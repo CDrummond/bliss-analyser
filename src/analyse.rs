@@ -157,9 +157,11 @@ pub fn analyse_files(db_path: &str, mpath: &Path, path: &Path, dry_run:bool, kee
     }
     if !dry_run {
         to_add.sort();
-        match analyse_new_files(&db, mpath, to_add) {
-            Ok(_) => { },
-            Err(_) => { }
+        if to_add.len()>0 {
+            match analyse_new_files(&db, mpath, to_add) {
+                Ok(_) => { },
+                Err(_) => { }
+            }
         }
     }
 
