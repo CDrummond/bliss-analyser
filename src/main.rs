@@ -14,7 +14,7 @@ mod tags;
 
 fn main() {
     let mut db_path = "bliss.db".to_string();
-    let mut logging = "warn".to_string();
+    let mut logging = "info".to_string();
     let mut music_path = ".".to_string();
     let mut ignore_file = String::new();
     let mut keep_old:bool = false;
@@ -37,6 +37,7 @@ fn main() {
     }
 
     if logging.eq_ignore_ascii_case("trace") || logging.eq_ignore_ascii_case("debug") || logging.eq_ignore_ascii_case("info") || logging.eq_ignore_ascii_case("warn") || logging.eq_ignore_ascii_case("error") {
+        logging += ",bliss_audio=error";
         env_logger::init_from_env(env_logger::Env::default().filter_or("XXXXXXXX", logging));
     } else {
         env_logger::init_from_env(env_logger::Env::default().filter_or("XXXXXXXX", "ERROR"));

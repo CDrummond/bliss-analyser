@@ -145,6 +145,7 @@ impl Db {
     }
 
     pub fn remove_old(&self, mpath:&Path, dry_run:bool) {
+        log::info!("Looking for non-existant tracks");
         let mut stmt = self.conn.prepare("SELECT File FROM Tracks;").unwrap();
         let track_iter = stmt.query_map([], |row| {
             Ok((row.get(0)?,))
@@ -161,7 +162,7 @@ impl Db {
                 to_remove.push(db_path);
             }
         }
-        log::info!("Num old tracks: {}", to_remove.len());
+        log::info!("Num non-existant tracks: {}", to_remove.len());
         if !dry_run {
             for t in to_remove {
                 match self.conn.execute("DELETE FROM Tracks WHERE File = ?;", params![t]) {

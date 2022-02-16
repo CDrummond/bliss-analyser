@@ -17,6 +17,7 @@ use crate::db;
 use crate::tags;
 
 const DONT_ANALYSE:&str = ".nomusic";
+const MAX_TAG_ERRORS_TO_SHOW:usize = 25;
 
 fn get_file_list(db:&mut db::Db, mpath:&PathBuf, path:&PathBuf, track_paths:&mut Vec<String>) {
     if path.is_dir() {
@@ -77,32 +78,31 @@ pub fn analyse_new_files(db:&db::Db, mpath: &PathBuf, track_paths:Vec<String>) -
     let total = track_paths.len();
     let pb = ProgressBar::new(total.try_into().unwrap());
     let style = ProgressStyle::default_bar()
-        .template("[{elapsed_precise}] {bar:40} {pos:>7}/{len:7} {wide_msg}")
-        .progress_chars("##-");
+        .template("[{elapsed_precise}] [{bar:25}] {pos:>6}/{len:6} {percent:>3}% {wide_msg}")
+        .progress_chars("=> ");
     pb.set_style(style);
 
     let results = analyze_paths_streaming(track_paths)?;
     let mut analysed = 0;
     let mut failed = 0;
-    let mut tag_error = 0;
+    let mut tag_error:Vec<String> = Vec::new();
 
+    log::info!("Analysing new tracks");
     for (path, result) in results {
-        pb.set_message(format!("Analysing {}", path));
+        let pbuff = PathBuf::from(&path);
+        let stripped = pbuff.strip_prefix(mpath).unwrap();
+        let spbuff = stripped.to_path_buf();
+        let sname = String::from(spbuff.to_string_lossy());
+        pb.set_message(format!("{}", sname));
         match result {
             Ok(track) => {
-                let meta = tags::read(&path);
-                let pb = PathBuf::from(path);
+                let cpath = String::from(path);
+                let meta = tags::read(&cpath);
                 if meta.title.is_empty() && meta.artist.is_empty() && meta.album.is_empty() && meta.genre.is_empty() {
-                    tag_error += 1;
+                    tag_error.push(sname.clone());
                 }
-                match pb.strip_prefix(mpath) {
-                    Ok(stripped) => {
-                        let spb = stripped.to_path_buf();
-                        let sname = String::from(spb.to_string_lossy());
-                        db.add_track(&sname, &meta, &track.analysis);
-                    },
-                    Err(_) => { }
-                }
+
+                db.add_track(&sname, &meta, &track.analysis);
                 analysed += 1;
             },
             Err(_) => {
@@ -111,7 +111,19 @@ pub fn analyse_new_files(db:&db::Db, mpath: &PathBuf, track_paths:Vec<String>) -
         };
         pb.inc(1);
     }
-    pb.finish_with_message(format!("{} Analyzed. {} Failure(s). {} Tag error(s).", analysed, failed, tag_error));
+    pb.finish_with_message(format!("{} Analysed. {} Failure(s).", analysed, failed));
+    if !tag_error.is_empty() {
+        let total = tag_error.len();
+        tag_error.truncate(MAX_TAG_ERRORS_TO_SHOW);
+
+        log::error!("Failed to read tags of the folling track(s):");
+        for err in tag_error {
+            log::error!("  {}", err);
+        }
+        if total>MAX_TAG_ERRORS_TO_SHOW {
+            log::error!("  + {} other(s)", total - MAX_TAG_ERRORS_TO_SHOW);
+        }
+    }
     Ok(())
 }
 
@@ -121,6 +133,7 @@ pub fn analyse_files(db_path: &str, mpath: &PathBuf, dry_run:bool, keep_old:bool
     let cur = PathBuf::from(mpath);
 
     db.init();
+    log::info!("Looking for new tracks");
     get_file_list(&mut db, mpath, &cur, &mut track_paths);
     log::info!("Num new tracks: {}", track_paths.len());
     if !keep_old {
@@ -132,6 +145,8 @@ pub fn analyse_files(db_path: &str, mpath: &PathBuf, dry_run:bool, keep_old:bool
                 Ok(_) => { },
                 Err(_) => { }
             }
+        } else {
+            log::info!("No new tracks to analyse");
         }
     }
 
