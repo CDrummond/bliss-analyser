@@ -10,6 +10,8 @@ use anyhow::{Result};
 use bliss_audio::{library::analyze_paths_streaming};
 use indicatif::{ProgressBar, ProgressStyle};
 use std::convert::TryInto;
+use std::fs::File;
+use std::io::{BufRead, BufReader};
 use std::path::PathBuf;
 use crate::db;
 use crate::tags;
@@ -140,5 +142,21 @@ pub fn read_tags(db_path: &str, mpath: &PathBuf) {
     let db = db::Db::new(&String::from(db_path));
     db.init();
     db.update_tags(&mpath);
+    db.close();
+}
+
+pub fn update_ignore(db_path: &str, ignore_path: &PathBuf) {
+    let file = File::open(ignore_path).unwrap();
+    let reader = BufReader::new(file);
+    let db = db::Db::new(&String::from(db_path));
+    db.init();
+
+    db.clear_ignore();
+    for (_index, line) in reader.lines().enumerate() {
+        let line = line.unwrap();
+        if !line.is_empty() && !line.starts_with("#") {
+            db.set_ignore(&line);
+        }
+    }
     db.close();
 }

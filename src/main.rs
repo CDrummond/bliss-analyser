@@ -16,6 +16,7 @@ fn main() {
     let mut db_path = "bliss.db".to_string();
     let mut logging = "warn".to_string();
     let mut music_path = ".".to_string();
+    let mut ignore_file = String::new();
     let mut keep_old:bool = false;
     let mut dry_run:bool = false;
     let mut tags_only:bool = false;
@@ -31,11 +32,7 @@ fn main() {
         arg_parse.refer(&mut keep_old).add_option(&["-k", "--keep-old"], Store, "Don't remove tracks from DB if they don't exist");
         arg_parse.refer(&mut dry_run).add_option(&["-r", "--dry-run"], Store, "Dry run, only show what needs to be done");
         arg_parse.refer(&mut tags_only).add_option(&["-t", "--tags-only"], Store, "Re-read tags");
-        /*
-        TODO:
-        -i --ignore Update ignore column
-        -t --tags Re-read tags
-        */
+        arg_parse.refer(&mut ignore_file).add_option(&["-i", "--ignore"], Store, "Update ignore status in DB");
         arg_parse.parse_args_or_exit();
     }
 
@@ -70,6 +67,18 @@ fn main() {
 
     if tags_only {
         analyse::read_tags(&db_path, &mpath);
+    } else if !ignore_file.is_empty() {
+        let ignore_path = PathBuf::from(&ignore_file);
+        if !ignore_path.exists() {
+            log::error!("Ignore file ({}) does not exist", ignore_file);
+            process::exit(-1);
+        }
+        if !ignore_path.is_file() {
+            log::error!("Ignore file ({}) is not a file", ignore_file);
+            process::exit(-1);
+        }
+        analyse::update_ignore(&db_path, &ignore_path);
+    } else {
+        analyse::analyse_files(&db_path, &mpath, dry_run, keep_old);
     }
-    analyse::analyse_files(&db_path, &mpath, dry_run, keep_old);
 }

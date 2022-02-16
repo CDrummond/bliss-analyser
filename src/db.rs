@@ -191,12 +191,26 @@ impl Db {
             let path = String::from(mpath.join(&dtags.file).to_string_lossy());
             let ftags = tags::read(&path);
             if ftags.duration!=dtags.duration || ftags.title!=dtags.title || ftags.artist!=dtags.artist || ftags.album!=dtags.album || ftags.genre!=dtags.genre {
-                match self.conn.execute("UPDATE Tracks SET Title=?, Artist=?, Album=?, Genre=?, Duration=? WHERE rowid=?);",
+                match self.conn.execute("UPDATE Tracks SET Title=?, Artist=?, Album=?, Genre=?, Duration=? WHERE rowid=?;",
                                         params![ftags.title, ftags.artist, ftags.album, ftags.genre, ftags.duration, dtags.rowid]) {
                     Ok(_) => { },
                     Err(e) => { log::error!("Failed to update tags of '{}'. {}", dtags.file, e); }
                 }
             }
+        }
+    }
+
+    pub fn clear_ignore(&self) {
+        match self.conn.execute("UPDATE Tracks SET Ignore=0;", []) {
+            Ok(_) => { },
+            Err(e) => { log::error!("Failed clear Ignore column. {}", e); }
+        }
+    }
+
+    pub fn set_ignore(&self, like:&str) {
+        match self.conn.execute("UPDATE Tracks SET Ignore=1 WHERE File LIKE ?", params![like]) {
+            Ok(_) => { },
+            Err(e) => { log::error!("Failed set Ignore column for '{}'. {}", like, e); }
         }
     }
  }
