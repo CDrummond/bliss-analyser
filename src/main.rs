@@ -13,6 +13,8 @@ mod analyse;
 mod db;
 mod tags;
 
+const VERSION: &'static str = env!("CARGO_PKG_VERSION");
+
 fn main() {
     let mut db_path = "bliss.db".to_string();
     let mut logging = "info".to_string();
@@ -30,10 +32,12 @@ fn main() {
     {
         let music_path_help = format!("Music folder (default: {})", &music_path);
         let db_path_help = format!("Database location (default: {})", &db_path);
+        let description = format!("Bliss Analyser v{}", VERSION);
+
         // arg_parse.refer 'borrows' db_path, etc, and can only have one
         // borrow per scope, hence this section is enclosed in { }
         let mut arg_parse = ArgumentParser::new();
-        arg_parse.set_description("Bliss Mixer");
+        arg_parse.set_description(&description);
         arg_parse.refer(&mut music_path).add_option(&["-m", "--music"], Store, &music_path_help);
         arg_parse.refer(&mut db_path).add_option(&["-d", "--db"], Store, &db_path_help);
         arg_parse.refer(&mut logging).add_option(&["-l", "--logging"], Store, "Log level (trace, debug, info, warn, error)");
