@@ -5,7 +5,7 @@
  * GPLv3 license.
  *
  **/
-use argparse::{ArgumentParser, Store};
+use argparse::{ArgumentParser, Store, StoreTrue};
 use std::path::PathBuf;
 use std::process;
 mod analyse;
@@ -29,9 +29,9 @@ fn main() {
         arg_parse.refer(&mut music_path).add_option(&["-m", "--music"], Store, "Music folder");
         arg_parse.refer(&mut db_path).add_option(&["-d", "--db"], Store, "Database location");
         arg_parse.refer(&mut logging).add_option(&["-l", "--logging"], Store, "Log level (trace, debug, info, warn, error)");
-        arg_parse.refer(&mut keep_old).add_option(&["-k", "--keep-old"], Store, "Don't remove tracks from DB if they don't exist");
-        arg_parse.refer(&mut dry_run).add_option(&["-r", "--dry-run"], Store, "Dry run, only show what needs to be done");
-        arg_parse.refer(&mut tags_only).add_option(&["-t", "--tags-only"], Store, "Re-read tags");
+        arg_parse.refer(&mut keep_old).add_option(&["-k", "--keep-old"], StoreTrue, "Don't remove tracks from DB if they don't exist");
+        arg_parse.refer(&mut dry_run).add_option(&["-r", "--dry-run"], StoreTrue, "Dry run, only show what needs to be done");
+        arg_parse.refer(&mut tags_only).add_option(&["-t", "--tags-only"], StoreTrue, "Re-read tags");
         arg_parse.refer(&mut ignore_file).add_option(&["-i", "--ignore"], Store, "Update ignore status in DB");
         arg_parse.parse_args_or_exit();
     }
