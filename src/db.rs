@@ -10,6 +10,17 @@ use bliss_audio::{Analysis, AnalysisIndex};
 use rusqlite::{Connection, params};
 use std::path::{Path, PathBuf};
 use std::process;
+use crate::tags;
+
+pub struct FileMetadata {
+    pub rowid:usize,
+    pub file:String,
+    pub title:String,
+    pub artist:String,
+    pub album:String,
+    pub genre:String,
+    pub duration:u32
+}
 
 pub struct Metadata {
     pub title:String,
@@ -145,7 +156,7 @@ impl Db {
                 db_path = db_path.replace("/", "\\");
             }
             let path = mpath.join(PathBuf::from(db_path.clone()));
-            
+
             if !path.exists() {
                 to_remove.push(db_path);
             }
@@ -156,6 +167,34 @@ impl Db {
                 match self.conn.execute("DELETE FROM Tracks WHERE File = ?;", params![t]) {
                     Ok(_) => { },
                     Err(_) => { }
+                }
+            }
+        }
+    }
+
+    pub fn update_tags(&self, mpath:&PathBuf) {
+        let mut stmt = self.conn.prepare("SELECT rowid, File, Title, Artist, Album, Genre, Duration FROM Tracks;").unwrap();
+        let track_iter = stmt.query_map([], |row| {
+            Ok(FileMetadata {
+                rowid: row.get(0)?,
+                file: row.get(1)?,
+                title: row.get(2)?,
+                artist: row.get(3)?,
+                album: row.get(4)?,
+                genre: row.get(5)?,
+                duration: row.get(6)?,
+            })
+        }).unwrap();
+
+        for tr in track_iter {
+            let dtags = tr.unwrap();
+            let path = String::from(mpath.join(&dtags.file).to_string_lossy());
+            let ftags = tags::read(&path);
+            if ftags.duration!=dtags.duration || ftags.title!=dtags.title || ftags.artist!=dtags.artist || ftags.album!=dtags.album || ftags.genre!=dtags.genre {
+                match self.conn.execute("UPDATE Tracks SET Title=?, Artist=?, Album=?, Genre=?, Duration=? WHERE rowid=?);",
+                                        params![ftags.title, ftags.artist, ftags.album, ftags.genre, ftags.duration, dtags.rowid]) {
+                    Ok(_) => { },
+                    Err(e) => { log::error!("Failed to update tags of '{}'. {}", dtags.file, e); }
                 }
             }
         }

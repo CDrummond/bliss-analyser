@@ -9,14 +9,14 @@
 use anyhow::{Result};
 use bliss_audio::{library::analyze_paths_streaming};
 use indicatif::{ProgressBar, ProgressStyle};
-use lofty::{Accessor, Probe};
 use std::convert::TryInto;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use crate::db;
+use crate::tags;
 
 const DONT_ANALYSE:&str = ".nomusic";
 
-fn get_file_list(db:&mut db::Db, mpath:& Path, path: &Path, to_add:&mut Vec<String>) {
+fn get_file_list(db:&mut db::Db, mpath:&PathBuf, path:&PathBuf, track_paths:&mut Vec<String>) {
     if path.is_dir() {
         match path.read_dir() {
             Ok(items) => {
@@ -30,7 +30,7 @@ fn get_file_list(db:&mut db::Db, mpath:& Path, path: &Path, to_add:&mut Vec<Stri
                                 if check.exists() {
                                     log::error!("Skiping {}", pb.to_string_lossy());
                                 } else {
-                                    get_file_list(db, mpath, &entry.path(), to_add);
+                                    get_file_list(db, mpath, &entry.path(), track_paths);
                                 }
                             } else if entry.path().is_file() {
                                 let e = pb.extension();
@@ -49,7 +49,7 @@ fn get_file_list(db:&mut db::Db, mpath:& Path, path: &Path, to_add:&mut Vec<Stri
                                                     match db.get_rowid(&sname) {
                                                         Ok(id) => {
                                                             if id<=0 {
-                                                                to_add.push(String::from(pb.to_string_lossy()));
+                                                                track_paths.push(String::from(pb.to_string_lossy()));
                                                             }
                                                         },
                                                         Err(_) => { }
@@ -71,47 +71,15 @@ fn get_file_list(db:&mut db::Db, mpath:& Path, path: &Path, to_add:&mut Vec<Stri
     }
 }
 
-pub fn read_metadata(track:&String) -> db::Metadata {
-    let mut meta = db::Metadata{
-        title:String::new(),
-        artist:String::new(),
-        album:String::new(),
-        genre:String::new(),
-        duration:180
-    };
-    let path = Path::new(track);
-    match Probe::open(path) {
-        Ok(probe) => {
-            match probe.read(true) {
-                Ok(file) => {
-                    let tag = match file.primary_tag() {
-                        Some(primary_tag) => primary_tag,
-                        None => file.first_tag().expect("Error: No tags found!"),
-                    };
-
-                    meta.title=tag.title().unwrap_or("").to_string();
-                    meta.artist=tag.artist().unwrap_or("").to_string();
-                    meta.album=tag.album().unwrap_or("").to_string();
-                    meta.genre=tag.genre().unwrap_or("").to_string();
-                    meta.duration=file.properties().duration().as_secs() as u32;
-                },
-                Err(_) => { }
-            }
-        },
-        Err(_) => { }
-    }
-    meta
-}
-
-pub fn analyse_new_files(db:&db::Db, mpath: &Path, to_add:Vec<String>) -> Result<()> {
-    let total = to_add.len();
+pub fn analyse_new_files(db:&db::Db, mpath: &PathBuf, track_paths:Vec<String>) -> Result<()> {
+    let total = track_paths.len();
     let pb = ProgressBar::new(total.try_into().unwrap());
     let style = ProgressStyle::default_bar()
         .template("[{elapsed_precise}] {bar:40} {pos:>7}/{len:7} {wide_msg}")
         .progress_chars("##-");
     pb.set_style(style);
 
-    let results = analyze_paths_streaming(to_add)?;
+    let results = analyze_paths_streaming(track_paths)?;
     let mut analysed = 0;
     let mut failed = 0;
     let mut tag_error = 0;
@@ -120,7 +88,7 @@ pub fn analyse_new_files(db:&db::Db, mpath: &Path, to_add:Vec<String>) -> Result
         pb.set_message(format!("Analysing {}", path));
         match result {
             Ok(track) => {
-                let meta = read_metadata(&path);
+                let meta = tags::read(&path);
                 let pb = PathBuf::from(path);
                 if meta.title.is_empty() && meta.artist.is_empty() && meta.album.is_empty() && meta.genre.is_empty() {
                     tag_error += 1;
@@ -145,25 +113,32 @@ pub fn analyse_new_files(db:&db::Db, mpath: &Path, to_add:Vec<String>) -> Result
     Ok(())
 }
 
-pub fn analyse_files(db_path: &str, mpath: &Path, path: &Path, dry_run:bool, keep_old:bool) {
-    let mut to_add:Vec<String> = Vec::new();
+pub fn analyse_files(db_path: &str, mpath: &PathBuf, dry_run:bool, keep_old:bool) {
+    let mut track_paths:Vec<String> = Vec::new();
     let mut db = db::Db::new(&String::from(db_path));
+    let cur = PathBuf::from(mpath);
 
     db.init();
-    get_file_list(&mut db, mpath, path, &mut to_add);
-    log::info!("Num new tracks: {}", to_add.len());
+    get_file_list(&mut db, mpath, &cur, &mut track_paths);
+    log::info!("Num new tracks: {}", track_paths.len());
     if !keep_old {
         db.remove_old(mpath, dry_run);
     }
     if !dry_run {
-        to_add.sort();
-        if to_add.len()>0 {
-            match analyse_new_files(&db, mpath, to_add) {
+        if track_paths.len()>0 {
+            match analyse_new_files(&db, mpath, track_paths) {
                 Ok(_) => { },
                 Err(_) => { }
             }
         }
     }
 
+    db.close();
+}
+
+pub fn read_tags(db_path: &str, mpath: &PathBuf) {
+    let db = db::Db::new(&String::from(db_path));
+    db.init();
+    db.update_tags(&mpath);
     db.close();
 }

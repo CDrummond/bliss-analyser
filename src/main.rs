@@ -6,10 +6,11 @@
  *
  **/
 use argparse::{ArgumentParser, Store};
-use std::path::Path;
+use std::path::PathBuf;
 use std::process;
 mod analyse;
 mod db;
+mod tags;
 
 fn main() {
     let mut db_path = "bliss.db".to_string();
@@ -17,6 +18,7 @@ fn main() {
     let mut music_path = ".".to_string();
     let mut keep_old:bool = false;
     let mut dry_run:bool = false;
+    let mut tags_only:bool = false;
 
     {
         // arg_parse.refer 'borrows' db_path, etc, and can only have one
@@ -28,6 +30,7 @@ fn main() {
         arg_parse.refer(&mut logging).add_option(&["-l", "--logging"], Store, "Log level (trace, debug, info, warn, error)");
         arg_parse.refer(&mut keep_old).add_option(&["-k", "--keep-old"], Store, "Don't remove tracks from DB if they don't exist");
         arg_parse.refer(&mut dry_run).add_option(&["-r", "--dry-run"], Store, "Dry run, only show what needs to be done");
+        arg_parse.refer(&mut tags_only).add_option(&["-t", "--tags-only"], Store, "Re-read tags");
         /*
         TODO:
         -i --ignore Update ignore column
@@ -49,13 +52,13 @@ fn main() {
         process::exit(-1);
     }
 
-    let path = Path::new(&db_path);
+    let path = PathBuf::from(&db_path);
     if path.exists() && !path.is_file() {
         log::error!("DB path ({}) is not a file", db_path);
         process::exit(-1);
     }
 
-    let mpath = Path::new(&music_path);
+    let mpath = PathBuf::from(&music_path);
     if !mpath.exists() {
         log::error!("Music path ({}) does not exist", music_path);
         process::exit(-1);
@@ -65,5 +68,8 @@ fn main() {
         process::exit(-1);
     }
 
-    analyse::analyse_files(&db_path, Path::new(&music_path), &mpath, dry_run, keep_old);
+    if tags_only {
+        analyse::read_tags(&db_path, &mpath);
+    }
+    analyse::analyse_files(&db_path, &mpath, dry_run, keep_old);
 }
