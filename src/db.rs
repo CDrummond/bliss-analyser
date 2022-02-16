@@ -193,7 +193,7 @@ impl Db {
         if total>0 {
             let pb = ProgressBar::new(total.try_into().unwrap());
             let style = ProgressStyle::default_bar()
-                .template("[{elapsed_precise}] [{bar:25}] {pos:>6}/{len:6} {percent:>3}% {wide_msg}")
+                .template("[{elapsed_precise}] [{bar:25}] {percent:>3}% {pos:>6}/{len:6} {wide_msg}")
                 .progress_chars("=> ");
             pb.set_style(style);
             let mut stmt = self.conn.prepare("SELECT rowid, File, Title, Artist, Album, Genre, Duration FROM Tracks ORDER BY File ASC;").unwrap();
