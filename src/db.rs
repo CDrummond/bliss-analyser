@@ -7,7 +7,9 @@
  **/
 
 use bliss_audio::{Analysis, AnalysisIndex};
+use indicatif::{ProgressBar, ProgressStyle};
 use rusqlite::{Connection, params};
+use std::convert::TryInto;
 use std::path::{Path, PathBuf};
 use std::process;
 use crate::tags;
@@ -173,31 +175,56 @@ impl Db {
         }
     }
 
-    pub fn update_tags(&self, mpath:&PathBuf) {
-        let mut stmt = self.conn.prepare("SELECT rowid, File, Title, Artist, Album, Genre, Duration FROM Tracks;").unwrap();
+    pub fn get_track_count(&self) -> usize {
+        let mut stmt = self.conn.prepare("SELECT COUNT(*) FROM Tracks;").unwrap();
         let track_iter = stmt.query_map([], |row| {
-            Ok(FileMetadata {
-                rowid: row.get(0)?,
-                file: row.get(1)?,
-                title: row.get(2)?,
-                artist: row.get(3)?,
-                album: row.get(4)?,
-                genre: row.get(5)?,
-                duration: row.get(6)?,
-            })
+            Ok(row.get(0)?)
         }).unwrap();
-
+        let mut count:usize = 0;
         for tr in track_iter {
-            let dtags = tr.unwrap();
-            let path = String::from(mpath.join(&dtags.file).to_string_lossy());
-            let ftags = tags::read(&path);
-            if ftags.duration!=dtags.duration || ftags.title!=dtags.title || ftags.artist!=dtags.artist || ftags.album!=dtags.album || ftags.genre!=dtags.genre {
-                match self.conn.execute("UPDATE Tracks SET Title=?, Artist=?, Album=?, Genre=?, Duration=? WHERE rowid=?;",
-                                        params![ftags.title, ftags.artist, ftags.album, ftags.genre, ftags.duration, dtags.rowid]) {
-                    Ok(_) => { },
-                    Err(e) => { log::error!("Failed to update tags of '{}'. {}", dtags.file, e); }
+            count = tr.unwrap();
+            break;
+        }
+        count
+    }
+
+    pub fn update_tags(&self, mpath:&PathBuf) {
+        let total = self.get_track_count();
+        if total>0 {
+            let pb = ProgressBar::new(total.try_into().unwrap());
+            let style = ProgressStyle::default_bar()
+                .template("[{elapsed_precise}] [{bar:25}] {pos:>6}/{len:6} {percent:>3}% {wide_msg}")
+                .progress_chars("=> ");
+            pb.set_style(style);
+            let mut stmt = self.conn.prepare("SELECT rowid, File, Title, Artist, Album, Genre, Duration FROM Tracks;").unwrap();
+            let track_iter = stmt.query_map([], |row| {
+                Ok(FileMetadata {
+                    rowid: row.get(0)?,
+                    file: row.get(1)?,
+                    title: row.get(2)?,
+                    artist: row.get(3)?,
+                    album: row.get(4)?,
+                    genre: row.get(5)?,
+                    duration: row.get(6)?,
+                })
+            }).unwrap();
+
+            let mut updated = 0;
+            for tr in track_iter {
+                let dtags = tr.unwrap();
+                pb.set_message(format!("{}", dtags.file));
+                let path = String::from(mpath.join(&dtags.file).to_string_lossy());
+                let ftags = tags::read(&path);
+                if ftags.duration!=dtags.duration || ftags.title!=dtags.title || ftags.artist!=dtags.artist || ftags.album!=dtags.album || ftags.genre!=dtags.genre {
+                    match self.conn.execute("UPDATE Tracks SET Title=?, Artist=?, Album=?, Genre=?, Duration=? WHERE rowid=?;",
+                                            params![ftags.title, ftags.artist, ftags.album, ftags.genre, ftags.duration, dtags.rowid]) {
+                        Ok(_) => { updated += 1; },
+                        Err(e) => { log::error!("Failed to update tags of '{}'. {}", dtags.file, e); }
+                    }
                 }
+                pb.inc(1);
             }
+            pb.finish_with_message(format!("{} Updated.", updated))
         }
     }
 
