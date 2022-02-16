@@ -6,6 +6,7 @@
  *
  **/
 use argparse::{ArgumentParser, Store, StoreTrue};
+use dirs;
 use std::path::PathBuf;
 use std::process;
 mod analyse;
@@ -21,9 +22,14 @@ fn main() {
     let mut dry_run:bool = false;
     let mut tags_only:bool = false;
 
+    match dirs::home_dir() {
+        Some(path) => { music_path = String::from(path.join("Music").to_string_lossy()); }
+        None => { }
+    }
+
     {
         let music_path_help = format!("Music folder (default: {})", &music_path);
-        let db_path_help = format!("Database location (default : {})", &db_path);
+        let db_path_help = format!("Database location (default: {})", &db_path);
         // arg_parse.refer 'borrows' db_path, etc, and can only have one
         // borrow per scope, hence this section is enclosed in { }
         let mut arg_parse = ArgumentParser::new();
