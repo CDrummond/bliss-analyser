@@ -31,7 +31,7 @@ fn get_file_list(db:&mut db::Db, mpath:&PathBuf, path:&PathBuf, track_paths:&mut
                                 let mut check = pb.clone();
                                 check.push(PathBuf::from(DONT_ANALYSE));
                                 if check.exists() {
-                                    log::error!("Skiping {}", pb.to_string_lossy());
+                                    log::info!("Skipping '{}', found '{}'", pb.to_string_lossy(), DONT_ANALYSE);
                                 } else {
                                     get_file_list(db, mpath, &entry.path(), track_paths);
                                 }
@@ -45,7 +45,7 @@ fn get_file_list(db:&mut db::Db, mpath:&PathBuf, path:&PathBuf, track_paths:&mut
                                                 let mut cue = pb.clone();
                                                 cue.set_extension("cue");
                                                 if cue.exists() {
-                                                    log::error!("Found CUE album '{}' - not currently handled!", pb.to_string_lossy());
+                                                    log::warn!("Found CUE album '{}' - not currently handled!", pb.to_string_lossy());
                                                 } else {
                                                     let spb = stripped.to_path_buf();
                                                     let sname = String::from(spb.to_string_lossy());
