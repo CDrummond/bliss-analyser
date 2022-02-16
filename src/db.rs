@@ -196,7 +196,7 @@ impl Db {
                 .template("[{elapsed_precise}] [{bar:25}] {pos:>6}/{len:6} {percent:>3}% {wide_msg}")
                 .progress_chars("=> ");
             pb.set_style(style);
-            let mut stmt = self.conn.prepare("SELECT rowid, File, Title, Artist, Album, Genre, Duration FROM Tracks;").unwrap();
+            let mut stmt = self.conn.prepare("SELECT rowid, File, Title, Artist, Album, Genre, Duration FROM Tracks ORDER BY File ASC;").unwrap();
             let track_iter = stmt.query_map([], |row| {
                 Ok(FileMetadata {
                     rowid: row.get(0)?,
