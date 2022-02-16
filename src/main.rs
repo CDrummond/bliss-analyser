@@ -22,12 +22,14 @@ fn main() {
     let mut tags_only:bool = false;
 
     {
+        let music_path_help = format!("Music folder (default: {})", &music_path);
+        let db_path_help = format!("Database location (default : {})", &db_path);
         // arg_parse.refer 'borrows' db_path, etc, and can only have one
         // borrow per scope, hence this section is enclosed in { }
         let mut arg_parse = ArgumentParser::new();
         arg_parse.set_description("Bliss Mixer");
-        arg_parse.refer(&mut music_path).add_option(&["-m", "--music"], Store, "Music folder");
-        arg_parse.refer(&mut db_path).add_option(&["-d", "--db"], Store, "Database location");
+        arg_parse.refer(&mut music_path).add_option(&["-m", "--music"], Store, &music_path_help);
+        arg_parse.refer(&mut db_path).add_option(&["-d", "--db"], Store, &db_path_help);
         arg_parse.refer(&mut logging).add_option(&["-l", "--logging"], Store, "Log level (trace, debug, info, warn, error)");
         arg_parse.refer(&mut keep_old).add_option(&["-k", "--keep-old"], StoreTrue, "Don't remove tracks from DB if they don't exist");
         arg_parse.refer(&mut dry_run).add_option(&["-r", "--dry-run"], StoreTrue, "Dry run, only show what needs to be done");
