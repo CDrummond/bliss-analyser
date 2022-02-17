@@ -19,6 +19,7 @@ pub struct FileMetadata {
     pub file:String,
     pub title:String,
     pub artist:String,
+    pub album_artist:String,
     pub album:String,
     pub genre:String,
     pub duration:u32
@@ -27,6 +28,7 @@ pub struct FileMetadata {
 pub struct Metadata {
     pub title:String,
     pub artist:String,
+    pub album_artist:String,
     pub album:String,
     pub genre:String,
     pub duration:u32
@@ -50,6 +52,7 @@ impl Db {
                 Title text,
                 Artist text,
                 Album text,
+                AlbumArtist text,
                 Genre text,
                 Duration integer,
                 Ignore integer,
@@ -121,8 +124,8 @@ impl Db {
         match self.get_rowid(&path) {
             Ok(id) => {
                 if id<=0 {
-                    match self.conn.execute("INSERT INTO Tracks (File, Title, Artist, Album, Genre, Duration, Ignore, Tempo, Zcr, MeanSpectralCentroid, StdDevSpectralCentroid, MeanSpectralRolloff, StdDevSpectralRolloff, MeanSpectralFlatness, StdDevSpectralFlatness, MeanLoudness, StdDevLoudness, Chroma1, Chroma2, Chroma3, Chroma4, Chroma5, Chroma6, Chroma7, Chroma8, Chroma9, Chroma10) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);",
-                            params![db_path, meta.title, meta.artist, meta.album, meta.genre, meta.duration, 0,
+                    match self.conn.execute("INSERT INTO Tracks (File, Title, Artist, AlbumArtist, Album, Genre, Duration, Ignore, Tempo, Zcr, MeanSpectralCentroid, StdDevSpectralCentroid, MeanSpectralRolloff, StdDevSpectralRolloff, MeanSpectralFlatness, StdDevSpectralFlatness, MeanLoudness, StdDevLoudness, Chroma1, Chroma2, Chroma3, Chroma4, Chroma5, Chroma6, Chroma7, Chroma8, Chroma9, Chroma10) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);",
+                            params![db_path, meta.title, meta.artist, meta.album_artist, meta.album, meta.genre, meta.duration, 0,
                             analysis[AnalysisIndex::Tempo], analysis[AnalysisIndex::Zcr], analysis[AnalysisIndex::MeanSpectralCentroid], analysis[AnalysisIndex::StdDeviationSpectralCentroid], analysis[AnalysisIndex::MeanSpectralRolloff],
                             analysis[AnalysisIndex::StdDeviationSpectralRolloff], analysis[AnalysisIndex::MeanSpectralFlatness], analysis[AnalysisIndex::StdDeviationSpectralFlatness], analysis[AnalysisIndex::MeanLoudness], analysis[AnalysisIndex::StdDeviationLoudness],
                             analysis[AnalysisIndex::Chroma1], analysis[AnalysisIndex::Chroma2], analysis[AnalysisIndex::Chroma3], analysis[AnalysisIndex::Chroma4], analysis[AnalysisIndex::Chroma5],
@@ -131,8 +134,8 @@ impl Db {
                         Err(e) => { log::error!("Failed to insert '{}' into database. {}", path, e); }
                     }
                 } else {
-                    match self.conn.execute("UPDATE Tracks SET Title=?, Artist=?, Album=?, Genre=?, Duration=?, Tempo=?, Zcr=?, MeanSpectralCentroid=?, StdDevSpectralCentroid=?, MeanSpectralRolloff=?, StdDevSpectralRolloff=?, MeanSpectralFlatness=?, StdDevSpectralFlatness=?, MeanLoudness=?, StdDevLoudness=?, Chroma1=?, Chroma2=?, Chroma3=?, Chroma4=?, Chroma5=?, Chroma6=?, Chroma7=?, Chroma8=?, Chroma9=?, Chroma10=? WHERE rowid=?);",
-                            params![meta.title, meta.artist, meta.album, meta.genre, meta.duration,
+                    match self.conn.execute("UPDATE Tracks SET Title=?, Artist=?, AlbumArtist=?, Album=?, Genre=?, Duration=?, Tempo=?, Zcr=?, MeanSpectralCentroid=?, StdDevSpectralCentroid=?, MeanSpectralRolloff=?, StdDevSpectralRolloff=?, MeanSpectralFlatness=?, StdDevSpectralFlatness=?, MeanLoudness=?, StdDevLoudness=?, Chroma1=?, Chroma2=?, Chroma3=?, Chroma4=?, Chroma5=?, Chroma6=?, Chroma7=?, Chroma8=?, Chroma9=?, Chroma10=? WHERE rowid=?);",
+                            params![meta.title, meta.artist, meta.album_artist, meta.album, meta.genre, meta.duration,
                             analysis[AnalysisIndex::Tempo], analysis[AnalysisIndex::Zcr], analysis[AnalysisIndex::MeanSpectralCentroid], analysis[AnalysisIndex::StdDeviationSpectralCentroid], analysis[AnalysisIndex::MeanSpectralRolloff],
                             analysis[AnalysisIndex::StdDeviationSpectralRolloff], analysis[AnalysisIndex::MeanSpectralFlatness], analysis[AnalysisIndex::StdDeviationSpectralFlatness], analysis[AnalysisIndex::MeanLoudness], analysis[AnalysisIndex::StdDeviationLoudness],
                             analysis[AnalysisIndex::Chroma1], analysis[AnalysisIndex::Chroma2], analysis[AnalysisIndex::Chroma3], analysis[AnalysisIndex::Chroma4], analysis[AnalysisIndex::Chroma5],
@@ -196,16 +199,17 @@ impl Db {
                 .template("[{elapsed_precise}] [{bar:25}] {percent:>3}% {pos:>6}/{len:6} {wide_msg}")
                 .progress_chars("=> ");
             pb.set_style(style);
-            let mut stmt = self.conn.prepare("SELECT rowid, File, Title, Artist, Album, Genre, Duration FROM Tracks ORDER BY File ASC;").unwrap();
+            let mut stmt = self.conn.prepare("SELECT rowid, File, Title, Artist, AlbumArtist, Album, Genre, Duration FROM Tracks ORDER BY File ASC;").unwrap();
             let track_iter = stmt.query_map([], |row| {
                 Ok(FileMetadata {
                     rowid: row.get(0)?,
                     file: row.get(1)?,
                     title: row.get(2)?,
                     artist: row.get(3)?,
-                    album: row.get(4)?,
-                    genre: row.get(5)?,
-                    duration: row.get(6)?,
+                    album_artist: row.get(4)?,
+                    album: row.get(5)?,
+                    genre: row.get(6)?,
+                    duration: row.get(7)?,
                 })
             }).unwrap();
 
@@ -215,9 +219,9 @@ impl Db {
                 pb.set_message(format!("{}", dtags.file));
                 let path = String::from(mpath.join(&dtags.file).to_string_lossy());
                 let ftags = tags::read(&path);
-                if ftags.duration!=dtags.duration || ftags.title!=dtags.title || ftags.artist!=dtags.artist || ftags.album!=dtags.album || ftags.genre!=dtags.genre {
-                    match self.conn.execute("UPDATE Tracks SET Title=?, Artist=?, Album=?, Genre=?, Duration=? WHERE rowid=?;",
-                                            params![ftags.title, ftags.artist, ftags.album, ftags.genre, ftags.duration, dtags.rowid]) {
+                if ftags.duration!=dtags.duration || ftags.title!=dtags.title || ftags.artist!=dtags.artist || ftags.album_artist!=dtags.album_artist || ftags.album!=dtags.album || ftags.genre!=dtags.genre {
+                    match self.conn.execute("UPDATE Tracks SET Title=?, Artist=?, AlbumArtist=?, Album=?, Genre=?, Duration=? WHERE rowid=?;",
+                                            params![ftags.title, ftags.artist, ftags.album_artist, ftags.album, ftags.genre, ftags.duration, dtags.rowid]) {
                         Ok(_) => { updated += 1; },
                         Err(e) => { log::error!("Failed to update tags of '{}'. {}", dtags.file, e); }
                     }
