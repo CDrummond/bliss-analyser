@@ -17,11 +17,11 @@ use crate::tags;
 pub struct FileMetadata {
     pub rowid:usize,
     pub file:String,
-    pub title:String,
-    pub artist:String,
-    pub album_artist:String,
-    pub album:String,
-    pub genre:String,
+    pub title:Option<String>,
+    pub artist:Option<String>,
+    pub album_artist:Option<String>,
+    pub album:Option<String>,
+    pub genre:Option<String>,
     pub duration:u32
 }
 
@@ -215,15 +215,23 @@ impl Db {
 
             let mut updated = 0;
             for tr in track_iter {
-                let dtags = tr.unwrap();
-                pb.set_message(format!("{}", dtags.file));
-                let path = String::from(mpath.join(&dtags.file).to_string_lossy());
+                let dbtags = tr.unwrap();
+                let dtags = Metadata{
+                    title:dbtags.title.unwrap_or(String::new()),
+                    artist:dbtags.artist.unwrap_or(String::new()),
+                    album_artist:dbtags.album_artist.unwrap_or(String::new()),
+                    album:dbtags.album.unwrap_or(String::new()),
+                    genre:dbtags.genre.unwrap_or(String::new()),
+                    duration:dbtags.duration
+                };
+                pb.set_message(format!("{}", dbtags.file));
+                let path = String::from(mpath.join(&dbtags.file).to_string_lossy());
                 let ftags = tags::read(&path);
                 if ftags.duration!=dtags.duration || ftags.title!=dtags.title || ftags.artist!=dtags.artist || ftags.album_artist!=dtags.album_artist || ftags.album!=dtags.album || ftags.genre!=dtags.genre {
                     match self.conn.execute("UPDATE Tracks SET Title=?, Artist=?, AlbumArtist=?, Album=?, Genre=?, Duration=? WHERE rowid=?;",
-                                            params![ftags.title, ftags.artist, ftags.album_artist, ftags.album, ftags.genre, ftags.duration, dtags.rowid]) {
+                                            params![ftags.title, ftags.artist, ftags.album_artist, ftags.album, ftags.genre, ftags.duration, dbtags.rowid]) {
                         Ok(_) => { updated += 1; },
-                        Err(e) => { log::error!("Failed to update tags of '{}'. {}", dtags.file, e); }
+                        Err(e) => { log::error!("Failed to update tags of '{}'. {}", dbtags.file, e); }
                     }
                 }
                 pb.inc(1);
