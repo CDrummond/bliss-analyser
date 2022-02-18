@@ -22,6 +22,6 @@ Build with `cargo build --release`
 ## Analyse music library
 
 ```
-$ bliss-analyse --db /path/to/music
+$ bliss-analyse --music /path/to/music
 ```
 
