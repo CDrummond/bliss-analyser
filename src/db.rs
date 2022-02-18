@@ -250,7 +250,8 @@ impl Db {
     }
 
     pub fn set_ignore(&self, like:&str) {
-        match self.conn.execute("UPDATE Tracks SET Ignore=1 WHERE File LIKE ?", params![like]) {
+        log::info!("Ignore: {}", like);
+        match self.conn.execute(&format!("UPDATE Tracks SET Ignore=1 WHERE File LIKE \"{}%\"", like), []) {
             Ok(_) => { },
             Err(e) => { log::error!("Failed set Ignore column for '{}'. {}", like, e); }
         }
