@@ -6,7 +6,10 @@
  *
  **/
 use argparse::{ArgumentParser, Store, StoreTrue};
+use chrono::Local;
 use dirs;
+use log::LevelFilter;
+use std::io::Write;
 use std::path::PathBuf;
 use std::process;
 mod analyse;
@@ -48,14 +51,13 @@ fn main() {
         arg_parse.parse_args_or_exit();
     }
 
-    if logging.eq_ignore_ascii_case("trace") || logging.eq_ignore_ascii_case("debug") || logging.eq_ignore_ascii_case("info") || logging.eq_ignore_ascii_case("warn") || logging.eq_ignore_ascii_case("error") {
-        logging += ",bliss_audio=error";
-        env_logger::init_from_env(env_logger::Env::default().filter_or("XXXXXXXX", logging));
-    } else {
-        env_logger::init_from_env(env_logger::Env::default().filter_or("XXXXXXXX", "ERROR"));
-        log::error!("Invalid log level ({}) supplied", logging);
-        process::exit(-1);
+    if !(logging.eq_ignore_ascii_case("trace") || logging.eq_ignore_ascii_case("debug") || logging.eq_ignore_ascii_case("info") || logging.eq_ignore_ascii_case("warn") || logging.eq_ignore_ascii_case("error")) {
+        logging = String::from("info");
     }
+    let mut builder = env_logger::Builder::from_env(env_logger::Env::default().filter_or("XXXXXXXX", logging));
+    builder.filter(Some("bliss_audio"), LevelFilter::Error);
+    builder.format(|buf, record| writeln!(buf, "[{} {:.1}] {}", Local::now().format("%Y-%m-%d %H:%M:%S"), record.level(), record.args()));
+    builder.init();
 
     if db_path.len() < 3 {
         log::error!("Invalid DB path ({}) supplied", db_path);
