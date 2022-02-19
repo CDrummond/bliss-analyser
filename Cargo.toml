@@ -20,3 +20,5 @@ indicatif = "0.16.2"
 lofty = { git = "https://github.com/Serial-ATA/lofty-rs", rev = "4c0b7c2" }
 dirs = "1"
 chrono = "0.4.19"
+regex = "1"
+substring = "1.4.5"
