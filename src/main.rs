@@ -15,6 +15,7 @@ use std::process;
 mod analyse;
 mod db;
 mod tags;
+mod upload;
 
 const VERSION: &'static str = env!("CARGO_PKG_VERSION");
 
@@ -26,6 +27,7 @@ fn main() {
     let mut keep_old:bool = false;
     let mut dry_run:bool = false;
     let mut tags_only:bool = false;
+    let mut upload = "".to_string();
 
     match dirs::home_dir() {
         Some(path) => { music_path = String::from(path.join("Music").to_string_lossy()); }
@@ -48,6 +50,7 @@ fn main() {
         arg_parse.refer(&mut dry_run).add_option(&["-r", "--dry-run"], StoreTrue, "Dry run, only show what needs to be done");
         arg_parse.refer(&mut tags_only).add_option(&["-t", "--tags-only"], StoreTrue, "Re-read tags");
         arg_parse.refer(&mut ignore_file).add_option(&["-i", "--ignore"], Store, "Update ignore status in DB");
+        arg_parse.refer(&mut upload).add_option(&["-u", "--upload"], Store, "Upload database to LMS (specify hostname or IP address)");
         arg_parse.parse_args_or_exit();
     }
 
@@ -70,30 +73,39 @@ fn main() {
         process::exit(-1);
     }
 
-    let mpath = PathBuf::from(&music_path);
-    if !mpath.exists() {
-        log::error!("Music path ({}) does not exist", music_path);
-        process::exit(-1);
-    }
-    if !mpath.is_dir() {
-        log::error!("Music path ({}) is not a directory", music_path);
-        process::exit(-1);
-    }
-
-    if tags_only {
-        analyse::read_tags(&db_path, &mpath);
-    } else if !ignore_file.is_empty() {
-        let ignore_path = PathBuf::from(&ignore_file);
-        if !ignore_path.exists() {
-            log::error!("Ignore file ({}) does not exist", ignore_file);
+    if !upload.is_empty() {
+        if path.exists() {
+            upload::upload_db(&db_path, &upload);
+        } else {
+            log::error!("DB ({}) does not exist", db_path);
             process::exit(-1);
         }
-        if !ignore_path.is_file() {
-            log::error!("Ignore file ({}) is not a file", ignore_file);
-            process::exit(-1);
-        }
-        analyse::update_ignore(&db_path, &ignore_path);
     } else {
-        analyse::analyse_files(&db_path, &mpath, dry_run, keep_old);
+        let mpath = PathBuf::from(&music_path);
+        if !mpath.exists() {
+            log::error!("Music path ({}) does not exist", music_path);
+            process::exit(-1);
+        }
+        if !mpath.is_dir() {
+            log::error!("Music path ({}) is not a directory", music_path);
+            process::exit(-1);
+        }
+
+        if tags_only {
+            analyse::read_tags(&db_path, &mpath);
+        } else if !ignore_file.is_empty() {
+            let ignore_path = PathBuf::from(&ignore_file);
+            if !ignore_path.exists() {
+                log::error!("Ignore file ({}) does not exist", ignore_file);
+                process::exit(-1);
+            }
+            if !ignore_path.is_file() {
+                log::error!("Ignore file ({}) is not a file", ignore_file);
+                process::exit(-1);
+            }
+            analyse::update_ignore(&db_path, &ignore_path);
+        } else {
+            analyse::analyse_files(&db_path, &mpath, dry_run, keep_old);
+        }
     }
 }
