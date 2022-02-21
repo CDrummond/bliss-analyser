@@ -30,7 +30,7 @@ fn main() {
     let mut ignore_file = "ignore.txt".to_string();
     let mut keep_old:bool = false;
     let mut dry_run:bool = false;
-    let mut task = "analyse".to_string();
+    let mut task = "".to_string();
     let mut lms_host = "127.0.0.1".to_string();
 
     match dirs::home_dir() {
@@ -44,7 +44,6 @@ fn main() {
         let db_path_help = format!("Database location (default: {})", &db_path);
         let logging_help = format!("Log level; trace, debug, info, warn, error. (default: {})", logging);
         let ignore_file_help = format!("File containg items to mark as ignored. (default: {})", ignore_file);
-        let task_help = format!("Task to perform; analyse, tags, ignore, upload. (default: {})", task);
         let lms_host_help = format!("LMS hostname or IP address (default: {})", &lms_host);
         let description = format!("Bliss Analyser v{}", VERSION);
 
@@ -60,7 +59,7 @@ fn main() {
         arg_parse.refer(&mut dry_run).add_option(&["-r", "--dry-run"], StoreTrue, "Dry run, only show what needs to be done (used with analyse task)");
         arg_parse.refer(&mut ignore_file).add_option(&["-i", "--ignore"], Store, &ignore_file_help);
         arg_parse.refer(&mut lms_host).add_option(&["-L", "--lms"], Store, &lms_host_help);
-        arg_parse.refer(&mut task).add_argument("task", Store, &task_help);
+        arg_parse.refer(&mut task).add_argument("task", Store, "Task to perform; analyse, tags, ignore, upload.");
         arg_parse.parse_args_or_exit();
     }
 
@@ -71,6 +70,11 @@ fn main() {
     builder.filter(Some("bliss_audio"), LevelFilter::Error);
     builder.format(|buf, record| writeln!(buf, "[{} {:.1}] {}", Local::now().format("%Y-%m-%d %H:%M:%S"), record.level(), record.args()));
     builder.init();
+
+    if task.is_empty()  {
+        log::error!("No task specified, please choose from; analyse, tags, ignore, upload");
+        process::exit(-1);
+    }
 
     if !task.eq_ignore_ascii_case("analyse") && !task.eq_ignore_ascii_case("tags") && !task.eq_ignore_ascii_case("ignore") && !task.eq_ignore_ascii_case("upload") {
         log::error!("Invalid task ({}) supplied", task);
