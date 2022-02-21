@@ -7,6 +7,7 @@
  **/
 use argparse::{ArgumentParser, Store, StoreTrue};
 use chrono::Local;
+use configparser::ini::Ini;
 use dirs;
 use log::LevelFilter;
 use std::io::Write;
@@ -17,9 +18,12 @@ mod db;
 mod tags;
 mod upload;
 
+
 const VERSION: &'static str = env!("CARGO_PKG_VERSION");
+const TOP_LEVEL_INI_TAG:&str = "Bliss";
 
 fn main() {
+    let mut config_file = "config.ini".to_string();
     let mut db_path = "bliss.db".to_string();
     let mut logging = "info".to_string();
     let mut music_path = ".".to_string();
@@ -35,6 +39,7 @@ fn main() {
     }
 
     {
+        let config_file_help = format!("config file (default: {})", &config_file);
         let music_path_help = format!("Music folder (default: {})", &music_path);
         let db_path_help = format!("Database location (default: {})", &db_path);
         let logging_help = format!("Log level; trace, debug, info, warn, error. (default: {})", logging);
@@ -47,6 +52,7 @@ fn main() {
         // borrow per scope, hence this section is enclosed in { }
         let mut arg_parse = ArgumentParser::new();
         arg_parse.set_description(&description);
+        arg_parse.refer(&mut config_file).add_option(&["-c", "--config"], Store, &config_file_help);
         arg_parse.refer(&mut music_path).add_option(&["-m", "--music"], Store, &music_path_help);
         arg_parse.refer(&mut db_path).add_option(&["-d", "--db"], Store, &db_path_help);
         arg_parse.refer(&mut logging).add_option(&["-l", "--logging"], Store, &logging_help);
@@ -69,6 +75,37 @@ fn main() {
     if !task.eq_ignore_ascii_case("analyse") && !task.eq_ignore_ascii_case("tags") && !task.eq_ignore_ascii_case("ignore") && !task.eq_ignore_ascii_case("upload") {
         log::error!("Invalid task ({}) supplied", task);
         process::exit(-1);
+    }
+
+    if !config_file.is_empty() {
+        let path = PathBuf::from(&config_file);
+        if path.exists() && path.is_file() {
+            let mut config = Ini::new();
+            match config.load(&config_file) {
+                Ok(_) => {
+                    match config.get(TOP_LEVEL_INI_TAG, "music") {
+                        Some(val) => {  music_path = val; },
+                        None => { }
+                    }
+                    match config.get(TOP_LEVEL_INI_TAG, "db") {
+                        Some(val) => {  db_path = val; },
+                        None => { }
+                    }
+                    match config.get(TOP_LEVEL_INI_TAG, "lms") {
+                        Some(val) => {  lms_host = val; },
+                        None => { }
+                    }
+                    match config.get(TOP_LEVEL_INI_TAG, "ignore") {
+                        Some(val) => {  ignore_file = val; },
+                        None => { }
+                    }
+                },
+                Err(e) => {
+                    log::error!("Failed to load config file. {}", e);
+                    process::exit(-1);
+                }
+            }
+        }
     }
 
     if db_path.len() < 3 {
