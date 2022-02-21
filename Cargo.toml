@@ -17,7 +17,7 @@ rusqlite = "0.25.0"
 log = "0.4.14"
 env_logger = "0.8.4"
 indicatif = "0.16.2"
-lofty = { git = "https://github.com/Serial-ATA/lofty-rs", rev = "4c0b7c2" }
+lofty = "0.5.0"
 dirs = "1"
 chrono = "0.4.19"
 regex = "1"
