@@ -86,7 +86,7 @@ jobs:
         Add-Content $env:GITHUB_ENV "LIBCLANG_PATH=${VCINSTALLDIR}\VC\Tools\LLVM\x64\bin`n"
         Invoke-WebRequest "https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-full-shared.7z" -OutFile ffmpeg-shared.7z
         7z x ffmpeg-shared.7z
-        mkdir ffmpeg
+        mkdir deps
         mv ffmpeg-*/* deps/
         Add-Content $env:GITHUB_ENV "FFMPEG_DIR=${pwd}\deps`n"
         Add-Content $env:GITHUB_PATH "${pwd}\deps\bin`n"
@@ -103,6 +103,8 @@ jobs:
         cargo build --release
         mkdir releases
         cp target/release/bliss-analyser.exe releases/bliss-analyser.exe
+        ls deps
+        ls deps/lib/
         cp deps/lib/*.dll releases/
 
     - name: Upload artifacts
