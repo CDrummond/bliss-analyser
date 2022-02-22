@@ -13,7 +13,7 @@ readme = "README.md"
 bliss-audio =  { git = "https://github.com/Polochon-street/bliss-rs", rev = "5f366b0" }
 argparse = "0.2.2"
 anyhow = "1.0.40"
-rusqlite = "0.25.0"
+rusqlite = { version = "0.25.0", features = ["bundled"] }
 log = "0.4.14"
 env_logger = "0.8.4"
 indicatif = "0.16.2"

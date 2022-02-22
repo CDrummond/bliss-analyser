@@ -15,12 +15,14 @@ jobs:
       uses: actions/checkout@v1
 
     - name: Packages
-      run: sudo apt-get update && sudo apt-get install build-essential yasm libavutil-dev libavcodec-dev libavformat-dev libavfilter-dev libavfilter-dev libavdevice-dev libswresample-dev libfftw3-dev ffmpeg libsqlite3-dev
+      run: sudo apt-get update && sudo apt-get install build-essential yasm libavutil-dev libavcodec-dev libavformat-dev libavfilter-dev libavfilter-dev libavdevice-dev libswresample-dev libfftw3-dev ffmpeg
       
     - name: Build
       run: |
         cargo build --release
         strip target/release/bliss-analyser
+        mkdir releases
+        cp target/release/bliss-analyser releases/bliss-analyser
 
     - name: Upload artifacts
       uses: actions/upload-artifact@v2
@@ -42,7 +44,7 @@ jobs:
 #
 #    - name: Install deps
 #      run: |
-#          brew install ffmpeg sqlite
+#          brew install ffmpeg
 #
 #    - name: Install Rust support for ARM64 & prepare environment
 #      run: |
@@ -86,10 +88,6 @@ jobs:
         7z x ffmpeg-shared.7z
         mkdir ffmpeg
         mv ffmpeg-*/* deps/
-        Invoke-WebRequest "https://sqlite.org/2022/sqlite-dll-win64-x64-3370200.zip" -OutFile sqlite.zip
-        7z x sqlite.zip
-        mv sqlite3.dll deps/bin
-        mv sqlite3.def deps/lib
         Add-Content $env:GITHUB_ENV "FFMPEG_DIR=${pwd}\deps`n"
         Add-Content $env:GITHUB_PATH "${pwd}\deps\bin`n"
 
@@ -103,6 +101,9 @@ jobs:
     - name: Build
       run: |
         cargo build --release
+        mkdir releases
+        cp target/release/bliss-analyser.exe releases/bliss-analyser.exe
+        cp deps/lib/*.dll releases/
 
     - name: Upload artifacts
       uses: actions/upload-artifact@v2
