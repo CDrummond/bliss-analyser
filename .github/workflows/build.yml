@@ -28,48 +28,48 @@ jobs:
         name: bliss-analyser-linux
         path: releases/
 
-  macOS:
-    runs-on: macos-11.0
-
-    steps:
-    - name: Install Rust
-      uses: actions-rs/toolchain@v1
-      with:
-          toolchain: stable
-
-    - name: Checkout
-      uses: actions/checkout@v2
-
-    - name: Install deps
-      run: |
-          brew install ffmpeg sqlite
-
-    - name: Install Rust support for ARM64 & prepare environment
-      run: |
-        rustup target add aarch64-apple-darwin
-        mkdir releases
-
-    - name: Build
-      run: |
-        cargo build --release
-        strip target/release/bliss-analyser
-        cp target/release/bliss-analyser releases/bliss-analyser-x86_64
-        cargo build --target=aarch64-apple-darwin --release
-        strip target/aarch64-apple-darwin/release/bliss-analyser
-        cp target/aarch64-apple-darwin/release/bliss-analyser releases/bliss-analyser-arm64
-
-    - name: Build fat binary
-      run: |
-        lipo -create \
-          -arch x86_64 releases/bliss-analyser-x86_64 \
-          -arch arm64 releases/bliss-analyser-arm64 \
-          -output releases/bliss-analyser
-
-    - name: Upload artifacts
-      uses: actions/upload-artifact@v2
-      with:
-        name: bliss-analyser-mac
-        path: releases/
+#  macOS:
+#    runs-on: macos-11.0
+#
+#    steps:
+#    - name: Install Rust
+#      uses: actions-rs/toolchain@v1
+#      with:
+#          toolchain: stable
+#
+#    - name: Checkout
+#      uses: actions/checkout@v2
+#
+#    - name: Install deps
+#      run: |
+#          brew install ffmpeg sqlite
+#
+#    - name: Install Rust support for ARM64 & prepare environment
+#      run: |
+#        rustup target add aarch64-apple-darwin
+#        mkdir releases
+#
+#    - name: Build
+#      run: |
+#        cargo build --release
+#        strip target/release/bliss-analyser
+#        cp target/release/bliss-analyser releases/bliss-analyser-x86_64
+#        cargo build --target=aarch64-apple-darwin --release
+#        strip target/aarch64-apple-darwin/release/bliss-analyser
+#        cp target/aarch64-apple-darwin/release/bliss-analyser releases/bliss-analyser-arm64
+#
+#    - name: Build fat binary
+#      run: |
+#        lipo -create \
+#          -arch x86_64 releases/bliss-analyser-x86_64 \
+#          -arch arm64 releases/bliss-analyser-arm64 \
+#          -output releases/bliss-analyser
+#
+#    - name: Upload artifacts
+#      uses: actions/upload-artifact@v2
+#      with:
+#        name: bliss-analyser-mac
+#        path: releases/
 
   Windows:
     runs-on: windows-2019
@@ -78,9 +78,12 @@ jobs:
         include:
           - ffmpeg_version: latest
             ffmpeg_download_url: https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-full-shared.7z
+          - sqlite3_version: 3.37.2
+            sqlite3_downlload_url: https://sqlite.org/2022/sqlite-dll-win64-x64-3370200.zip
       fail-fast: false
     env:
       FFMPEG_DOWNLOAD_URL: ${{ matrix.ffmpeg_download_url }}
+      SQLITE3_DOWNLOAD_URL: ${{ matrix.sqlite3_downlload_url }}
 
     steps:
     - name: Checkout
@@ -93,9 +96,13 @@ jobs:
         Invoke-WebRequest "${env:FFMPEG_DOWNLOAD_URL}" -OutFile ffmpeg-release-full-shared.7z
         7z x ffmpeg-release-full-shared.7z
         mkdir ffmpeg
-        mv ffmpeg-*/* ffmpeg/
-        Add-Content $env:GITHUB_ENV "FFMPEG_DIR=${pwd}\ffmpeg`n"
-        Add-Content $env:GITHUB_PATH "${pwd}\ffmpeg\bin`n"
+        mv ffmpeg-*/* deps/
+        Invoke-WebRequest "${env:SQLITE3_DOWNLOAD_URL}" -OutFile sqlite-dll-win64-x64-3370200.zip
+        7z x sqlite-dll-win64-x64-3370200.zip
+        mv sqlite3.dll deps/bin
+        mv sqlite3.def deps/lib
+        Add-Content $env:GITHUB_ENV "FFMPEG_DIR=${pwd}\deps`n"
+        Add-Content $env:GITHUB_PATH "${pwd}\deps\bin`n"
 
     - name: Install Rust
       uses: actions-rs/toolchain@v1
