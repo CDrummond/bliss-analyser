@@ -103,9 +103,7 @@ jobs:
         cargo build --release
         mkdir releases
         cp target/release/bliss-analyser.exe releases/bliss-analyser.exe
-        ls deps
-        ls deps/lib/
-        cp deps/lib/*.dll releases/
+        cp deps/bin/*.dll releases/
 
     - name: Upload artifacts
       uses: actions/upload-artifact@v2
