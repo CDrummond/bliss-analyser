@@ -69,7 +69,11 @@ pub fn upload_db(db_path:&String, lms:&String) {
             match file.metadata() {
                 Ok(meta) => {
                     let buffered_reader = BufReader::new(file);
-                    match ureq::put(&format!("http://{}:{}/upload", lms, port)).set("Content-Length", &meta.len().to_string()).send(buffered_reader) {
+                    log::info!("Length: {}", meta.len());
+                    match ureq::put(&format!("http://{}:{}/upload", lms, port))
+                                .set("Content-Length", &meta.len().to_string())
+                                .set("Content-Type", "application/octet-stream")
+                                .send(buffered_reader) {
                         Ok(_) => {
                             log::info!("Database uploaded");
                             log::info!("Asking plugin to stop mixer");
