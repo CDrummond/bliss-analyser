@@ -19,9 +19,6 @@ apt install -y clang libavcodec-dev libavformat-dev libavutil-dev libavfilter-de
 Build with `cargo build --release`
 
 
-## Analyse music library
+# Usage
 
-```
-$ bliss-analyse --music /path/to/music
-```
-
+Please refer to `UserGuide.md` for details of how this tool may be used.
