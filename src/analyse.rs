@@ -127,7 +127,7 @@ pub fn analyse_new_files(db:&db::Db, mpath: &PathBuf, track_paths:Vec<String>) -
     Ok(())
 }
 
-pub fn analyse_files(db_path: &str, mpath: &PathBuf, dry_run:bool, keep_old:bool) {
+pub fn analyse_files(db_path: &str, mpath: &PathBuf, dry_run:bool, keep_old:bool, max_num_tracks:usize) {
     let mut track_paths:Vec<String> = Vec::new();
     let mut db = db::Db::new(&String::from(db_path));
     let cur = PathBuf::from(mpath);
@@ -136,6 +136,10 @@ pub fn analyse_files(db_path: &str, mpath: &PathBuf, dry_run:bool, keep_old:bool
     log::info!("Looking for new tracks");
     get_file_list(&mut db, mpath, &cur, &mut track_paths);
     log::info!("Num new tracks: {}", track_paths.len());
+    if !dry_run && max_num_tracks>0 && track_paths.len()>max_num_tracks {
+        log::info!("Only analysing {} tracks", max_num_tracks);
+        track_paths.truncate(max_num_tracks);
+    }
     if !keep_old {
         db.remove_old(mpath, dry_run);
     }

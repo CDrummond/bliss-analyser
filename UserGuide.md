@@ -130,6 +130,7 @@ analysis will be performed, instead the logging will inform you how many new
 tracks are to be analysed and how many old tracks are left in the database.
 * `-i` / `--ignore` Name and location of the file containing items to ignore.
 * `-L` / `--lms` Hostname, or IP address, of your LMS server.
+* `-n` / `--numtracks` Specify maximum number of tracks to analyse.
 
 If any of these are used, then they will override their equivalent from the INI
 config file.

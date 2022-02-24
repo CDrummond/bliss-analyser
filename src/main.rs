@@ -32,6 +32,7 @@ fn main() {
     let mut dry_run:bool = false;
     let mut task = "".to_string();
     let mut lms_host = "127.0.0.1".to_string();
+    let mut max_num_tracks:usize = 0;
 
     match dirs::home_dir() {
         Some(path) => { music_path = String::from(path.join("Music").to_string_lossy()); }
@@ -59,6 +60,7 @@ fn main() {
         arg_parse.refer(&mut dry_run).add_option(&["-r", "--dry-run"], StoreTrue, "Dry run, only show what needs to be done (used with analyse task)");
         arg_parse.refer(&mut ignore_file).add_option(&["-i", "--ignore"], Store, &ignore_file_help);
         arg_parse.refer(&mut lms_host).add_option(&["-L", "--lms"], Store, &lms_host_help);
+        arg_parse.refer(&mut max_num_tracks).add_option(&["-n", "--numtracks"], Store, "Maximum number of tracks to analyse");
         arg_parse.refer(&mut task).add_argument("task", Store, "Task to perform; analyse, tags, ignore, upload.");
         arg_parse.parse_args_or_exit();
     }
@@ -155,7 +157,7 @@ fn main() {
             }
             analyse::update_ignore(&db_path, &ignore_path);
         } else {
-            analyse::analyse_files(&db_path, &mpath, dry_run, keep_old);
+            analyse::analyse_files(&db_path, &mpath, dry_run, keep_old, max_num_tracks);
         }
     }
 }
