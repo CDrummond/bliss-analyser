@@ -16,7 +16,7 @@ use std::path::PathBuf;
 use crate::db;
 use crate::tags;
 
-const DONT_ANALYSE:&str = ".nomusic";
+const DONT_ANALYSE:&str = ".notmusic";
 const MAX_TAG_ERRORS_TO_SHOW:usize = 25;
 
 fn get_file_list(db:&mut db::Db, mpath:&PathBuf, path:&PathBuf, track_paths:&mut Vec<String>) {
