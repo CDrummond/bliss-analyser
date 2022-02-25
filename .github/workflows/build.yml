@@ -24,9 +24,7 @@ jobs:
         mkdir releases
         cp target/release/bliss-analyser releases/bliss-analyser
         cp UserGuide.md releases/README.md
-        mkdir releases/scripts
-        cp scripts/music-similarity-to-bliss.py releases/scripts
-        cp scripts/README.md releases/scripts
+        cp configs/linux.ini releases/config.ini
 
     - name: Upload artifacts
       uses: actions/upload-artifact@v2
@@ -57,9 +55,7 @@ jobs:
         strip target/release/bliss-analyser
         cp target/release/bliss-analyser releases/bliss-analyser
         cp UserGuide.md releases/README.md
-        mkdir releases/scripts
-        cp scripts/music-similarity-to-bliss.py releases/scripts
-        cp scripts/README.md releases/scripts
+        cp configs/macos.ini releases/config.ini
 
     - name: Upload artifacts
       uses: actions/upload-artifact@v2
@@ -99,9 +95,7 @@ jobs:
         cp target/release/bliss-analyser.exe releases/bliss-analyser.exe
         cp deps/bin/*.dll releases/
         cp UserGuide.md releases/README.md
-        mkdir releases/scripts
-        cp scripts/music-similarity-to-bliss.py releases/scripts
-        cp scripts/README.md releases/scripts
+        cp configs/windows.ini releases/config.ini
 
     - name: Upload artifacts
       uses: actions/upload-artifact@v2
