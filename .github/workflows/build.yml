@@ -24,6 +24,7 @@ jobs:
         mkdir releases
         cp target/release/bliss-analyser releases/bliss-analyser
         cp UserGuide.md releases/README.md
+        cp LICENSE releases/
         cp configs/linux.ini releases/config.ini
 
     - name: Upload artifacts
@@ -55,6 +56,7 @@ jobs:
         strip target/release/bliss-analyser
         cp target/release/bliss-analyser releases/bliss-analyser
         cp UserGuide.md releases/README.md
+        cp LICENSE releases/
         cp configs/macos.ini releases/config.ini
 
     - name: Upload artifacts
@@ -95,6 +97,7 @@ jobs:
         cp target/release/bliss-analyser.exe releases/bliss-analyser.exe
         cp deps/bin/*.dll releases/
         cp UserGuide.md releases/README.md
+        cp LICENSE releases/
         cp configs/windows.ini releases/config.ini
 
     - name: Upload artifacts
