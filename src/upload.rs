@@ -18,10 +18,19 @@ fn fail(msg:&str) {
     process::exit(-1);
 }
 
+pub fn stop_mixer(lms:&String) {
+    let stop_req = "{\"id\":1, \"method\":\"slim.request\",\"params\":[\"\",[\"blissmixer\",\"stop\"]]}";
+
+    log::info!("Asking plugin to stop mixer");
+    match ureq::post(&format!("http://{}:9000/jsonrpc.js", lms)).send_string(&stop_req) {
+        Ok(_) => { },
+        Err(e) => { log::error!("Failed to ask plugin to stop mixer. {}", e); }
+    }
+}
+
 pub fn upload_db(db_path:&String, lms:&String) {
     // First tell LMS to restart the mixer in upload mode
     let start_req = "{\"id\":1, \"method\":\"slim.request\",\"params\":[\"\",[\"blissmixer\",\"start-upload\"]]}";
-    let stop_req = "{\"id\":1, \"method\":\"slim.request\",\"params\":[\"\",[\"blissmixer\",\"stop\"]]}";
     let mut port:u16 = 0;
 
     log::info!("Requesting LMS plugin to allow uploads");
@@ -76,11 +85,7 @@ pub fn upload_db(db_path:&String, lms:&String) {
                                 .send(buffered_reader) {
                         Ok(_) => {
                             log::info!("Database uploaded");
-                            log::info!("Asking plugin to stop mixer");
-                            match ureq::post(&format!("http://{}:9000/jsonrpc.js", lms)).send_string(&stop_req) {
-                                Ok(_) => { },
-                                Err(_) => { }
-                            }
+                            stop_mixer(lms);
                         },
                         Err(e) => {
                             fail(&format!("Failed to upload database. {}", e));
