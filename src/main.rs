@@ -61,7 +61,7 @@ fn main() {
         arg_parse.refer(&mut ignore_file).add_option(&["-i", "--ignore"], Store, &ignore_file_help);
         arg_parse.refer(&mut lms_host).add_option(&["-L", "--lms"], Store, &lms_host_help);
         arg_parse.refer(&mut max_num_tracks).add_option(&["-n", "--numtracks"], Store, "Maximum number of tracks to analyse");
-        arg_parse.refer(&mut task).add_argument("task", Store, "Task to perform; analyse, tags, ignore, upload.");
+        arg_parse.refer(&mut task).add_argument("task", Store, "Task to perform; analyse, tags, ignore, upload, stopmixer.");
         arg_parse.parse_args_or_exit();
     }
 
@@ -78,7 +78,7 @@ fn main() {
         process::exit(-1);
     }
 
-    if !task.eq_ignore_ascii_case("analyse") && !task.eq_ignore_ascii_case("tags") && !task.eq_ignore_ascii_case("ignore") && !task.eq_ignore_ascii_case("upload") {
+    if !task.eq_ignore_ascii_case("analyse") && !task.eq_ignore_ascii_case("tags") && !task.eq_ignore_ascii_case("ignore") && !task.eq_ignore_ascii_case("upload")  && !task.eq_ignore_ascii_case("stopmixer") {
         log::error!("Invalid task ({}) supplied", task);
         process::exit(-1);
     }
@@ -114,50 +114,54 @@ fn main() {
         }
     }
 
-    if db_path.len() < 3 {
-        log::error!("Invalid DB path ({}) supplied", db_path);
-        process::exit(-1);
-    }
-
-    let path = PathBuf::from(&db_path);
-    if path.exists() && !path.is_file() {
-        log::error!("DB path ({}) is not a file", db_path);
-        process::exit(-1);
-    }
-
-    if task.eq_ignore_ascii_case("upload") {
-        if path.exists() {
-            upload::upload_db(&db_path, &lms_host);
-        } else {
-            log::error!("DB ({}) does not exist", db_path);
-            process::exit(-1);
-        }
+    if task.eq_ignore_ascii_case("stopmixer") {
+        upload::stop_mixer(&lms_host);
     } else {
-        let mpath = PathBuf::from(&music_path);
-        if !mpath.exists() {
-            log::error!("Music path ({}) does not exist", music_path);
-            process::exit(-1);
-        }
-        if !mpath.is_dir() {
-            log::error!("Music path ({}) is not a directory", music_path);
+        if db_path.len() < 3 {
+            log::error!("Invalid DB path ({}) supplied", db_path);
             process::exit(-1);
         }
 
-        if task.eq_ignore_ascii_case("tags") {
-            analyse::read_tags(&db_path, &mpath);
-        } else if task.eq_ignore_ascii_case("ignore") {
-            let ignore_path = PathBuf::from(&ignore_file);
-            if !ignore_path.exists() {
-                log::error!("Ignore file ({}) does not exist", ignore_file);
+        let path = PathBuf::from(&db_path);
+        if path.exists() && !path.is_file() {
+            log::error!("DB path ({}) is not a file", db_path);
+            process::exit(-1);
+        }
+
+        if task.eq_ignore_ascii_case("upload") {
+            if path.exists() {
+                upload::upload_db(&db_path, &lms_host);
+            } else {
+                log::error!("DB ({}) does not exist", db_path);
                 process::exit(-1);
             }
-            if !ignore_path.is_file() {
-                log::error!("Ignore file ({}) is not a file", ignore_file);
-                process::exit(-1);
-            }
-            analyse::update_ignore(&db_path, &ignore_path);
         } else {
-            analyse::analyse_files(&db_path, &mpath, dry_run, keep_old, max_num_tracks);
+            let mpath = PathBuf::from(&music_path);
+            if !mpath.exists() {
+                log::error!("Music path ({}) does not exist", music_path);
+                process::exit(-1);
+            }
+            if !mpath.is_dir() {
+                log::error!("Music path ({}) is not a directory", music_path);
+                process::exit(-1);
+            }
+
+            if task.eq_ignore_ascii_case("tags") {
+                analyse::read_tags(&db_path, &mpath);
+            } else if task.eq_ignore_ascii_case("ignore") {
+                let ignore_path = PathBuf::from(&ignore_file);
+                if !ignore_path.exists() {
+                    log::error!("Ignore file ({}) does not exist", ignore_file);
+                    process::exit(-1);
+                }
+                if !ignore_path.is_file() {
+                    log::error!("Ignore file ({}) is not a file", ignore_file);
+                    process::exit(-1);
+                }
+                analyse::update_ignore(&db_path, &ignore_path);
+            } else {
+                analyse::analyse_files(&db_path, &mpath, dry_run, keep_old, max_num_tracks);
+            }
         }
     }
 }

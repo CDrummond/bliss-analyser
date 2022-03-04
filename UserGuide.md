@@ -13,33 +13,36 @@ Quick guide
 
 1. Install the `Bliss Mixer` LMS plugin.
 
-2. Create `config.ini` in the current folder with (change as appropriate):
+2. Install ffmpeg if using Linux or macOS.
+
+3. Edit the supplied `config.ini` in the current folder to set appropiate values
+for `music` and `lms` - e.g.:
 ```
 [Bliss]
 music=/home/user/Music
 lms=127.0.0.1
 ```
 
-3. Analyse your tracks:
+4. Analyse your tracks:
 ```
 ./bliss-analyser analyse
 ```
 
-4. Upload analysis database to LMS:
+5. Upload analysis database to LMS:
 ```
 ./bliss-analyser upload
 ```
 
-5. Set LMS to use `Bliss` in `Don't Stop the Music`
+6. Set LMS to use `Bliss` in `Don't Stop the Music`
 
-6. Play some music!
+7. Play some music!
 
 
 
 Installation
 ============
 
-For Windows no extra installtion steps are required, as all dependencies are
+For Windows no extra installation steps are required, as all dependencies are
 bundled within its ZIP file. However, both the Linux and macOS versions require
 that `ffmpeg` be installed.
 
@@ -100,7 +103,7 @@ ignore=ignore.txt
 The following items are supported:
 * `music` specifies the location of your music collection - e.g. `c:\Users\user\Music`
 for windows. This default to `Music` within the user's home folder.
-* `db` specifies the name and location of the database file uses to store the
+* `db` specifies the name and location of the database file used to store the
 analysis results. This will default to `bliss.db` in the current folder.
 * `lms` specifies the hostname, or IP address, of your LMS server. This is used
 when uploading the database file to LMS. This defaults to `127.0.0.1`
@@ -140,10 +143,11 @@ required task. This takes the following values:
 
 * `analyse` Performs analysis of tracks.
 * `upload` Uploads the database to LMS.
+* `stopmixer` Asks LMS plugin to stop it instance of `bliss-mixer`
 * `tags` Re-reads tags from your music collection, and updates the database for
 any changes.
 * `ignore` Reads the `ignore` file and updates the database to flag tracks as
-being ignored for mixes.
+to be ignored for mixes.
 
 
 
@@ -166,10 +170,10 @@ accomplished as follows:
 
 This will first iterate all sub-folders of your music collection to build a list
 of filenames to analyse. New tracks that are not currently in the database are
-the analysed, and a progress bar showing the current percentage and time used is
-shown.
+then analysed, and a progress bar showing the current percentage and time used
+is shown.
 
-As a rough guide, a 2015-era i7 8-core laptop with SSD analyses around 1400
+As a rough guide, a 2015-era i7 8-core laptop with SSD analyses around 14000
 tracks/hour.
 
 
@@ -204,6 +208,22 @@ accomplished as follows:
 .\bliss-analyser.exe upload
 ```
 
+If your LMS is running on the same machine as `bliss-analyser` and you have set
+the db path to be the location within your LMS's `Cache` folder which
+`bliss-mixer` will use to access `bliss.db`, then there is no need to 'upload'
+the database and all you need to do is stop any running `bliss-mixer`. This can
+be accomplished manually, or via the following:
+
+(Linux / macOS)
+```
+./bliss-analyser stopmixer
+```
+
+(Windows)
+```
+.\bliss-analyser.exe stopmixer
+```
+
 *NOTE* You must already have the `Bliss Mixer` LMS plugin installed, or you will
 not be able to upload the database.
 
@@ -234,7 +254,7 @@ Ignoring tracks in mixes
 
 Its possible that you have some tracks that you never want added to mixes, but
 as these are in your music collection they might be in your music queue and so
-could possibly be chosen as `seed` tracks for mixes. Therefore you'd want there
+could possibly be chosen as `seed` tracks for mixes. Therefore you'd want the
 analysis in the database, so that you can find mixable tracks for them, but
 would not want them be chosen as mixable tracks from other seeds. This is
 accomplished be setting the `Ignore` column to `1` for such tracks. To make this
