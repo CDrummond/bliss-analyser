@@ -1,3 +1,7 @@
+0.0.2
+-----
+1. Package vcruntime140.dll with Windows ZIP.
+
 0.0.1
 -----
 1. Initial release.

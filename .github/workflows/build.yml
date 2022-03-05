@@ -99,6 +99,7 @@ jobs:
         cp UserGuide.md releases/README.md
         cp LICENSE releases/
         cp configs/windows.ini releases/config.ini
+        cp c:\Windows\system32\vcruntime140.dll releases
 
     - name: Upload artifacts
       uses: actions/upload-artifact@v2
