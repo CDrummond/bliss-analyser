@@ -110,9 +110,6 @@ when uploading the database file to LMS. This defaults to `127.0.0.1`
 * `ignore` specifies the name and location of a file containing items to ignore
 in mixes. See the `Ignore` section later on for more details.
 
-All configuration items can be supplied on the command-line, and if so those
-specified override those from the config file.
-
 
 
 Command-line parameters
@@ -135,8 +132,8 @@ tracks are to be analysed and how many old tracks are left in the database.
 * `-L` / `--lms` Hostname, or IP address, of your LMS server.
 * `-n` / `--numtracks` Specify maximum number of tracks to analyse.
 
-If any of these are used, then they will override their equivalent from the INI
-config file.
+Equivalent items specied in the INI config file (detailed above) will override
+any specified on the commandline.
 
 `bliss-analyser` requires one extra parameter, which is used to determine the
 required task. This takes the following values:
