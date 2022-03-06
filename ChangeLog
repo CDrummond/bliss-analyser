@@ -2,6 +2,7 @@
 -----
 1. Package vcruntime140.dll with Windows ZIP.
 2. Update user docs.
+3. Update ignore syntax to allow adding SQL WHERE clauses.
 
 0.0.1
 -----

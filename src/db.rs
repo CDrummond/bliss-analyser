@@ -249,11 +249,19 @@ impl Db {
         }
     }
 
-    pub fn set_ignore(&self, like:&str) {
-        log::info!("Ignore: {}", like);
-        match self.conn.execute(&format!("UPDATE Tracks SET Ignore=1 WHERE File LIKE \"{}%\"", like), []) {
-            Ok(_) => { },
-            Err(e) => { log::error!("Failed set Ignore column for '{}'. {}", like, e); }
+    pub fn set_ignore(&self, line:&str) {
+        log::info!("Ignore: {}", line);
+        if line.starts_with("SQL:") {
+            let sql = &line[4..];
+            match self.conn.execute(&format!("UPDATE Tracks Set Ignore=1 WHERE {}", sql), []) {
+                Ok(_) => { },
+                Err(e) => { log::error!("Failed set Ignore column for '{}'. {}", line, e); }
+            }
+        } else {
+            match self.conn.execute(&format!("UPDATE Tracks SET Ignore=1 WHERE File LIKE \"{}%\"", line), []) {
+                Ok(_) => { },
+                Err(e) => { log::error!("Failed set Ignore column for '{}'. {}", line, e); }
+            }
         }
     }
  }

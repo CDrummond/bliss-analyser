@@ -258,19 +258,23 @@ accomplished be setting the `Ignore` column to `1` for such tracks. To make this
 easier, `bliss-analyser` can read a text file containing items to ignore and
 will update the database as appropriate.
 
-This `ignore` file is a plain text file where each line contains the unique
-path to be ignored. i.e. it could contain  the complete path (relative to your
-music folder) of a track, an album name (to exclude a whole album), or an artist
-name (to exclude all tracks by the artist). e.g.
+This `ignore` file is a plain text file where each line contains either:
+
+1. The unique path to be ignored. i.e. it could contain  the complete path
+(relative to your music folder) of a track, an album name (to exclude a whole
+album), or an artist name (to exclude all tracks by the artist).
+2. An SQL selector. If so, line must start "SQL:" followed by code that will be
+run after WHERE
 
 ```
 ABBA/Gold - Greatest Hits/01 Dancing Queen.mp3
 AC-DC/Power Up/
 The Police/
+SQL:Genre='Blues'
 ```
 
-This would exclude 'Dancing Queen' by ABBA, all of AC/DC's 'Power Up', and all
-tracks by 'The Police'
+This would exclude 'Dancing Queen' by ABBA, all of AC/DC's 'Power Up', all
+tracks by 'The Police', and all tracks with 'Genre' set to 'Blues'
 
 Assuming `config.ini` is in the current folder and contains valid entries, this
 is accomplished as follows:
