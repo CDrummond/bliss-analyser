@@ -271,10 +271,22 @@ ABBA/Gold - Greatest Hits/01 Dancing Queen.mp3
 AC-DC/Power Up/
 The Police/
 SQL:Genre='Blues'
+SQL:Genre LIKE '%Dance%'
+SQL:Genre='Rock'
+SQL:Genre LIKE 'Rock;%'
+SQL:Genre LIKE '%;Rock'
+SQL:Genre LIKE '%;Rock;%'
 ```
 
 This would exclude 'Dancing Queen' by ABBA, all of AC/DC's 'Power Up', all
-tracks by 'The Police', and all tracks with 'Genre' set to 'Blues'
+tracks by 'The Police', all tracks with 'Genre' set to 'Blues', and all tracks
+that have 'Dance' or 'Rock'  as part of their 'Genre'.
+
+The SQL LIKE lines do sub-string matching. So '%Dance%' will match any genre
+string that contains 'Dance' - e.g. 'Classical Dance'. The 4 lines with 'Rock'
+show how you can explicitly look for an exact match. The 1st line means 'Rock'
+is the only genre, 2nd means 'Rock' is the first genre, 3rd means 'Rock' is the
+last genre, and 4th means 'Rock' is amongs other genres.
 
 Assuming `config.ini` is in the current folder and contains valid entries, this
 is accomplished as follows:
