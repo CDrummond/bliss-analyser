@@ -167,10 +167,10 @@ impl Db {
                 to_remove.push(db_path);
             }
         }
-        log::info!("Num non-existant tracks: {}", to_remove.len());
-        if !dry_run {
+        let num_to_remove = to_remove.len();
+        log::info!("Num non-existant tracks: {}", num_to_remove);
+        if !dry_run && num_to_remove>0 {
             let count_before = self.get_track_count();
-            let num_to_remove = to_remove.len();
             for t in to_remove {
                 log::debug!("Remove '{}'", t);
                 match self.conn.execute("DELETE FROM Tracks WHERE File = ?;", params![t]) {
