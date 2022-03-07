@@ -158,13 +158,14 @@ impl Db {
         let mut to_remove:Vec<String> = Vec::new();
         for tr in track_iter {
             let mut db_path:String = tr.unwrap().0;
+            let orig_path = db_path.clone();
             if cfg!(windows) {
                 db_path = db_path.replace("/", "\\");
             }
             let path = mpath.join(PathBuf::from(db_path.clone()));
 
             if !path.exists() {
-                to_remove.push(db_path);
+                to_remove.push(orig_path);
             }
         }
         let num_to_remove = to_remove.len();

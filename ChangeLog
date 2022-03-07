@@ -5,6 +5,7 @@
 3. Update ignore syntax to allow adding SQL WHERE clauses.
 4. Use newer version of tag reader library.
 5. If fail to remove old tracks from DB, then output more info.
+6. Fix removing old tracks when run under Windows.
 
 0.0.1
 -----
