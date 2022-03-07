@@ -169,11 +169,18 @@ impl Db {
         }
         log::info!("Num non-existant tracks: {}", to_remove.len());
         if !dry_run {
+            let count_before = self.get_track_count();
+            let num_to_remove = to_remove.len();
             for t in to_remove {
+                log::debug!("Remove '{}'", t);
                 match self.conn.execute("DELETE FROM Tracks WHERE File = ?;", params![t]) {
                     Ok(_) => { },
-                    Err(_) => { }
+                    Err(e) => { log::error!("Failed to remove '{}' - {}", t, e) }
                 }
+            }
+            let count_now = self.get_track_count();
+            if (count_now + num_to_remove) != count_before {
+                log::error!("Failed to remove all tracks. Count before: {}, wanted to remove: {}, count now: {}", count_before, num_to_remove, count_now);
             }
         }
     }
