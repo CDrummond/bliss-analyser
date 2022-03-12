@@ -259,7 +259,6 @@ pub fn analyse_new_cue_tracks(db:&db::Db, mpath: &PathBuf, cue_tracks:Vec<cue::C
     let results = analyze_cue_streaming(cue_tracks)?;
     let mut analysed = 0;
     let mut failed = 0;
-    let mut tag_error:Vec<String> = Vec::new();
 
     log::info!("Analysing new cue tracks");
     for (track, result) in results {
@@ -288,18 +287,6 @@ pub fn analyse_new_cue_tracks(db:&db::Db, mpath: &PathBuf, cue_tracks:Vec<cue::C
         pb.inc(1);
     }
     pb.finish_with_message(format!("{} Analysed. {} Failure(s).", analysed, failed));
-    if !tag_error.is_empty() {
-        let total = tag_error.len();
-        tag_error.truncate(MAX_TAG_ERRORS_TO_SHOW);
-
-        log::error!("Failed to read tags of the folling track(s):");
-        for err in tag_error {
-            log::error!("  {}", err);
-        }
-        if total>MAX_TAG_ERRORS_TO_SHOW {
-            log::error!("  + {} other(s)", total - MAX_TAG_ERRORS_TO_SHOW);
-        }
-    }
     Ok(())
 }
 
