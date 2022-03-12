@@ -1,3 +1,7 @@
+0.1.0
+-----
+1. Add support for analysing CUE files.
+
 0.0.2
 -----
 1. Package vcruntime140.dll with Windows ZIP.

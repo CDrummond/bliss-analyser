@@ -12,6 +12,7 @@ use rusqlite::{Connection, params};
 use std::convert::TryInto;
 use std::path::{Path, PathBuf};
 use std::process;
+use crate::cue;
 use crate::tags;
 
 pub struct FileMetadata {
@@ -134,7 +135,7 @@ impl Db {
                         Err(e) => { log::error!("Failed to insert '{}' into database. {}", path, e); }
                     }
                 } else {
-                    match self.conn.execute("UPDATE Tracks SET Title=?, Artist=?, AlbumArtist=?, Album=?, Genre=?, Duration=?, Tempo=?, Zcr=?, MeanSpectralCentroid=?, StdDevSpectralCentroid=?, MeanSpectralRolloff=?, StdDevSpectralRolloff=?, MeanSpectralFlatness=?, StdDevSpectralFlatness=?, MeanLoudness=?, StdDevLoudness=?, Chroma1=?, Chroma2=?, Chroma3=?, Chroma4=?, Chroma5=?, Chroma6=?, Chroma7=?, Chroma8=?, Chroma9=?, Chroma10=? WHERE rowid=?);",
+                    match self.conn.execute("UPDATE Tracks SET Title=?, Artist=?, AlbumArtist=?, Album=?, Genre=?, Duration=?, Tempo=?, Zcr=?, MeanSpectralCentroid=?, StdDevSpectralCentroid=?, MeanSpectralRolloff=?, StdDevSpectralRolloff=?, MeanSpectralFlatness=?, StdDevSpectralFlatness=?, MeanLoudness=?, StdDevLoudness=?, Chroma1=?, Chroma2=?, Chroma3=?, Chroma4=?, Chroma5=?, Chroma6=?, Chroma7=?, Chroma8=?, Chroma9=?, Chroma10=? WHERE rowid=?;",
                             params![meta.title, meta.artist, meta.album_artist, meta.album, meta.genre, meta.duration,
                             analysis[AnalysisIndex::Tempo], analysis[AnalysisIndex::Zcr], analysis[AnalysisIndex::MeanSpectralCentroid], analysis[AnalysisIndex::StdDeviationSpectralCentroid], analysis[AnalysisIndex::MeanSpectralRolloff],
                             analysis[AnalysisIndex::StdDeviationSpectralRolloff], analysis[AnalysisIndex::MeanSpectralFlatness], analysis[AnalysisIndex::StdDeviationSpectralFlatness], analysis[AnalysisIndex::MeanLoudness], analysis[AnalysisIndex::StdDeviationLoudness],
@@ -159,10 +160,17 @@ impl Db {
         for tr in track_iter {
             let mut db_path:String = tr.unwrap().0;
             let orig_path = db_path.clone();
+            match orig_path.find(cue::MARKER) {
+                Some(s) => {
+                    db_path.truncate(s);
+                },
+                None => { }
+            }
             if cfg!(windows) {
                 db_path = db_path.replace("/", "\\");
             }
             let path = mpath.join(PathBuf::from(db_path.clone()));
+            //log::debug!("Check if '{}' exists.", path.to_string_lossy());
 
             if !path.exists() {
                 to_remove.push(orig_path);
@@ -173,7 +181,7 @@ impl Db {
         if !dry_run && num_to_remove>0 {
             let count_before = self.get_track_count();
             for t in to_remove {
-                log::debug!("Remove '{}'", t);
+                //log::debug!("Remove '{}'", t);
                 match self.conn.execute("DELETE FROM Tracks WHERE File = ?;", params![t]) {
                     Ok(_) => { },
                     Err(e) => { log::error!("Failed to remove '{}' - {}", t, e) }
@@ -224,24 +232,26 @@ impl Db {
             let mut updated = 0;
             for tr in track_iter {
                 let dbtags = tr.unwrap();
-                let dtags = Metadata{
-                    title:dbtags.title.unwrap_or(String::new()),
-                    artist:dbtags.artist.unwrap_or(String::new()),
-                    album_artist:dbtags.album_artist.unwrap_or(String::new()),
-                    album:dbtags.album.unwrap_or(String::new()),
-                    genre:dbtags.genre.unwrap_or(String::new()),
-                    duration:dbtags.duration
-                };
-                pb.set_message(format!("{}", dbtags.file));
-                let path = String::from(mpath.join(&dbtags.file).to_string_lossy());
-                let ftags = tags::read(&path);
-                if ftags.title.is_empty() && ftags.artist.is_empty() && ftags.album_artist.is_empty() && ftags.album.is_empty() && ftags.genre.is_empty() {
-                    log::error!("Failed to read tags of '{}'", dbtags.file);
-                } else if ftags.duration!=dtags.duration || ftags.title!=dtags.title || ftags.artist!=dtags.artist || ftags.album_artist!=dtags.album_artist || ftags.album!=dtags.album || ftags.genre!=dtags.genre {
-                    match self.conn.execute("UPDATE Tracks SET Title=?, Artist=?, AlbumArtist=?, Album=?, Genre=?, Duration=? WHERE rowid=?;",
-                                            params![ftags.title, ftags.artist, ftags.album_artist, ftags.album, ftags.genre, ftags.duration, dbtags.rowid]) {
-                        Ok(_) => { updated += 1; },
-                        Err(e) => { log::error!("Failed to update tags of '{}'. {}", dbtags.file, e); }
+                if !dbtags.file.contains(cue::MARKER) {
+                    let dtags = Metadata{
+                        title:dbtags.title.unwrap_or(String::new()),
+                        artist:dbtags.artist.unwrap_or(String::new()),
+                        album_artist:dbtags.album_artist.unwrap_or(String::new()),
+                        album:dbtags.album.unwrap_or(String::new()),
+                        genre:dbtags.genre.unwrap_or(String::new()),
+                        duration:dbtags.duration
+                    };
+                    pb.set_message(format!("{}", dbtags.file));
+                    let path = String::from(mpath.join(&dbtags.file).to_string_lossy());
+                    let ftags = tags::read(&path);
+                    if ftags.title.is_empty() && ftags.artist.is_empty() && ftags.album_artist.is_empty() && ftags.album.is_empty() && ftags.genre.is_empty() {
+                        log::error!("Failed to read tags of '{}'", dbtags.file);
+                    } else if ftags.duration!=dtags.duration || ftags.title!=dtags.title || ftags.artist!=dtags.artist || ftags.album_artist!=dtags.album_artist || ftags.album!=dtags.album || ftags.genre!=dtags.genre {
+                        match self.conn.execute("UPDATE Tracks SET Title=?, Artist=?, AlbumArtist=?, Album=?, Genre=?, Duration=? WHERE rowid=?;",
+                                                params![ftags.title, ftags.artist, ftags.album_artist, ftags.album, ftags.genre, ftags.duration, dbtags.rowid]) {
+                            Ok(_) => { updated += 1; },
+                            Err(e) => { log::error!("Failed to update tags of '{}'. {}", dbtags.file, e); }
+                        }
                     }
                 }
                 pb.inc(1);

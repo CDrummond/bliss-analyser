@@ -14,6 +14,7 @@ use std::io::Write;
 use std::path::PathBuf;
 use std::process;
 mod analyse;
+mod cue;
 mod db;
 mod tags;
 mod upload;

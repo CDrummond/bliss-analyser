@@ -1,6 +1,6 @@
 [package]
 name = "bliss-analyser"
-version = "0.0.2"
+version = "0.1.0"
 authors = ["Craig Drummond <craig.p.drummond@gmail.com>"]
 edition = "2018"
 license = "GPL-3.0-only"
@@ -24,3 +24,8 @@ regex = "1"
 substring = "1.4.5"
 ureq = "2.4.0"
 configparser = "3.0.0"
+rcue = { git = "https://github.com/gyng/rcue" }
+hhmmss = "0.1.0"
+num_cpus = "1.13.0"
+tempdir = "0.3.7"
+subprocess = "0.2.8"
