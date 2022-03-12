@@ -19,7 +19,7 @@ use std::time::Duration;
 use std::sync::mpsc;
 use std::sync::mpsc::{Receiver, Sender};
 use std::thread;
-use subprocess::{Popen, PopenConfig};
+use subprocess::{Exec, NullFile};
 use tempdir::TempDir;
 use num_cpus;
 use crate::cue;
@@ -199,25 +199,21 @@ pub fn analyze_cue_streaming(tracks: Vec<cue::CueTrack>,) -> BlissResult<Receive
 
                         log::debug!("Extracting '{}'", track_path);
                         if cue_track.duration<last_track_duration {
-                            match Popen::create(&["ffmpeg", "-hide_banner", "-loglevel", "panic", "-i", &audio_path, "-b:a", "128k",
-                                                  "-ss", &cue_track.start.hhmmss(), "-t", &cue_track.duration.hhmmss(), &tmp_file.to_string_lossy()], PopenConfig::default()) {
-                                Ok(mut proc) => {
-                                    match proc.wait() {
-                                        Ok(_) => { },
-                                        Err(_) => { }
-                                    }
-                                },
-                                Err(e) => { log::error!("Wait failed for ffmpeg. {}", e); }
+                            match Exec::cmd("ffmpeg").arg("-i").arg(&audio_path).arg("-b:a").arg("128k")
+                                                     .arg("-ss").arg(&cue_track.start.hhmmss()).arg("-t").arg(&cue_track.duration.hhmmss())
+                                                     .arg(String::from(tmp_file.to_string_lossy()))
+                                                     .stderr(NullFile)
+                                                     .join() {
+                                Ok(_) => { },
+                                Err(e) => { log::error!("Failed to call ffmpeg. {}", e); }
                             }
                         } else {
-                            match Popen::create(&["ffmpeg", "-hide_banner", "-loglevel", "panic", "-i", &audio_path, "-b:a", "128k",
-                                                  "-ss", &cue_track.start.hhmmss(), &tmp_file.to_string_lossy()], PopenConfig::default()) {
-                                Ok(mut proc) => {
-                                    match proc.wait() {
-                                        Ok(_) => { },
-                                        Err(e) => { log::error!("Wait failed for ffmpeg. {}", e); }
-                                    }
-                                },
+                            match Exec::cmd("ffmpeg").arg("-i").arg(&audio_path).arg("-b:a").arg("128k")
+                                                     .arg("-ss").arg(&cue_track.start.hhmmss())
+                                                     .arg(String::from(tmp_file.to_string_lossy()))
+                                                     .stderr(NullFile)
+                                                     .join() {
+                                Ok(_) => { },
                                 Err(e) => { log::error!("Failed to call ffmpeg. {}", e); }
                             }
                         }
