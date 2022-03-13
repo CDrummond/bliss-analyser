@@ -57,8 +57,7 @@ fn get_file_list(db:&mut db::Db, mpath:&PathBuf, path:&PathBuf, track_paths:&mut
                                                 if cue_file.exists() {
                                                     // Found a CUE file, try to parse and then check if tracks exists in DB
                                                     let this_cue_tracks = cue::parse(&pb, &cue_file);
-                                                    let mut analyse = false;
-                                                    for track in this_cue_tracks.iter() {
+                                                    for track in this_cue_tracks {
                                                         match track.track_path.strip_prefix(mpath) {
                                                             Ok(tstripped) => {
                                                                 let spb = tstripped.to_path_buf();
@@ -66,19 +65,13 @@ fn get_file_list(db:&mut db::Db, mpath:&PathBuf, path:&PathBuf, track_paths:&mut
                                                                 match db.get_rowid(&sname) {
                                                                     Ok(id) => {
                                                                         if id<=0 {
-                                                                            analyse = true;
+                                                                            cue_tracks.push(track.clone());
                                                                         }
                                                                     },
                                                                     Err(_) => { }
                                                                 }
                                                             },
                                                             Err(_) => { }
-                                                        }
-                                                    }
-
-                                                    if analyse {
-                                                        for track in this_cue_tracks {
-                                                            cue_tracks.push(track);
                                                         }
                                                     }
                                                 } else {

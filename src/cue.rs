@@ -26,8 +26,7 @@ pub struct CueTrack {
     pub album_artist:String,
     pub genre:String,
     pub start:Duration,
-    pub duration:Duration,
-    pub analyse:bool
+    pub duration:Duration
 }
 
 pub fn parse(audio_path:&PathBuf, cue_path:&PathBuf) -> Vec<CueTrack> {
@@ -50,7 +49,7 @@ pub fn parse(audio_path:&PathBuf, cue_path:&PathBuf) -> Vec<CueTrack> {
                             Some((_, start)) => {
                                 let mut track_path = audio_path.clone();
                                 let ext = audio_path.extension().unwrap().to_string_lossy();
-                                track_path.set_extension(format!("{}{}{}.mp3", ext, MARKER, resp.len()));
+                                track_path.set_extension(format!("{}{}{}.mp3", ext, MARKER, resp.len()+1));
                                 let ctrack = CueTrack {
                                     audio_path: audio_path.clone(),
                                     track_path: track_path,
@@ -61,7 +60,6 @@ pub fn parse(audio_path:&PathBuf, cue_path:&PathBuf) -> Vec<CueTrack> {
                                     genre: genre.clone(),
                                     start: start.clone(),
                                     duration: Duration::new(LAST_TRACK_DURATION, 0),
-                                    analyse: false
                                 };
                                 resp.push(ctrack);
                             },
