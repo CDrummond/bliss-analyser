@@ -50,7 +50,7 @@ pub fn parse(audio_path:&PathBuf, cue_path:&PathBuf) -> Vec<CueTrack> {
                                 let mut track_path = audio_path.clone();
                                 let ext = audio_path.extension().unwrap().to_string_lossy();
                                 track_path.set_extension(format!("{}{}{}.mp3", ext, MARKER, resp.len()+1));
-                                let ctrack = CueTrack {
+                                let mut ctrack = CueTrack {
                                     audio_path: audio_path.clone(),
                                     track_path: track_path,
                                     title: track.title.unwrap_or(String::new()),
@@ -61,6 +61,9 @@ pub fn parse(audio_path:&PathBuf, cue_path:&PathBuf) -> Vec<CueTrack> {
                                     start: start.clone(),
                                     duration: Duration::new(LAST_TRACK_DURATION, 0),
                                 };
+                                if ctrack.artist.is_empty() && !ctrack.album_artist.is_empty() {
+                                    ctrack.artist = ctrack.album_artist.clone();
+                                }
                                 resp.push(ctrack);
                             },
                             None => { }
