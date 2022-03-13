@@ -185,15 +185,21 @@ pub fn analyze_cue_streaming(tracks: Vec<cue::CueTrack>,) -> BlissResult<Receive
                 Ok(dir) => {
                     for cue_track in owned_chunk {
                         let audio_path = String::from(cue_track.audio_path.to_string_lossy());
+                        let ext = cue_track.audio_path.extension();
                         let track_path = String::from(cue_track.track_path.to_string_lossy());
                         let mut tmp_file = PathBuf::from(dir.path());
-                        tmp_file.push(format!("{}.mp3", idx));
+                        if ext.is_some() {
+                            tmp_file.push(format!("{}.{}", idx, ext.unwrap().to_string_lossy()));
+                        } else {
+                            tmp_file.push(format!("{}.flac", idx));
+                        }
                         idx += 1;
 
                         log::debug!("Extracting '{}'", track_path);
                         if cue_track.duration<last_track_duration {
                             match Exec::cmd("ffmpeg").arg("-i").arg(&audio_path)
-                                                     .arg("-ss").arg(&cue_track.start.hhmmss()).arg("-t").arg(&cue_track.duration.hhmmss())
+                                                     .arg("-ss").arg(&cue_track.start.hhmmss())
+                                                     .arg("-t").arg(&cue_track.duration.hhmmss())
                                                      .arg("-c").arg("copy")
                                                      .arg(String::from(tmp_file.to_string_lossy()))
                                                      .stderr(NullFile)
