@@ -174,6 +174,16 @@ As a rough guide, a 2015-era i7 8-core laptop with SSD analyses around 14000
 tracks/hour.
 
 
+CUE files
+---------
+
+If the anlyser encounters an audio file with a matching CUE file (e.g.
+`album.flac` and `album.cue` in same folder) then it will attempt to analyse the
+individual tracks contained within. To do this the analyser uses `ffmpeg` to
+create temporary 128k MP3 files of each track. (These temporary files are
+removed afterwards).
+
+
 Exclude folders
 ---------------
 
@@ -243,6 +253,10 @@ entries):
 ```
 .\bliss-analyser.exe tags
 ```
+
+*NOTE* Tag re-reading is not implemented for CUE tracks. Therefore if you update
+your CUE files you will need to remove these from the database and re-analyse,
+or manually edit the meta-data in `bliss.db` using an SQLite GUI.
 
 
 
