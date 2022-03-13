@@ -7,7 +7,7 @@
 # MIT license.
 #
 
-import datetime, os, requests, sys, time
+import datetime, os, requests, shutil, subprocess, sys, tempfile, time
 
 GITHUB_TOKEN_FILE = "%s/.config/github-token" % os.path.expanduser('~')
 GITHUB_REPO = "CDrummond/bliss-analyser"
@@ -67,6 +67,20 @@ def download_artifacts(version):
             break
 
 
+def make_executable(version):
+    cwd = os.getcwd()
+    for a in ["bliss-analyser-linux", "bliss-analyser-mac"]:
+        archive = "%s-%s.zip" % (a, version)
+        info("Making analyser executable in %s" % archive)
+        with tempfile.TemporaryDirectory() as td:
+            subprocess.call(["unzip", archive, "-d", td], shell=False)
+            os.remove(archive)
+            os.chdir(td)
+            subprocess.call(["chmod", "a+x", "%s/bliss-analyser" % td], shell=False)
+            shutil.make_archive("%s/%s-%s" % (cwd, a, version), "zip")
+            os.chdir(cwd)
+
+
 def checkVersion(version):
     try:
         parts=version.split('.')
@@ -85,4 +99,4 @@ if version!="test":
     checkVersion(version)
 
 download_artifacts(version)
-
+make_executable(version)
