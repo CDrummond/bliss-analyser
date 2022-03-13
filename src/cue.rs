@@ -64,6 +64,14 @@ pub fn parse(audio_path:&PathBuf, cue_path:&PathBuf) -> Vec<CueTrack> {
                                 if ctrack.artist.is_empty() && !ctrack.album_artist.is_empty() {
                                     ctrack.artist = ctrack.album_artist.clone();
                                 }
+                                if ctrack.album.is_empty() {
+                                    let mut path = audio_path.clone();
+                                    path.set_extension("");
+                                    match path.file_name() {
+                                        Some(n) => { ctrack.album = String::from(n.to_string_lossy()); }
+                                        None => { }
+                                    }
+                                }
                                 resp.push(ctrack);
                             },
                             None => { }
