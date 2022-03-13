@@ -180,8 +180,8 @@ CUE files
 If the anlyser encounters an audio file with a matching CUE file (e.g.
 `album.flac` and `album.cue` in same folder) then it will attempt to analyse the
 individual tracks contained within. To do this the analyser uses `ffmpeg` to
-create temporary 128k MP3 files of each track. (These temporary files are
-removed afterwards).
+create temporary files of each track, which are then analysed. (These temporary
+files are removed afterwards).
 
 
 Exclude folders
