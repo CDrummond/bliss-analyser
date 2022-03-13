@@ -13,7 +13,7 @@ use std::path::PathBuf;
 use std::time::Duration;
 
 pub const MARKER:&str = ".CUE_TRACK.";
-pub const LAST_TRACK_DURATION:u64 = 60*60*24*7;
+pub const LAST_TRACK_DURATION:u64 = 60*60*24;
 const GENRE:&str = "GENRE";
 
 #[derive(Clone)]

@@ -196,27 +196,15 @@ pub fn analyze_cue_streaming(tracks: Vec<cue::CueTrack>,) -> BlissResult<Receive
                         idx += 1;
 
                         log::debug!("Extracting '{}'", track_path);
-                        if cue_track.duration<last_track_duration {
-                            match Exec::cmd("ffmpeg").arg("-i").arg(&audio_path)
-                                                     .arg("-ss").arg(&cue_track.start.hhmmss())
-                                                     .arg("-t").arg(&cue_track.duration.hhmmss())
-                                                     .arg("-c").arg("copy")
-                                                     .arg(String::from(tmp_file.to_string_lossy()))
-                                                     .stderr(NullFile)
-                                                     .join() {
-                                Ok(_) => { },
-                                Err(e) => { log::error!("Failed to call ffmpeg. {}", e); }
-                            }
-                        } else {
-                            match Exec::cmd("ffmpeg").arg("-i").arg(&audio_path)
-                                                     .arg("-ss").arg(&cue_track.start.hhmmss())
-                                                     .arg("-c").arg("copy")
-                                                     .arg(String::from(tmp_file.to_string_lossy()))
-                                                     .stderr(NullFile)
-                                                     .join() {
-                                Ok(_) => { },
-                                Err(e) => { log::error!("Failed to call ffmpeg. {}", e); }
-                            }
+                        match Exec::cmd("ffmpeg").arg("-i").arg(&audio_path)
+                                                    .arg("-ss").arg(&cue_track.start.hhmmss())
+                                                    .arg("-t").arg(&cue_track.duration.hhmmss())
+                                                    .arg("-c").arg("copy")
+                                                    .arg(String::from(tmp_file.to_string_lossy()))
+                                                    .stderr(NullFile)
+                                                    .join() {
+                            Ok(_) => { },
+                            Err(e) => { log::error!("Failed to call ffmpeg. {}", e); }
                         }
 
                         if ! cfg!(windows) {
