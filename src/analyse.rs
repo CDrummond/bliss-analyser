@@ -211,6 +211,14 @@ pub fn analyze_cue_streaming(tracks: Vec<cue::CueTrack>,) -> BlissResult<Receive
                             }
                         }
 
+                        if ! cfg!(windows) {
+                            // ffmpeg seeks to break echo on terminal? 'stty echo' restores...
+                            match Exec::cmd("stty").arg("echo").join() {
+                                Ok(_) => { },
+                                Err(_) => { }
+                            }
+                        }
+
                         if tmp_file.exists() {
                             log::debug!("Analyzing '{}'", track_path);
                             let song = Song::new(&tmp_file);
