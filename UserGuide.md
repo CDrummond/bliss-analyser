@@ -102,7 +102,8 @@ ignore=ignore.txt
 
 The following items are supported:
 * `music` specifies the location of your music collection - e.g. `c:\Users\user\Music`
-for windows. This default to `Music` within the user's home folder.
+for windows. This default to `Music` within the user's home folder. Up to 4 other
+music folders may be specified via `music_1`, `music_2`, `music_3`, and `music_4`
 * `db` specifies the name and location of the database file used to store the
 analysis results. This will default to `bliss.db` in the current folder.
 * `lms` specifies the hostname, or IP address, of your LMS server. This is used

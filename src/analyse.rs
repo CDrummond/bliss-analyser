@@ -287,54 +287,61 @@ pub fn analyse_new_cue_tracks(db:&db::Db, mpath: &PathBuf, cue_tracks:Vec<cue::C
     Ok(())
 }
 
-pub fn analyse_files(db_path: &str, mpath: &PathBuf, dry_run:bool, keep_old:bool, max_num_tracks:usize) {
-    let mut track_paths:Vec<String> = Vec::new();
-    let mut cue_tracks:Vec<cue::CueTrack> = Vec::new();
+pub fn analyse_files(db_path: &str, mpaths: &Vec<PathBuf>, dry_run:bool, keep_old:bool, max_num_tracks:usize) {
     let mut db = db::Db::new(&String::from(db_path));
-    let cur = PathBuf::from(mpath);
 
     db.init();
-    log::info!("Looking for new tracks");
-    get_file_list(&mut db, mpath, &cur, &mut track_paths, &mut cue_tracks);
-    log::info!("Num new tracks: {}", track_paths.len());
-    if !cue_tracks.is_empty() {
-        log::info!("Num new cue tracks: {}", cue_tracks.len());
-    }
-    if !dry_run && max_num_tracks>0 && track_paths.len()>max_num_tracks {
-        log::info!("Only analysing {} tracks", max_num_tracks);
-        track_paths.truncate(max_num_tracks);
-    }
-    if !dry_run && max_num_tracks>0 && cue_tracks.len()>max_num_tracks {
-        log::info!("Only analysing {} cue tracks", max_num_tracks);
-        cue_tracks.truncate(max_num_tracks);
-    }
-    if !keep_old {
-        db.remove_old(mpath, dry_run);
-    }
-    if !dry_run {
-        if track_paths.len()>0 {
-            match analyse_new_files(&db, mpath, track_paths) {
-                Ok(_) => { },
-                Err(e) => { log::error!("Analysis returned error: {}", e); }
-            }
-        } else {
-            log::info!("No new tracks to analyse");
-        }
+
+    for path in mpaths {
+        let mpath = path.clone();
+        let cur = path.clone();
+        let mut track_paths:Vec<String> = Vec::new();
+        let mut cue_tracks:Vec<cue::CueTrack> = Vec::new();
+
+        log::info!("Looking for new tracks in {}", mpath.to_string_lossy());
+        get_file_list(&mut db, &mpath, &cur, &mut track_paths, &mut cue_tracks);
+        log::info!("Num new tracks: {}", track_paths.len());
         if !cue_tracks.is_empty() {
-            match analyse_new_cue_tracks(&db, mpath, cue_tracks) {
-                Ok(_) => { },
-                Err(e) => { log::error!("Cue analysis returned error: {}", e); }
+            log::info!("Num new cue tracks: {}", cue_tracks.len());
+        }
+        if !dry_run && max_num_tracks>0 && track_paths.len()>max_num_tracks {
+            log::info!("Only analysing {} tracks", max_num_tracks);
+            track_paths.truncate(max_num_tracks);
+        }
+        if !dry_run && max_num_tracks>0 && cue_tracks.len()>max_num_tracks {
+            log::info!("Only analysing {} cue tracks", max_num_tracks);
+            cue_tracks.truncate(max_num_tracks);
+        }
+
+        if !dry_run {
+            if track_paths.len()>0 {
+                match analyse_new_files(&db, &mpath, track_paths) {
+                    Ok(_) => { },
+                    Err(e) => { log::error!("Analysis returned error: {}", e); }
+                }
+            } else {
+                log::info!("No new tracks to analyse");
+            }
+            if !cue_tracks.is_empty() {
+                match analyse_new_cue_tracks(&db, &mpath, cue_tracks) {
+                    Ok(_) => { },
+                    Err(e) => { log::error!("Cue analysis returned error: {}", e); }
+                }
             }
         }
+    }
+
+    if !keep_old {
+        db.remove_old(mpaths, dry_run);
     }
 
     db.close();
 }
 
-pub fn read_tags(db_path: &str, mpath: &PathBuf) {
+pub fn read_tags(db_path: &str, mpaths: &Vec<PathBuf>) {
     let db = db::Db::new(&String::from(db_path));
     db.init();
-    db.update_tags(&mpath);
+    db.update_tags(&mpaths);
     db.close();
 }
 

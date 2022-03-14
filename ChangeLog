@@ -1,6 +1,8 @@
 0.1.0
 -----
 1. Add support for analysing CUE files.
+2. Support up to 5 music folders (music, music_1, music_2, music_3, and
+   music_4).
 
 0.0.2
 -----

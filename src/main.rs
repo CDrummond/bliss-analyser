@@ -34,6 +34,7 @@ fn main() {
     let mut task = "".to_string();
     let mut lms_host = "127.0.0.1".to_string();
     let mut max_num_tracks:usize = 0;
+    let mut music_paths:Vec<PathBuf> = Vec::new();
 
     match dirs::home_dir() {
         Some(path) => { music_path = String::from(path.join("Music").to_string_lossy()); }
@@ -90,20 +91,23 @@ fn main() {
             let mut config = Ini::new();
             match config.load(&config_file) {
                 Ok(_) => {
-                    match config.get(TOP_LEVEL_INI_TAG, "music") {
-                        Some(val) => {  music_path = val; },
-                        None => { }
+                    let path_keys: [&str; 5] = ["music", "music_1", "music_2", "music_3", "music_4"];
+                    for key in &path_keys {
+                        match config.get(TOP_LEVEL_INI_TAG, key) {
+                            Some(val) => { music_paths.push(PathBuf::from(&val)); },
+                            None => { }
+                        }
                     }
                     match config.get(TOP_LEVEL_INI_TAG, "db") {
-                        Some(val) => {  db_path = val; },
+                        Some(val) => { db_path = val; },
                         None => { }
                     }
                     match config.get(TOP_LEVEL_INI_TAG, "lms") {
-                        Some(val) => {  lms_host = val; },
+                        Some(val) => { lms_host = val; },
                         None => { }
                     }
                     match config.get(TOP_LEVEL_INI_TAG, "ignore") {
-                        Some(val) => {  ignore_file = val; },
+                        Some(val) => { ignore_file = val; },
                         None => { }
                     }
                 },
@@ -113,6 +117,10 @@ fn main() {
                 }
             }
         }
+    }
+
+    if music_paths.is_empty() {
+        music_paths.push(PathBuf::from(&music_path));
     }
 
     if task.eq_ignore_ascii_case("stopmixer") {
@@ -137,18 +145,19 @@ fn main() {
                 process::exit(-1);
             }
         } else {
-            let mpath = PathBuf::from(&music_path);
-            if !mpath.exists() {
-                log::error!("Music path ({}) does not exist", music_path);
-                process::exit(-1);
-            }
-            if !mpath.is_dir() {
-                log::error!("Music path ({}) is not a directory", music_path);
-                process::exit(-1);
+            for mpath in &music_paths {
+                if !mpath.exists() {
+                    log::error!("Music path ({}) does not exist", mpath.to_string_lossy());
+                    process::exit(-1);
+                }
+                if !mpath.is_dir() {
+                    log::error!("Music path ({}) is not a directory", mpath.to_string_lossy());
+                    process::exit(-1);
+                }
             }
 
             if task.eq_ignore_ascii_case("tags") {
-                analyse::read_tags(&db_path, &mpath);
+                analyse::read_tags(&db_path, &music_paths);
             } else if task.eq_ignore_ascii_case("ignore") {
                 let ignore_path = PathBuf::from(&ignore_file);
                 if !ignore_path.exists() {
@@ -161,7 +170,7 @@ fn main() {
                 }
                 analyse::update_ignore(&db_path, &ignore_path);
             } else {
-                analyse::analyse_files(&db_path, &mpath, dry_run, keep_old, max_num_tracks);
+                analyse::analyse_files(&db_path, &music_paths, dry_run, keep_old, max_num_tracks);
             }
         }
     }
