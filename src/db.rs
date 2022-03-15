@@ -178,18 +178,25 @@ impl Db {
         }
         let num_to_remove = to_remove.len();
         log::info!("Num non-existant tracks: {}", num_to_remove);
-        if !dry_run && num_to_remove>0 {
-            let count_before = self.get_track_count();
-            for t in to_remove {
-                //log::debug!("Remove '{}'", t);
-                match self.conn.execute("DELETE FROM Tracks WHERE File = ?;", params![t]) {
-                    Ok(_) => { },
-                    Err(e) => { log::error!("Failed to remove '{}' - {}", t, e) }
+        if num_to_remove>0 {
+            if dry_run {
+                log::info!("The following need to be removed from database:");
+                for t in to_remove {
+                    log::info!("  {}", t);
                 }
-            }
-            let count_now = self.get_track_count();
-            if (count_now + num_to_remove) != count_before {
-                log::error!("Failed to remove all tracks. Count before: {}, wanted to remove: {}, count now: {}", count_before, num_to_remove, count_now);
+            } else {
+                let count_before = self.get_track_count();
+                for t in to_remove {
+                    //log::debug!("Remove '{}'", t);
+                    match self.conn.execute("DELETE FROM Tracks WHERE File = ?;", params![t]) {
+                        Ok(_) => { },
+                        Err(e) => { log::error!("Failed to remove '{}' - {}", t, e) }
+                    }
+                }
+                let count_now = self.get_track_count();
+                if (count_now + num_to_remove) != count_before {
+                    log::error!("Failed to remove all tracks. Count before: {}, wanted to remove: {}, count now: {}", count_before, num_to_remove, count_now);
+                }
             }
         }
     }

@@ -336,7 +336,17 @@ pub fn analyse_files(db_path: &str, mpath: &PathBuf, dry_run:bool, keep_old:bool
     if !keep_old {
         db.remove_old(mpath, dry_run);
     }
-    if !dry_run {
+    if dry_run {
+        if !track_paths.is_empty() || !cue_tracks.is_empty() {
+            log::info!("The following need to be analysed:");
+            for track in track_paths {
+                log::info!("  {}", track);
+            }
+            for track in cue_tracks {
+                log::info!("  {}", track.track_path.to_string_lossy());
+            }
+        }
+    } else {
         if track_paths.len()>0 {
             match analyse_new_files(&db, mpath, track_paths) {
                 Ok(_) => { },
