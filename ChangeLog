@@ -1,6 +1,7 @@
 0.1.0
 -----
 1. Add support for analysing CUE files.
+2. Output list of (up to 100) tracks that failed to analyse.
 
 0.0.2
 -----
