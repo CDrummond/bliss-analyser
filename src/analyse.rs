@@ -321,6 +321,7 @@ pub fn analyse_files(db_path: &str, mpath: &PathBuf, dry_run:bool, keep_old:bool
     db.init();
     log::info!("Looking for new tracks");
     get_file_list(&mut db, mpath, &cur, &mut track_paths, &mut cue_tracks);
+    track_paths.sort();
     log::info!("Num new tracks: {}", track_paths.len());
     if !cue_tracks.is_empty() {
         log::info!("Num new cue tracks: {}", cue_tracks.len());
