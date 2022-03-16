@@ -314,6 +314,7 @@ pub fn analyse_new_cue_tracks(db:&db::Db, mpath: &PathBuf, cue_tracks:Vec<cue::C
 
 pub fn analyse_files(db_path: &str, mpaths: &Vec<PathBuf>, dry_run:bool, keep_old:bool, max_num_tracks:usize) {
     let mut db = db::Db::new(&String::from(db_path));
+    let mut track_count_left = max_num_tracks;
 
     db.init();
 
@@ -338,14 +339,6 @@ pub fn analyse_files(db_path: &str, mpaths: &Vec<PathBuf>, dry_run:bool, keep_ol
         if !cue_tracks.is_empty() {
             log::info!("Num new cue tracks: {}", cue_tracks.len());
         }
-        if !dry_run && max_num_tracks>0 && track_paths.len()>max_num_tracks {
-            log::info!("Only analysing {} tracks", max_num_tracks);
-            track_paths.truncate(max_num_tracks);
-        }
-        if !dry_run && max_num_tracks>0 && cue_tracks.len()>max_num_tracks {
-            log::info!("Only analysing {} cue tracks", max_num_tracks);
-            cue_tracks.truncate(max_num_tracks);
-        }
         if dry_run {
             if !track_paths.is_empty() || !cue_tracks.is_empty() {
                 log::info!("The following need to be analysed:");
@@ -357,6 +350,25 @@ pub fn analyse_files(db_path: &str, mpaths: &Vec<PathBuf>, dry_run:bool, keep_ol
                 }
             }
         } else {
+            if max_num_tracks>0 {
+                if track_paths.len()>track_count_left {
+                    log::info!("Only analysing {} tracks", track_count_left);
+                    track_paths.truncate(track_count_left);
+                }
+                track_count_left -= track_paths.len();
+            }
+            if max_num_tracks>0 {
+                if track_count_left == 0 {
+                    cue_tracks.clear();
+                } else {
+                    if cue_tracks.len()>track_count_left {
+                        log::info!("Only analysing {} cue tracks", track_count_left);
+                        cue_tracks.truncate(track_count_left);
+                    }
+                    track_count_left -= track_paths.len();
+                }
+            }
+
             if !track_paths.is_empty() {
                 match analyse_new_files(&db, &mpath, track_paths) {
                     Ok(_) => { },
@@ -371,6 +383,11 @@ pub fn analyse_files(db_path: &str, mpaths: &Vec<PathBuf>, dry_run:bool, keep_ol
                     Ok(_) => { },
                     Err(e) => { log::error!("Cue analysis returned error: {}", e); }
                 }
+            }
+
+            if max_num_tracks>0 && track_count_left<=0 {
+                log::info!("Track limit reached");
+                break;
             }
         }
     }
