@@ -33,6 +33,7 @@ jobs:
         name: bliss-analyser-linux
         path: releases/
 
+
   macOS:
     runs-on: macos-11.0
 
@@ -49,39 +50,22 @@ jobs:
       run: |
         brew install ffmpeg@5
 
-    - name: Install Rust support for ARM64 & prepare environment
-      run: |
-        rustup target add aarch64-apple-darwin
-
     - name: Build
       run: |
         mkdir releases
         cargo build --release
         strip target/release/bliss-analyser
-        cp target/release/bliss-analyser releases/bliss-analyser-x86_64
-        cargo build --target=aarch64-apple-darwin --release
-        strip target/aarch64-apple-darwin/release/bliss-analyser
-        cp target/aarch64-apple-darwin/release/bliss-analyser releases/bliss-analyser-arm64
+        cp target/release/bliss-analyser releases/bliss-analyser
         cp UserGuide.md releases/README.md
         cp LICENSE releases/
         cp configs/macos.ini releases/config.ini
-
-    - name: Build fat binary
-      run: |
-        lipo -create \
-          -arch x86_64 releases/bliss-analyser-x86_64 \
-          -arch arm64 releases/bliss-analyser-arm64 \
-          -output releases/bliss-analyser
-
-    - name: Remove ununsed binaries
-      run:
-        rm releases/bliss-analyser-x86_64 releases/bliss-analyser-arm64
 
     - name: Upload artifacts
       uses: actions/upload-artifact@v2
       with:
         name: bliss-analyser-mac
         path: releases/
+
 
   Windows:
     runs-on: windows-2019
