@@ -33,6 +33,7 @@ jobs:
         name: bliss-analyser-linux
         path: releases/
 
+
   macOS:
     runs-on: macos-11.0
 
@@ -47,7 +48,7 @@ jobs:
 
     - name: Install deps
       run: |
-          brew install ffmpeg@5
+        brew install ffmpeg@5
 
     - name: Build
       run: |
@@ -64,6 +65,7 @@ jobs:
       with:
         name: bliss-analyser-mac
         path: releases/
+
 
   Windows:
     runs-on: windows-2019

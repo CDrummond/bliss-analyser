@@ -27,7 +27,8 @@ use crate::db;
 use crate::tags;
 
 const DONT_ANALYSE:&str = ".notmusic";
-const MAX_TAG_ERRORS_TO_SHOW:usize = 25;
+const MAX_ERRORS_TO_SHOW:usize = 100;
+const MAX_TAG_ERRORS_TO_SHOW:usize = 50;
 
 fn get_file_list(db:&mut db::Db, mpath:&PathBuf, path:&PathBuf, track_paths:&mut Vec<String>, cue_tracks:&mut Vec<cue::CueTrack>) {
     if path.is_dir() {
@@ -112,7 +113,7 @@ pub fn analyse_new_files(db:&db::Db, mpath: &PathBuf, track_paths:Vec<String>) -
 
     let results = analyze_paths_streaming(track_paths)?;
     let mut analysed = 0;
-    let mut failed = 0;
+    let mut failed:Vec<String> = Vec::new();
     let mut tag_error:Vec<String> = Vec::new();
 
     log::info!("Analysing new tracks");
@@ -133,13 +134,25 @@ pub fn analyse_new_files(db:&db::Db, mpath: &PathBuf, track_paths:Vec<String>) -
                 db.add_track(&sname, &meta, &track.analysis);
                 analysed += 1;
             },
-            Err(_) => {
-                failed += 1;
+            Err(e) => {
+                failed.push(format!("{} - {}", sname, e));
             }
         };
         pb.inc(1);
     }
-    pb.finish_with_message(format!("{} Analysed. {} Failure(s).", analysed, failed));
+    pb.finish_with_message(format!("{} Analysed. {} Failure(s).", analysed, failed.len()));
+    if !failed.is_empty() {
+        let total = failed.len();
+        failed.truncate(MAX_ERRORS_TO_SHOW);
+
+        log::error!("Failed to analyse the folling track(s):");
+        for err in failed {
+            log::error!("  {}", err);
+        }
+        if total>MAX_ERRORS_TO_SHOW {
+            log::error!("  + {} other(s)", total - MAX_ERRORS_TO_SHOW);
+        }
+    }
     if !tag_error.is_empty() {
         let total = tag_error.len();
         tag_error.truncate(MAX_TAG_ERRORS_TO_SHOW);
@@ -255,7 +268,7 @@ pub fn analyse_new_cue_tracks(db:&db::Db, mpath: &PathBuf, cue_tracks:Vec<cue::C
 
     let results = analyze_cue_streaming(cue_tracks)?;
     let mut analysed = 0;
-    let mut failed = 0;
+    let mut failed:Vec<String> = Vec::new();
 
     log::info!("Analysing new cue tracks");
     for (track, result) in results {
@@ -277,13 +290,25 @@ pub fn analyse_new_cue_tracks(db:&db::Db, mpath: &PathBuf, cue_tracks:Vec<cue::C
                 db.add_track(&sname, &meta, &song.analysis);
                 analysed += 1;
             },
-            Err(_) => {
-                failed += 1;
+            Err(e) => {
+                failed.push(format!("{} - {}", sname, e));
             }
         };
         pb.inc(1);
     }
-    pb.finish_with_message(format!("{} Analysed. {} Failure(s).", analysed, failed));
+    pb.finish_with_message(format!("{} Analysed. {} Failure(s).", analysed, failed.len()));
+    if !failed.is_empty() {
+        let total = failed.len();
+        failed.truncate(MAX_ERRORS_TO_SHOW);
+
+        log::error!("Failed to analyse the folling track(s):");
+        for err in failed {
+            log::error!("  {}", err);
+        }
+        if total>MAX_ERRORS_TO_SHOW {
+            log::error!("  + {} other(s)", total - MAX_ERRORS_TO_SHOW);
+        }
+    }
     Ok(())
 }
 
@@ -291,6 +316,10 @@ pub fn analyse_files(db_path: &str, mpaths: &Vec<PathBuf>, dry_run:bool, keep_ol
     let mut db = db::Db::new(&String::from(db_path));
 
     db.init();
+
+    if !keep_old {
+        db.remove_old(mpaths, dry_run);
+    }
 
     for path in mpaths {
         let mpath = path.clone();
@@ -300,6 +329,7 @@ pub fn analyse_files(db_path: &str, mpaths: &Vec<PathBuf>, dry_run:bool, keep_ol
 
         log::info!("Looking for new tracks in {}", mpath.to_string_lossy());
         get_file_list(&mut db, &mpath, &cur, &mut track_paths, &mut cue_tracks);
+        track_paths.sort();
         log::info!("Num new tracks: {}", track_paths.len());
         if !cue_tracks.is_empty() {
             log::info!("Num new cue tracks: {}", cue_tracks.len());
@@ -312,9 +342,18 @@ pub fn analyse_files(db_path: &str, mpaths: &Vec<PathBuf>, dry_run:bool, keep_ol
             log::info!("Only analysing {} cue tracks", max_num_tracks);
             cue_tracks.truncate(max_num_tracks);
         }
-
-        if !dry_run {
-            if track_paths.len()>0 {
+        if dry_run {
+            if !track_paths.is_empty() || !cue_tracks.is_empty() {
+                log::info!("The following need to be analysed:");
+                for track in track_paths {
+                    log::info!("  {}", track);
+                }
+                for track in cue_tracks {
+                    log::info!("  {}", track.track_path.to_string_lossy());
+                }
+            }
+        } else {
+            if !track_paths.is_empty() {
                 match analyse_new_files(&db, &mpath, track_paths) {
                     Ok(_) => { },
                     Err(e) => { log::error!("Analysis returned error: {}", e); }
@@ -322,6 +361,7 @@ pub fn analyse_files(db_path: &str, mpaths: &Vec<PathBuf>, dry_run:bool, keep_ol
             } else {
                 log::info!("No new tracks to analyse");
             }
+
             if !cue_tracks.is_empty() {
                 match analyse_new_cue_tracks(&db, &mpath, cue_tracks) {
                     Ok(_) => { },
@@ -329,10 +369,6 @@ pub fn analyse_files(db_path: &str, mpaths: &Vec<PathBuf>, dry_run:bool, keep_ol
                 }
             }
         }
-    }
-
-    if !keep_old {
-        db.remove_old(mpaths, dry_run);
     }
 
     db.close();

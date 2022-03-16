@@ -1,7 +1,11 @@
 0.1.0
 -----
 1. Add support for analysing CUE files.
-2. Support up to 5 music folders (music, music_1, music_2, music_3, and
+2. Output list of (up to 100) tracks that failed to analyse.
+3. When performing a dry-run analysis (--dry-run) print paths of all tracks to
+   be analysed and to be removed.
+4. Use git version of tag reader library.
+5. Support up to 5 music folders (music, music_1, music_2, music_3, and
    music_4).
 
 0.0.2
