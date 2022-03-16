@@ -327,7 +327,11 @@ pub fn analyse_files(db_path: &str, mpaths: &Vec<PathBuf>, dry_run:bool, keep_ol
         let mut track_paths:Vec<String> = Vec::new();
         let mut cue_tracks:Vec<cue::CueTrack> = Vec::new();
 
-        log::info!("Looking for new tracks in {}", mpath.to_string_lossy());
+        if mpaths.len()>1 {
+            log::info!("Looking for new tracks in {}", mpath.to_string_lossy());
+        } else {
+            log::info!("Looking for new tracks");
+        }
         get_file_list(&mut db, &mpath, &cur, &mut track_paths, &mut cue_tracks);
         track_paths.sort();
         log::info!("Num new tracks: {}", track_paths.len());
