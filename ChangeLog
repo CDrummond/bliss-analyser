@@ -5,7 +5,6 @@
 3. When performing a dry-run analysis (--dry-run) print paths of all tracks to
    be analysed and to be removed.
 4. Use git version of tag reader library.
-5. Build fat binary for macOS.
 
 0.0.2
 -----
