@@ -320,7 +320,7 @@ pub fn analyse_new_cue_tracks(
         let total = failed.len();
         failed.truncate(MAX_ERRORS_TO_SHOW);
 
-        log::error!("Failed to analyse the folling track(s):");
+        log::error!("Failed to analyse the following track(s):");
         for err in failed {
             log::error!("  {}", err);
         }

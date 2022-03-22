@@ -164,7 +164,7 @@ impl Db {
     }
 
     pub fn remove_old(&self, mpaths: &Vec<PathBuf>, dry_run: bool) {
-        log::info!("Looking for non-existant tracks");
+        log::info!("Looking for non-existent tracks");
         let mut stmt = self.conn.prepare("SELECT File FROM Tracks;").unwrap();
         let track_iter = stmt.query_map([], |row| Ok((row.get(0)?,))).unwrap();
         let mut to_remove: Vec<String> = Vec::new();
@@ -198,7 +198,7 @@ impl Db {
         }
 
         let num_to_remove = to_remove.len();
-        log::info!("Num non-existant tracks: {}", num_to_remove);
+        log::info!("Num non-existent tracks: {}", num_to_remove);
         if num_to_remove > 0 {
             if dry_run {
                 log::info!("The following need to be removed from database:");
