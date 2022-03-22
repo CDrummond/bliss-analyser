@@ -275,9 +275,11 @@ pub fn analyse_new_cue_tracks(
     cue_tracks: Vec<cue::CueTrack>,
 ) -> Result<()> {
     let total = cue_tracks.len();
-    let progress = ProgressBar::new(total.try_into().unwrap()).with_style(ProgressStyle::default_bar()
-        .template("[{elapsed_precise}] [{bar:25}] {percent:>3}% {pos:>6}/{len:6} {wide_msg}")
-        .progress_chars("=> "));
+    let progress = ProgressBar::new(total.try_into().unwrap()).with_style(
+        ProgressStyle::default_bar()
+            .template("[{elapsed_precise}] [{bar:25}] {percent:>3}% {pos:>6}/{len:6} {wide_msg}")
+            .progress_chars("=> "),
+    );
 
     let results = analyze_cue_streaming(cue_tracks)?;
     let mut analysed = 0;
