@@ -25,7 +25,7 @@ pub struct FileMetadata {
     pub duration: u32,
 }
 
-#[derive(Default)]
+#[derive(Default, PartialEq)]
 pub struct Metadata {
     pub title: String,
     pub artist: String,
