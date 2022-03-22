@@ -91,7 +91,7 @@ impl Db {
             [],
         );
 
-        if let Err(e) = cmd {
+        if cmd.is_err() {
             log::error!("Failed to create DB table");
             process::exit(-1);
         }
@@ -101,7 +101,7 @@ impl Db {
             [],
         );
 
-        if let Err(e) = cmd {
+        if cmd.is_err() {
             log::error!("Failed to create DB index");
             process::exit(-1);
         }

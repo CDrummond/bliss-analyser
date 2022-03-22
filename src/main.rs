@@ -51,7 +51,7 @@ fn main() {
             logging
         );
         let ignore_file_help = format!(
-            "File containg items to mark as ignored. (default: {})",
+            "File contains items to mark as ignored. (default: {})",
             ignore_file
         );
         let lms_host_help = format!("LMS hostname or IP address (default: {})", &lms_host);
