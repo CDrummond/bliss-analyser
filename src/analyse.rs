@@ -154,11 +154,7 @@ pub fn analyse_new_files(db: &db::Db, mpath: &PathBuf, track_paths: Vec<String>)
             Ok(track) => {
                 let cpath = String::from(path);
                 let meta = tags::read(&cpath);
-                if meta.title.is_empty()
-                    && meta.artist.is_empty()
-                    && meta.album.is_empty()
-                    && meta.genre.is_empty()
-                {
+                if meta.is_empty() {
                     tag_error.push(sname.clone());
                 }
 
@@ -180,7 +176,7 @@ pub fn analyse_new_files(db: &db::Db, mpath: &PathBuf, track_paths: Vec<String>)
         let total = failed.len();
         failed.truncate(MAX_ERRORS_TO_SHOW);
 
-        log::error!("Failed to analyse the folling track(s):");
+        log::error!("Failed to analyse the following track(s):");
         for err in failed {
             log::error!("  {}", err);
         }
@@ -192,7 +188,7 @@ pub fn analyse_new_files(db: &db::Db, mpath: &PathBuf, track_paths: Vec<String>)
         let total = tag_error.len();
         tag_error.truncate(MAX_TAG_ERRORS_TO_SHOW);
 
-        log::error!("Failed to read tags of the folling track(s):");
+        log::error!("Failed to read tags of the following track(s):");
         for err in tag_error {
             log::error!("  {}", err);
         }

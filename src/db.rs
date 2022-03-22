@@ -34,6 +34,16 @@ pub struct Metadata {
     pub duration: u32,
 }
 
+impl Metadata {
+    pub fn is_empty(&self) -> bool {
+        self.title.is_empty()
+            && self.artist.is_empty()
+            && self.album_artist.is_empty()
+            && self.album.is_empty()
+            && self.genre.is_empty()
+    }
+}
+
 pub struct Db {
     pub conn: Connection,
 }
