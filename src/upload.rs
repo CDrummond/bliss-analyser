@@ -21,11 +21,9 @@ pub fn stop_mixer(lms: &String) {
         "{\"id\":1, \"method\":\"slim.request\",\"params\":[\"\",[\"blissmixer\",\"stop\"]]}";
 
     log::info!("Asking plugin to stop mixer");
-    match ureq::post(&format!("http://{}:9000/jsonrpc.js", lms)).send_string(&stop_req) {
-        Ok(_) => {}
-        Err(e) => {
-            log::error!("Failed to ask plugin to stop mixer. {}", e);
-        }
+    let req = ureq::post(&format!("http://{}:9000/jsonrpc.js", lms)).send_string(&stop_req);
+    if let Err(e) = req {
+        log::error!("Failed to ask plugin to stop mixer. {}", e);
     }
 }
 
@@ -70,7 +68,7 @@ pub fn upload_db(db_path: &String, lms: &String) {
         }
     }
 
-    if port <= 0 {
+    if port == 0 {
         fail("Invalid port");
     }
 
