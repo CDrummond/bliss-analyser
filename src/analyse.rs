@@ -11,13 +11,14 @@ use crate::tags;
 use anyhow::Result;
 use bliss_audio::{library::analyze_paths_streaming, BlissResult, Song};
 use hhmmss::Hhmmss;
+use if_chain::if_chain;
 use indicatif::{ProgressBar, ProgressStyle};
 use num_cpus;
 use std::convert::TryInto;
 use std::fs;
-use std::fs::File;
+use std::fs::{DirEntry, File};
 use std::io::{BufRead, BufReader};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::mpsc;
 use std::sync::mpsc::{Receiver, Sender};
 use std::thread;
@@ -28,115 +29,90 @@ use tempdir::TempDir;
 const DONT_ANALYSE: &str = ".notmusic";
 const MAX_ERRORS_TO_SHOW: usize = 100;
 const MAX_TAG_ERRORS_TO_SHOW: usize = 50;
+const VALID_EXTENSIONS: [&str; 5] = ["m4a", "mp3", "ogg", "flac", "opus"];
 
 fn get_file_list(
     db: &mut db::Db,
-    mpath: &PathBuf,
-    path: &PathBuf,
+    mpath: &Path,
+    path: &Path,
     track_paths: &mut Vec<String>,
     cue_tracks: &mut Vec<cue::CueTrack>,
 ) {
-    if path.is_dir() {
-        match path.read_dir() {
-            Ok(items) => {
-                for item in items {
-                    match item {
-                        Ok(entry) => {
-                            let pb = entry.path().to_path_buf();
-                            if entry.path().is_dir() {
-                                let mut check = pb.clone();
-                                check.push(PathBuf::from(DONT_ANALYSE));
-                                if check.exists() {
-                                    log::info!(
-                                        "Skipping '{}', found '{}'",
-                                        pb.to_string_lossy(),
-                                        DONT_ANALYSE
-                                    );
-                                } else {
-                                    get_file_list(
-                                        db,
-                                        mpath,
-                                        &entry.path(),
-                                        track_paths,
-                                        cue_tracks,
-                                    );
-                                }
-                            } else if entry.path().is_file() {
-                                let e = pb.extension();
-                                if e.is_some() {
-                                    let ext = e.unwrap().to_string_lossy();
-                                    if ext == "m4a"
-                                        || ext == "mp3"
-                                        || ext == "ogg"
-                                        || ext == "flac"
-                                        || ext == "opus"
-                                    {
-                                        match pb.strip_prefix(mpath) {
-                                            Ok(stripped) => {
-                                                let mut cue_file = pb.clone();
-                                                cue_file.set_extension("cue");
-                                                if cue_file.exists() {
-                                                    // Found a CUE file, try to parse and then check if tracks exists in DB
-                                                    let this_cue_tracks =
-                                                        cue::parse(&pb, &cue_file);
-                                                    for track in this_cue_tracks {
-                                                        match track.track_path.strip_prefix(mpath) {
-                                                            Ok(tstripped) => {
-                                                                let spb = tstripped.to_path_buf();
-                                                                let sname = String::from(
-                                                                    spb.to_string_lossy(),
-                                                                );
-                                                                match db.get_rowid(&sname) {
-                                                                    Ok(id) => {
-                                                                        if id <= 0 {
-                                                                            cue_tracks.push(
-                                                                                track.clone(),
-                                                                            );
-                                                                        }
-                                                                    }
-                                                                    Err(_) => {}
-                                                                }
-                                                            }
-                                                            Err(_) => {}
-                                                        }
-                                                    }
-                                                } else {
-                                                    let spb = stripped.to_path_buf();
-                                                    let sname = String::from(spb.to_string_lossy());
-                                                    match db.get_rowid(&sname) {
-                                                        Ok(id) => {
-                                                            if id <= 0 {
-                                                                track_paths.push(String::from(
-                                                                    pb.to_string_lossy(),
-                                                                ));
-                                                            }
-                                                        }
-                                                        Err(_) => {}
-                                                    }
-                                                }
-                                            }
-                                            Err(_) => {}
-                                        }
+    if !path.is_dir() {
+        return;
+    }
+
+    if let Ok(items) = path.read_dir() {
+        for item in items {
+            if let Ok(entry) = item {
+                check_dir_entry(db, mpath, entry, track_paths, cue_tracks);
+            }
+        }
+    }
+}
+
+fn check_dir_entry(
+    db: &mut db::Db,
+    mpath: &Path,
+    entry: DirEntry,
+    track_paths: &mut Vec<String>,
+    cue_tracks: &mut Vec<cue::CueTrack>,
+) {
+    let pb = entry.path();
+    if pb.is_dir() {
+        let check = pb.join(DONT_ANALYSE);
+        if check.exists() {
+            log::info!(
+                "Skipping '{}', found '{}'",
+                pb.to_string_lossy(),
+                DONT_ANALYSE
+            );
+        } else {
+            get_file_list(db, mpath, &pb, track_paths, cue_tracks);
+        }
+    } else if pb.is_file() {
+        if_chain! {
+                if let Some(ext) = pb.extension();
+                let ext = ext.to_string_lossy();
+                if VALID_EXTENSIONS.contains(&&*ext);
+                if let Ok(stripped) = pb.strip_prefix(mpath);
+                then {
+                    let mut cue_file = pb.clone();
+                    cue_file.set_extension("cue");
+                    if cue_file.exists() {
+                        // Found a CUE file, try to parse and then check if tracks exists in DB
+                        let this_cue_tracks = cue::parse(&pb, &cue_file);
+                        for track in this_cue_tracks {
+                            if let Ok(tstripped) = track.track_path.strip_prefix(mpath) {
+                                let sname = String::from(tstripped.to_string_lossy());
+
+                                if let Ok(id) = db.get_rowid(&sname) {
+                                    if id<=0 {
+                                        cue_tracks.push(track);
                                     }
                                 }
                             }
                         }
-                        Err(_) => {}
+                    } else {
+                        let sname = String::from(stripped.to_string_lossy());
+                        if let Ok(id) = db.get_rowid(&sname) {
+                            if id<=0 {
+                                track_paths.push(String::from(pb.to_string_lossy()));
+                            }
+                        }
                     }
                 }
-            }
-            Err(_) => {}
         }
     }
 }
 
 pub fn analyse_new_files(db: &db::Db, mpath: &PathBuf, track_paths: Vec<String>) -> Result<()> {
     let total = track_paths.len();
-    let pb = ProgressBar::new(total.try_into().unwrap());
-    let style = ProgressStyle::default_bar()
-        .template("[{elapsed_precise}] [{bar:25}] {percent:>3}% {pos:>6}/{len:6} {wide_msg}")
-        .progress_chars("=> ");
-    pb.set_style(style);
+    let progress = ProgressBar::new(total.try_into().unwrap()).with_style(
+        ProgressStyle::default_bar()
+            .template("[{elapsed_precise}] [{bar:25}] {percent:>3}% {pos:>6}/{len:6} {wide_msg}")
+            .progress_chars("=> "),
+    );
 
     let results = analyze_paths_streaming(track_paths)?;
     let mut analysed = 0;
@@ -149,7 +125,7 @@ pub fn analyse_new_files(db: &db::Db, mpath: &PathBuf, track_paths: Vec<String>)
         let stripped = pbuff.strip_prefix(mpath).unwrap();
         let spbuff = stripped.to_path_buf();
         let sname = String::from(spbuff.to_string_lossy());
-        pb.set_message(format!("{}", sname));
+        progress.set_message(format!("{}", sname));
         match result {
             Ok(track) => {
                 let cpath = String::from(path);
@@ -165,9 +141,11 @@ pub fn analyse_new_files(db: &db::Db, mpath: &PathBuf, track_paths: Vec<String>)
                 failed.push(format!("{} - {}", sname, e));
             }
         };
-        pb.inc(1);
+
+        progress.inc(1);
     }
-    pb.finish_with_message(format!(
+
+    progress.finish_with_message(format!(
         "{} Analysed. {} Failure(s).",
         analysed,
         failed.len()
@@ -226,72 +204,62 @@ pub fn analyze_cue_streaming(
         let tx_thread = tx.clone();
         let owned_chunk = chunk.to_owned();
         let child = thread::spawn(move || {
+            let dir = TempDir::new("bliss");
+            if let Err(e) = dir {
+                log::error!("Failed to create temp folder. {}", e);
+                return;
+            }
+
             let mut idx = 0;
-            match &TempDir::new("bliss") {
-                Ok(dir) => {
-                    for cue_track in owned_chunk {
-                        let audio_path = String::from(cue_track.audio_path.to_string_lossy());
-                        let ext = cue_track.audio_path.extension();
-                        let track_path = String::from(cue_track.track_path.to_string_lossy());
-                        let mut tmp_file = PathBuf::from(dir.path());
-                        if ext.is_some() {
-                            tmp_file.push(format!("{}.{}", idx, ext.unwrap().to_string_lossy()));
-                        } else {
-                            tmp_file.push(format!("{}.flac", idx));
-                        }
-                        idx += 1;
-
-                        log::debug!("Extracting '{}'", track_path);
-                        match Exec::cmd("ffmpeg")
-                            .arg("-i")
-                            .arg(&audio_path)
-                            .arg("-ss")
-                            .arg(&cue_track.start.hhmmss())
-                            .arg("-t")
-                            .arg(&cue_track.duration.hhmmss())
-                            .arg("-c")
-                            .arg("copy")
-                            .arg(String::from(tmp_file.to_string_lossy()))
-                            .stderr(NullFile)
-                            .join()
-                        {
-                            Ok(_) => {}
-                            Err(e) => {
-                                log::error!("Failed to call ffmpeg. {}", e);
-                            }
-                        }
-
-                        if !cfg!(windows) {
-                            // ffmpeg seeks to break echo on terminal? 'stty echo' restores...
-                            match Exec::cmd("stty").arg("echo").join() {
-                                Ok(_) => {}
-                                Err(_) => {}
-                            }
-                        }
-
-                        if tmp_file.exists() {
-                            log::debug!("Analyzing '{}'", track_path);
-                            let song = Song::new(&tmp_file);
-                            if cue_track.duration >= last_track_duration {
-                                // Last track, so read duration from temp file
-                                let mut cloned = cue_track.clone();
-                                let meta = tags::read(&String::from(tmp_file.to_string_lossy()));
-                                cloned.duration = Duration::new(meta.duration as u64, 0);
-                                tx_thread.send((cloned, song)).unwrap();
-                            } else {
-                                tx_thread.send((cue_track, song)).unwrap();
-                            }
-                            match fs::remove_file(tmp_file) {
-                                Ok(_) => {}
-                                Err(_) => {}
-                            }
-                        } else {
-                            log::error!("Failed to create temp file");
-                        }
-                    }
+            let dir = dir.unwrap();
+            for mut cue_track in owned_chunk {
+                let audio_path = String::from(cue_track.audio_path.to_string_lossy());
+                let ext = cue_track.audio_path.extension();
+                let track_path = String::from(cue_track.track_path.to_string_lossy());
+                let mut tmp_file = PathBuf::from(dir.path());
+                if ext.is_some() {
+                    tmp_file.push(format!("{}.{}", idx, ext.unwrap().to_string_lossy()));
+                } else {
+                    tmp_file.push(format!("{}.flac", idx));
                 }
-                Err(e) => {
-                    log::error!("Failed to create temp folder. {}", e);
+                idx += 1;
+
+                log::debug!("Extracting '{}'", track_path);
+                let cmd = Exec::cmd("ffmpeg")
+                    .arg("-i")
+                    .arg(&audio_path)
+                    .arg("-ss")
+                    .arg(&cue_track.start.hhmmss())
+                    .arg("-t")
+                    .arg(&cue_track.duration.hhmmss())
+                    .arg("-c")
+                    .arg("copy")
+                    .arg(String::from(tmp_file.to_string_lossy()))
+                    .stderr(NullFile)
+                    .join();
+
+                if let Err(e) = cmd {
+                    log::error!("Failed to call ffmpeg. {}", e);
+                }
+
+                if !cfg!(windows) {
+                    // ffmpeg seeks to break echo on terminal? 'stty echo' restores...
+                    let _ = Exec::cmd("stty").arg("echo").join();
+                }
+
+                if tmp_file.exists() {
+                    log::debug!("Analyzing '{}'", track_path);
+                    let song = Song::new(&tmp_file);
+                    if cue_track.duration >= last_track_duration {
+                        // Last track, so read duration from temp file
+                        let meta = tags::read(&String::from(tmp_file.to_string_lossy()));
+                        cue_track.duration = Duration::new(meta.duration as u64, 0);
+                    }
+
+                    tx_thread.send((cue_track, song)).unwrap();
+                    let _ = fs::remove_file(tmp_file);
+                } else {
+                    log::error!("Failed to create temp file");
                 }
             }
         });
@@ -307,11 +275,9 @@ pub fn analyse_new_cue_tracks(
     cue_tracks: Vec<cue::CueTrack>,
 ) -> Result<()> {
     let total = cue_tracks.len();
-    let pb = ProgressBar::new(total.try_into().unwrap());
-    let style = ProgressStyle::default_bar()
+    let progress = ProgressBar::new(total.try_into().unwrap()).with_style(ProgressStyle::default_bar()
         .template("[{elapsed_precise}] [{bar:25}] {percent:>3}% {pos:>6}/{len:6} {wide_msg}")
-        .progress_chars("=> ");
-    pb.set_style(style);
+        .progress_chars("=> "));
 
     let results = analyze_cue_streaming(cue_tracks)?;
     let mut analysed = 0;
@@ -322,7 +288,7 @@ pub fn analyse_new_cue_tracks(
         let stripped = track.track_path.strip_prefix(mpath).unwrap();
         let spbuff = stripped.to_path_buf();
         let sname = String::from(spbuff.to_string_lossy());
-        pb.set_message(format!("{}", sname));
+        progress.set_message(format!("{}", sname));
         match result {
             Ok(song) => {
                 let meta = db::Metadata {
@@ -341,9 +307,9 @@ pub fn analyse_new_cue_tracks(
                 failed.push(format!("{} - {}", sname, e));
             }
         };
-        pb.inc(1);
+        progress.inc(1);
     }
-    pb.finish_with_message(format!(
+    progress.finish_with_message(format!(
         "{} Analysed. {} Failure(s).",
         analysed,
         failed.len()
@@ -396,6 +362,7 @@ pub fn analyse_files(
         if !cue_tracks.is_empty() {
             log::info!("Num new cue tracks: {}", cue_tracks.len());
         }
+
         if dry_run {
             if !track_paths.is_empty() || !cue_tracks.is_empty() {
                 log::info!("The following need to be analysed:");
@@ -438,11 +405,8 @@ pub fn analyse_files(
             }
 
             if !cue_tracks.is_empty() {
-                match analyse_new_cue_tracks(&db, &mpath, cue_tracks) {
-                    Ok(_) => {}
-                    Err(e) => {
-                        log::error!("Cue analysis returned error: {}", e);
-                    }
+                if let Err(e) = analyse_new_cue_tracks(&db, &mpath, cue_tracks) {
+                    log::error!("Cue analysis returned error: {}", e);
                 }
             }
 
@@ -470,11 +434,12 @@ pub fn update_ignore(db_path: &str, ignore_path: &PathBuf) {
     db.init();
 
     db.clear_ignore();
-    for (_index, line) in reader.lines().enumerate() {
-        let line = line.unwrap();
+    let mut lines = reader.lines();
+    while let Some(Ok(line)) = lines.next() {
         if !line.is_empty() && !line.starts_with("#") {
             db.set_ignore(&line);
         }
     }
+
     db.close();
 }
