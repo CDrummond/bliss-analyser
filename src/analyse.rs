@@ -72,36 +72,36 @@ fn check_dir_entry(
         }
     } else if pb.is_file() {
         if_chain! {
-                if let Some(ext) = pb.extension();
-                let ext = ext.to_string_lossy();
-                if VALID_EXTENSIONS.contains(&&*ext);
-                if let Ok(stripped) = pb.strip_prefix(mpath);
-                then {
-                    let mut cue_file = pb.clone();
-                    cue_file.set_extension("cue");
-                    if cue_file.exists() {
-                        // Found a CUE file, try to parse and then check if tracks exists in DB
-                        let this_cue_tracks = cue::parse(&pb, &cue_file);
-                        for track in this_cue_tracks {
-                            if let Ok(tstripped) = track.track_path.strip_prefix(mpath) {
-                                let sname = String::from(tstripped.to_string_lossy());
+            if let Some(ext) = pb.extension();
+            let ext = ext.to_string_lossy();
+            if VALID_EXTENSIONS.contains(&&*ext);
+            if let Ok(stripped) = pb.strip_prefix(mpath);
+            then {
+                let mut cue_file = pb.clone();
+                cue_file.set_extension("cue");
+                if cue_file.exists() {
+                    // Found a CUE file, try to parse and then check if tracks exists in DB
+                    let this_cue_tracks = cue::parse(&pb, &cue_file);
+                    for track in this_cue_tracks {
+                        if let Ok(tstripped) = track.track_path.strip_prefix(mpath) {
+                            let sname = String::from(tstripped.to_string_lossy());
 
-                                if let Ok(id) = db.get_rowid(&sname) {
-                                    if id<=0 {
-                                        cue_tracks.push(track);
-                                    }
+                            if let Ok(id) = db.get_rowid(&sname) {
+                                if id<=0 {
+                                    cue_tracks.push(track);
                                 }
                             }
                         }
-                    } else {
-                        let sname = String::from(stripped.to_string_lossy());
-                        if let Ok(id) = db.get_rowid(&sname) {
-                            if id<=0 {
-                                track_paths.push(String::from(pb.to_string_lossy()));
-                            }
+                    }
+                } else {
+                    let sname = String::from(stripped.to_string_lossy());
+                    if let Ok(id) = db.get_rowid(&sname) {
+                        if id<=0 {
+                            track_paths.push(String::from(pb.to_string_lossy()));
                         }
                     }
                 }
+            }
         }
     }
 }
