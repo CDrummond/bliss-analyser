@@ -1,6 +1,6 @@
 [package]
 name = "bliss-analyser"
-version = "0.1.1"
+version = "0.2.0"
 authors = ["Craig Drummond <craig.p.drummond@gmail.com>"]
 edition = "2018"
 license = "GPL-3.0-only"
@@ -17,7 +17,7 @@ rusqlite = { version = "0.25.0", features = ["bundled"] }
 log = "0.4.14"
 env_logger = "0.8.4"
 indicatif = "0.16.2"
-lofty = { git = "https://github.com/Serial-ATA/lofty-rs", rev = "45182b6" }
+lofty = "0.6.0"
 dirs = "1"
 chrono = "0.4.19"
 regex = "1"

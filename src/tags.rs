@@ -6,7 +6,7 @@ use crate::db;
  * GPLv3 license.
  *
  **/
-use lofty::{Accessor, ItemKey};
+use lofty::{Accessor, AudioFile, ItemKey};
 use regex::Regex;
 use std::path::Path;
 use substring::Substring;

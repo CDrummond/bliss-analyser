@@ -1,6 +1,7 @@
-0.1.1
+0.2.0
 -----
 1. Tidy up code, thanks to Serial-ATA
+2. Update version of tag reader library, should now support ID3v2 in FLAC.
 
 0.1.0
 -----

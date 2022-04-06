@@ -119,7 +119,7 @@ dependencies = [
 
 [[package]]
 name = "bliss-analyser"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "anyhow",
  "argparse",
@@ -738,8 +738,9 @@ dependencies = [
 
 [[package]]
 name = "lofty"
-version = "0.5.3"
-source = "git+https://github.com/Serial-ATA/lofty-rs?rev=45182b6#45182b6e3d71f9b9cc022aca9e3e192abb82ad10"
+version = "0.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a944022a74ee371dbf1f36839f4a589822e8c980d1265f086eb540648c78083a"
 dependencies = [
  "base64",
  "byteorder",
@@ -949,9 +950,9 @@ dependencies = [
 
 [[package]]
 name = "once_cell"
-version = "1.9.0"
+version = "1.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "da32515d9f6e6e489d7bc9d84c71b060db7247dc035bbe44eac88cf87486d8d5"
+checksum = "87f3e037eac156d1775da914196f0f37741a274155e34a0b7e427c35d2a2ecb9"
 
 [[package]]
 name = "opaque-debug"
@@ -967,9 +968,9 @@ checksum = "624a8340c38c1b80fd549087862da4ba43e08858af025b236e509b6649fc13d5"
 
 [[package]]
 name = "paste"
-version = "1.0.6"
+version = "1.0.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0744126afe1a6dd7f394cb50a716dbe086cb06e255e53d8d0185d82828358fb5"
+checksum = "0c520e05135d6e763148b6426a837e239041653ba7becd2e538c076c738025fc"
 
 [[package]]
 name = "peeking_take_while"
