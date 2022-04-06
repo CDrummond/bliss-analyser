@@ -6,7 +6,7 @@ upload its database of music analysis to LMS. The `Bliss Mixer` LMS plugin can
 then use this information to provide music mixes for LMS's `Don't Stop the Music`
 feature.
 
-**NOTE** You must run this application from a terminal window (e.g. cmd.com or
+**NOTE:** You must run this application from a terminal window (e.g. cmd.com or
 PowerShell for Windows), as there is no graphical user interface.
 
 
