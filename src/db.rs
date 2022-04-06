@@ -51,8 +51,16 @@ pub struct Db {
 
 impl Db {
     pub fn new(path: &String) -> Self {
-        Self {
-            conn: Connection::open(path).unwrap(),
+        match Connection::open(path) {
+            Ok(conn) => {
+                Self {
+                    conn: conn,
+                }
+            }
+            Err(e) => {
+                log::error!("Failed top open/create database. {}", e);
+                process::exit(-1);
+            }
         }
     }
 
