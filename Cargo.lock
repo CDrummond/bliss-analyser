@@ -145,8 +145,8 @@ dependencies = [
 
 [[package]]
 name = "bliss-audio"
-version = "0.4.6"
-source = "git+https://github.com/Polochon-street/bliss-rs?rev=5f366b0#5f366b0d809886265ac54398a61523431b44f8a0"
+version = "0.5.0"
+source = "git+https://github.com/Polochon-street/bliss-rs#c08fd3d7034c737e7645f59498dfa78b24eea182"
 dependencies = [
  "bliss-audio-aubio-rs",
  "crossbeam",
@@ -738,9 +738,9 @@ dependencies = [
 
 [[package]]
 name = "lofty"
-version = "0.6.0"
+version = "0.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a944022a74ee371dbf1f36839f4a589822e8c980d1265f086eb540648c78083a"
+checksum = "45967792fc531850b544d0e50065ffda8ce814a0d2142a6cbe7009961964e17c"
 dependencies = [
  "base64",
  "byteorder",

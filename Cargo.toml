@@ -10,7 +10,7 @@ keywords = ["audio", "song", "similarity"]
 readme = "README.md"
 
 [dependencies]
-bliss-audio =  { git = "https://github.com/Polochon-street/bliss-rs", rev = "5f366b0" }
+bliss-audio =  { git = "https://github.com/Polochon-street/bliss-rs" }
 argparse = "0.2.2"
 anyhow = "1.0.40"
 rusqlite = { version = "0.25.0", features = ["bundled"] }

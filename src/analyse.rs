@@ -9,7 +9,7 @@ use crate::tags;
  *
  **/
 use anyhow::Result;
-use bliss_audio::{library::analyze_paths_streaming, BlissResult, Song};
+use bliss_audio::{analyze_paths, BlissResult, Song};
 use hhmmss::Hhmmss;
 use if_chain::if_chain;
 use indicatif::{ProgressBar, ProgressStyle};
@@ -114,13 +114,12 @@ pub fn analyse_new_files(db: &db::Db, mpath: &PathBuf, track_paths: Vec<String>)
             .progress_chars("=> "),
     );
 
-    let results = analyze_paths_streaming(track_paths)?;
     let mut analysed = 0;
     let mut failed: Vec<String> = Vec::new();
     let mut tag_error: Vec<String> = Vec::new();
 
     log::info!("Analysing new tracks");
-    for (path, result) in results {
+    for (path, result) in analyze_paths(track_paths) {
         let pbuff = PathBuf::from(&path);
         let stripped = pbuff.strip_prefix(mpath).unwrap();
         let spbuff = stripped.to_path_buf();
@@ -177,9 +176,9 @@ pub fn analyse_new_files(db: &db::Db, mpath: &PathBuf, track_paths: Vec<String>)
     Ok(())
 }
 
-pub fn analyze_cue_streaming(
+pub fn analyze_cue_tracks(
     tracks: Vec<cue::CueTrack>,
-) -> BlissResult<Receiver<(cue::CueTrack, BlissResult<Song>)>> {
+) -> mpsc::IntoIter<(cue::CueTrack, BlissResult<Song>)> {
     let num_cpus = num_cpus::get();
     let last_track_duration = Duration::new(cue::LAST_TRACK_DURATION, 0);
 
@@ -189,7 +188,7 @@ pub fn analyze_cue_streaming(
         Receiver<(cue::CueTrack, BlissResult<Song>)>,
     ) = mpsc::channel();
     if tracks.is_empty() {
-        return Ok(rx);
+        return rx.into_iter();
     }
 
     let mut handles = Vec::new();
@@ -249,7 +248,7 @@ pub fn analyze_cue_streaming(
 
                 if tmp_file.exists() {
                     log::debug!("Analyzing '{}'", track_path);
-                    let song = Song::new(&tmp_file);
+                    let song = Song::from_path(&tmp_file);
                     if cue_track.duration >= last_track_duration {
                         // Last track, so read duration from temp file
                         let meta = tags::read(&String::from(tmp_file.to_string_lossy()));
@@ -266,7 +265,7 @@ pub fn analyze_cue_streaming(
         handles.push(child);
     }
 
-    Ok(rx)
+    rx.into_iter()
 }
 
 pub fn analyse_new_cue_tracks(
@@ -281,12 +280,11 @@ pub fn analyse_new_cue_tracks(
             .progress_chars("=> "),
     );
 
-    let results = analyze_cue_streaming(cue_tracks)?;
     let mut analysed = 0;
     let mut failed: Vec<String> = Vec::new();
 
     log::info!("Analysing new cue tracks");
-    for (track, result) in results {
+    for (track, result) in analyze_cue_tracks(cue_tracks) {
         let stripped = track.track_path.strip_prefix(mpath).unwrap();
         let spbuff = stripped.to_path_buf();
         let sname = String::from(spbuff.to_string_lossy());
