@@ -105,10 +105,7 @@ impl Db {
             process::exit(-1);
         }
 
-        let cmd = self.conn.execute(
-            "CREATE UNIQUE INDEX IF NOT EXISTS Tracks_idx ON Tracks(File)",
-            [],
-        );
+        let cmd = self.conn.execute("CREATE UNIQUE INDEX IF NOT EXISTS Tracks_idx ON Tracks(File)", []);
 
         if cmd.is_err() {
             log::error!("Failed to create DB index");
@@ -125,12 +122,8 @@ impl Db {
         if cfg!(windows) {
             db_path = db_path.replace("\\", "/");
         }
-        let mut stmt = self
-            .conn
-            .prepare("SELECT rowid FROM Tracks WHERE File=:path;")?;
-        let track_iter = stmt
-            .query_map(&[(":path", &db_path)], |row| Ok(row.get(0)?))
-            .unwrap();
+        let mut stmt = self.conn.prepare("SELECT rowid FROM Tracks WHERE File=:path;")?;
+        let track_iter = stmt.query_map(&[(":path", &db_path)], |row| Ok(row.get(0)?)).unwrap();
         let mut rowid: usize = 0;
         for tr in track_iter {
             rowid = tr.unwrap();
@@ -153,7 +146,7 @@ impl Db {
                             analysis[AnalysisIndex::StdDeviationSpectralRolloff], analysis[AnalysisIndex::MeanSpectralFlatness], analysis[AnalysisIndex::StdDeviationSpectralFlatness], analysis[AnalysisIndex::MeanLoudness], analysis[AnalysisIndex::StdDeviationLoudness],
                             analysis[AnalysisIndex::Chroma1], analysis[AnalysisIndex::Chroma2], analysis[AnalysisIndex::Chroma3], analysis[AnalysisIndex::Chroma4], analysis[AnalysisIndex::Chroma5],
                             analysis[AnalysisIndex::Chroma6], analysis[AnalysisIndex::Chroma7], analysis[AnalysisIndex::Chroma8], analysis[AnalysisIndex::Chroma9], analysis[AnalysisIndex::Chroma10]]) {
-                        Ok(_) => { },
+                        Ok(_) => { }
                         Err(e) => { log::error!("Failed to insert '{}' into database. {}", path, e); }
                     }
                 } else {
@@ -163,12 +156,12 @@ impl Db {
                             analysis[AnalysisIndex::StdDeviationSpectralRolloff], analysis[AnalysisIndex::MeanSpectralFlatness], analysis[AnalysisIndex::StdDeviationSpectralFlatness], analysis[AnalysisIndex::MeanLoudness], analysis[AnalysisIndex::StdDeviationLoudness],
                             analysis[AnalysisIndex::Chroma1], analysis[AnalysisIndex::Chroma2], analysis[AnalysisIndex::Chroma3], analysis[AnalysisIndex::Chroma4], analysis[AnalysisIndex::Chroma5],
                             analysis[AnalysisIndex::Chroma6], analysis[AnalysisIndex::Chroma7], analysis[AnalysisIndex::Chroma8], analysis[AnalysisIndex::Chroma9], analysis[AnalysisIndex::Chroma10], id]) {
-                        Ok(_) => { },
+                        Ok(_) => { }
                         Err(e) => { log::error!("Failed to update '{}' in database. {}", path, e); }
                     }
                 }
             }
-            Err(_) => {}
+            Err(_) => { }
         }
     }
 
@@ -218,9 +211,7 @@ impl Db {
                 let count_before = self.get_track_count();
                 for t in to_remove {
                     //log::debug!("Remove '{}'", t);
-                    let cmd = self
-                        .conn
-                        .execute("DELETE FROM Tracks WHERE File = ?;", params![t]);
+                    let cmd = self.conn.execute("DELETE FROM Tracks WHERE File = ?;", params![t]);
 
                     if let Err(e) = cmd {
                         log::error!("Failed to remove '{}' - {}", t, e)
@@ -296,7 +287,7 @@ impl Db {
                             } else if ftags != dtags {
                                 match self.conn.execute("UPDATE Tracks SET Title=?, Artist=?, AlbumArtist=?, Album=?, Genre=?, Duration=? WHERE rowid=?;",
                                                         params![ftags.title, ftags.artist, ftags.album_artist, ftags.album, ftags.genre, ftags.duration, dbtags.rowid]) {
-                                    Ok(_) => { updated += 1; },
+                                    Ok(_) => { updated += 1; }
                                     Err(e) => { log::error!("Failed to update tags of '{}'. {}", dbtags.file, e); }
                                 }
                             }
@@ -322,18 +313,13 @@ impl Db {
         log::info!("Ignore: {}", line);
         if line.starts_with("SQL:") {
             let sql = &line[4..];
-            let cmd = self
-                .conn
-                .execute(&format!("UPDATE Tracks Set Ignore=1 WHERE {}", sql), []);
+            let cmd = self.conn.execute(&format!("UPDATE Tracks Set Ignore=1 WHERE {}", sql), []);
 
             if let Err(e) = cmd {
                 log::error!("Failed set Ignore column for '{}'. {}", line, e);
             }
         } else {
-            let cmd = self.conn.execute(
-                &format!("UPDATE Tracks SET Ignore=1 WHERE File LIKE \"{}%\"", line),
-                [],
-            );
+            let cmd = self.conn.execute(&format!("UPDATE Tracks SET Ignore=1 WHERE File LIKE \"{}%\"", line), []);
 
             if let Err(e) = cmd {
                 log::error!("Failed set Ignore column for '{}'. {}", line, e);

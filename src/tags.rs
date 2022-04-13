@@ -29,10 +29,7 @@ pub fn read(track: &String) -> db::Metadata {
         meta.title = tag.title().unwrap_or_default().to_string();
         meta.artist = tag.artist().unwrap_or_default().to_string();
         meta.album = tag.album().unwrap_or_default().to_string();
-        meta.album_artist = tag
-            .get_string(&ItemKey::AlbumArtist)
-            .unwrap_or_default()
-            .to_string();
+        meta.album_artist = tag.get_string(&ItemKey::AlbumArtist).unwrap_or_default().to_string();
         meta.genre = tag.genre().unwrap_or_default().to_string();
 
         // Check whether MP3 as numeric genre, and if so covert to text
@@ -53,8 +50,7 @@ pub fn read(track: &String) -> db::Metadata {
                             if re.is_match(&genre) {
                                 match genre.find(")") {
                                     Some(end) => {
-                                        let test =
-                                            genre.to_string().substring(1, end).parse::<u8>();
+                                        let test = genre.to_string().substring(1, end).parse::<u8>();
 
                                         if let Ok(val) = test {
                                             let idx: usize = val as usize;
@@ -64,13 +60,13 @@ pub fn read(track: &String) -> db::Metadata {
                                             }
                                         }
                                     }
-                                    None => {}
+                                    None => { }
                                 }
                             }
                         }
                     }
                 }
-                None => {}
+                None => { }
             }
         }
 

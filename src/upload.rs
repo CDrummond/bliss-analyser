@@ -18,8 +18,7 @@ fn fail(msg: &str) {
 }
 
 pub fn stop_mixer(lms: &String) {
-    let stop_req =
-        "{\"id\":1, \"method\":\"slim.request\",\"params\":[\"\",[\"blissmixer\",\"stop\"]]}";
+    let stop_req = "{\"id\":1, \"method\":\"slim.request\",\"params\":[\"\",[\"blissmixer\",\"stop\"]]}";
 
     log::info!("Asking plugin to stop mixer");
     let req = ureq::post(&format!("http://{}:9000/jsonrpc.js", lms)).send_string(&stop_req);
@@ -45,28 +44,18 @@ pub fn upload_db(db_path: &String, lms: &String) {
                             let p = txt.substring(0, e);
                             let test = p.parse::<u16>();
                             match test {
-                                Ok(val) => {
-                                    port = val;
-                                }
-                                Err(_) => {
-                                    fail("Could not parse resp (cast)");
-                                }
+                                Ok(val) => { port = val; }
+                                Err(_) => { fail("Could not parse resp (cast)"); }
                             }
                         }
-                        None => {
-                            fail("Could not parse resp (closing)");
-                        }
+                        None => { fail("Could not parse resp (closing)"); }
                     }
                 }
-                None => {
-                    fail("Could not parse resp (no port)");
-                }
-            },
+                None => { fail("Could not parse resp (no port)"); }
+            }
             Err(_) => fail("No text?"),
-        },
-        Err(e) => {
-            fail(&format!("Failed to ask LMS plugin to allow upload. {}", e));
         }
+        Err(e) => { fail(&format!("Failed to ask LMS plugin to allow upload. {}", e)); }
     }
 
     if port == 0 {
@@ -83,23 +72,16 @@ pub fn upload_db(db_path: &String, lms: &String) {
                 match ureq::put(&format!("http://{}:{}/upload", lms, port))
                     .set("Content-Length", &meta.len().to_string())
                     .set("Content-Type", "application/octet-stream")
-                    .send(buffered_reader)
-                {
+                    .send(buffered_reader) {
                     Ok(_) => {
                         log::info!("Database uploaded");
                         stop_mixer(lms);
                     }
-                    Err(e) => {
-                        fail(&format!("Failed to upload database. {}", e));
-                    }
+                    Err(e) => { fail(&format!("Failed to upload database. {}", e)); }
                 }
             }
-            Err(e) => {
-                fail(&format!("Failed to open database. {}", e));
-            }
-        },
-        Err(e) => {
-            fail(&format!("Failed to open database. {}", e));
+            Err(e) => { fail(&format!("Failed to open database. {}", e)); }
         }
+        Err(e) => { fail(&format!("Failed to open database. {}", e)); }
     }
 }

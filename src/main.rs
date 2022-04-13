@@ -47,14 +47,8 @@ fn main() {
         let config_file_help = format!("config file (default: {})", &config_file);
         let music_path_help = format!("Music folder (default: {})", &music_path);
         let db_path_help = format!("Database location (default: {})", &db_path);
-        let logging_help = format!(
-            "Log level; trace, debug, info, warn, error. (default: {})",
-            logging
-        );
-        let ignore_file_help = format!(
-            "File contains items to mark as ignored. (default: {})",
-            ignore_file
-        );
+        let logging_help = format!("Log level; trace, debug, info, warn, error. (default: {})", logging);
+        let ignore_file_help = format!("File contains items to mark as ignored. (default: {})", ignore_file);
         let lms_host_help = format!("LMS hostname or IP address (default: {})", &lms_host);
         let description = format!("Bliss Analyser v{}", VERSION);
 
@@ -62,66 +56,27 @@ fn main() {
         // borrow per scope, hence this section is enclosed in { }
         let mut arg_parse = ArgumentParser::new();
         arg_parse.set_description(&description);
-        arg_parse
-            .refer(&mut config_file)
-            .add_option(&["-c", "--config"], Store, &config_file_help);
-        arg_parse
-            .refer(&mut music_path)
-            .add_option(&["-m", "--music"], Store, &music_path_help);
-        arg_parse
-            .refer(&mut db_path)
-            .add_option(&["-d", "--db"], Store, &db_path_help);
-        arg_parse
-            .refer(&mut logging)
-            .add_option(&["-l", "--logging"], Store, &logging_help);
-        arg_parse.refer(&mut keep_old).add_option(
-            &["-k", "--keep-old"],
-            StoreTrue,
-            "Don't remove tracks from DB if they don't exist (used with analyse task)",
-        );
-        arg_parse.refer(&mut dry_run).add_option(
-            &["-r", "--dry-run"],
-            StoreTrue,
-            "Dry run, only show what needs to be done (used with analyse task)",
-        );
-        arg_parse
-            .refer(&mut ignore_file)
-            .add_option(&["-i", "--ignore"], Store, &ignore_file_help);
-        arg_parse
-            .refer(&mut lms_host)
-            .add_option(&["-L", "--lms"], Store, &lms_host_help);
-        arg_parse.refer(&mut max_num_tracks).add_option(
-            &["-n", "--numtracks"],
-            Store,
-            "Maximum number of tracks to analyse",
-        );
-        arg_parse.refer(&mut task).add_argument(
-            "task",
-            Store,
-            "Task to perform; analyse, tags, ignore, upload, stopmixer.",
-        );
+        arg_parse.refer(&mut config_file).add_option(&["-c", "--config"], Store, &config_file_help);
+        arg_parse.refer(&mut music_path).add_option(&["-m", "--music"], Store, &music_path_help);
+        arg_parse.refer(&mut db_path).add_option(&["-d", "--db"], Store, &db_path_help);
+        arg_parse.refer(&mut logging).add_option(&["-l", "--logging"], Store, &logging_help);
+        arg_parse.refer(&mut keep_old).add_option(&["-k", "--keep-old"], StoreTrue, "Don't remove tracks from DB if they don't exist (used with analyse task)");
+        arg_parse.refer(&mut dry_run).add_option(&["-r", "--dry-run"], StoreTrue, "Dry run, only show what needs to be done (used with analyse task)");
+        arg_parse.refer(&mut ignore_file).add_option(&["-i", "--ignore"], Store, &ignore_file_help);
+        arg_parse.refer(&mut lms_host).add_option(&["-L", "--lms"], Store, &lms_host_help);
+        arg_parse.refer(&mut max_num_tracks).add_option(&["-n", "--numtracks"], Store, "Maximum number of tracks to analyse");
+        arg_parse.refer(&mut task).add_argument("task", Store, "Task to perform; analyse, tags, ignore, upload, stopmixer.");
         arg_parse.parse_args_or_exit();
     }
 
-    if !(logging.eq_ignore_ascii_case("trace")
-        || logging.eq_ignore_ascii_case("debug")
-        || logging.eq_ignore_ascii_case("info")
-        || logging.eq_ignore_ascii_case("warn")
-        || logging.eq_ignore_ascii_case("error"))
-    {
+    if !(logging.eq_ignore_ascii_case("trace") || logging.eq_ignore_ascii_case("debug") || logging.eq_ignore_ascii_case("info")
+        || logging.eq_ignore_ascii_case("warn") || logging.eq_ignore_ascii_case("error")) {
         logging = String::from("info");
     }
-    let mut builder =
-        env_logger::Builder::from_env(env_logger::Env::default().filter_or("XXXXXXXX", logging));
+    let mut builder = env_logger::Builder::from_env(env_logger::Env::default().filter_or("XXXXXXXX", logging));
     builder.filter(Some("bliss_audio"), LevelFilter::Error);
     builder.format(|buf, record| {
-        writeln!(
-            buf,
-            "[{} {:.1}] {}",
-            Local::now().format("%Y-%m-%d %H:%M:%S"),
-            record.level(),
-            record.args()
-        )
+        writeln!(buf, "[{} {:.1}] {}", Local::now().format("%Y-%m-%d %H:%M:%S"), record.level(), record.args())
     });
     builder.init();
 
@@ -130,12 +85,8 @@ fn main() {
         process::exit(-1);
     }
 
-    if !task.eq_ignore_ascii_case("analyse")
-        && !task.eq_ignore_ascii_case("tags")
-        && !task.eq_ignore_ascii_case("ignore")
-        && !task.eq_ignore_ascii_case("upload")
-        && !task.eq_ignore_ascii_case("stopmixer")
-    {
+    if !task.eq_ignore_ascii_case("analyse") && !task.eq_ignore_ascii_case("tags") && !task.eq_ignore_ascii_case("ignore")
+        && !task.eq_ignore_ascii_case("upload") && !task.eq_ignore_ascii_case("stopmixer") {
         log::error!("Invalid task ({}) supplied", task);
         process::exit(-1);
     }
@@ -146,33 +97,24 @@ fn main() {
             let mut config = Ini::new();
             match config.load(&config_file) {
                 Ok(_) => {
-                    let path_keys: [&str; 5] =
-                        ["music", "music_1", "music_2", "music_3", "music_4"];
+                    let path_keys: [&str; 5] = ["music", "music_1", "music_2", "music_3", "music_4"];
                     for key in &path_keys {
                         match config.get(TOP_LEVEL_INI_TAG, key) {
-                            Some(val) => {
-                                music_paths.push(PathBuf::from(&val));
-                            }
-                            None => {}
+                            Some(val) => { music_paths.push(PathBuf::from(&val)); }
+                            None => { }
                         }
                     }
                     match config.get(TOP_LEVEL_INI_TAG, "db") {
-                        Some(val) => {
-                            db_path = val;
-                        }
-                        None => {}
+                        Some(val) => { db_path = val; }
+                        None => { }
                     }
                     match config.get(TOP_LEVEL_INI_TAG, "lms") {
-                        Some(val) => {
-                            lms_host = val;
-                        }
-                        None => {}
+                        Some(val) => { lms_host = val; }
+                        None => { }
                     }
                     match config.get(TOP_LEVEL_INI_TAG, "ignore") {
-                        Some(val) => {
-                            ignore_file = val;
-                        }
-                        None => {}
+                        Some(val) => { ignore_file = val; }
+                        None => { }
                     }
                 }
                 Err(e) => {
@@ -215,10 +157,7 @@ fn main() {
                     process::exit(-1);
                 }
                 if !mpath.is_dir() {
-                    log::error!(
-                        "Music path ({}) is not a directory",
-                        mpath.to_string_lossy()
-                    );
+                    log::error!("Music path ({}) is not a directory", mpath.to_string_lossy());
                     process::exit(-1);
                 }
             }

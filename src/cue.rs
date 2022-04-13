@@ -49,12 +49,7 @@ pub fn parse(audio_path: &PathBuf, cue_path: &PathBuf) -> Vec<CueTrack> {
                         Some((_, start)) => {
                             let mut track_path = audio_path.clone();
                             let ext = audio_path.extension().unwrap().to_string_lossy();
-                            track_path.set_extension(format!(
-                                "{}{}{}",
-                                ext,
-                                MARKER,
-                                resp.len() + 1
-                            ));
+                            track_path.set_extension(format!("{}{}{}", ext, MARKER, resp.len() + 1));
 
                             let mut ctrack = CueTrack {
                                 audio_path: audio_path.clone(),
@@ -80,14 +75,12 @@ pub fn parse(audio_path: &PathBuf, cue_path: &PathBuf) -> Vec<CueTrack> {
 
                             resp.push(ctrack);
                         }
-                        None => {}
+                        None => { }
                     }
                 }
             }
         }
-        Err(e) => {
-            log::error!("Failed to parse '{}'. {}", cue_path.to_string_lossy(), e);
-        }
+        Err(e) => { log::error!("Failed to parse '{}'. {}", cue_path.to_string_lossy(), e); }
     }
 
     for i in 0..(resp.len() - 1) {

@@ -63,11 +63,7 @@ fn check_dir_entry(
     if pb.is_dir() {
         let check = pb.join(DONT_ANALYSE);
         if check.exists() {
-            log::info!(
-                "Skipping '{}', found '{}'",
-                pb.to_string_lossy(),
-                DONT_ANALYSE
-            );
+            log::info!("Skipping '{}', found '{}'", pb.to_string_lossy(), DONT_ANALYSE);
         } else {
             get_file_list(db, mpath, &pb, track_paths, cue_tracks);
         }
@@ -137,9 +133,7 @@ pub fn analyse_new_files(db: &db::Db, mpath: &PathBuf, track_paths: Vec<String>)
                 db.add_track(&sname, &meta, &track.analysis);
                 analysed += 1;
             }
-            Err(e) => {
-                failed.push(format!("{} - {}", sname, e));
-            }
+            Err(e) => { failed.push(format!("{} - {}", sname, e)); }
         };
 
         progress.inc(1);
@@ -177,9 +171,7 @@ pub fn analyse_new_files(db: &db::Db, mpath: &PathBuf, track_paths: Vec<String>)
     Ok(())
 }
 
-pub fn analyze_cue_tracks(
-    tracks: Vec<cue::CueTrack>,
-) -> mpsc::IntoIter<(cue::CueTrack, BlissResult<Song>)> {
+pub fn analyze_cue_tracks(tracks: Vec<cue::CueTrack>) -> mpsc::IntoIter<(cue::CueTrack, BlissResult<Song>)> {
     let num_cpus = num_cpus::get();
     let last_track_duration = Duration::new(cue::LAST_TRACK_DURATION, 0);
 
@@ -269,11 +261,7 @@ pub fn analyze_cue_tracks(
     rx.into_iter()
 }
 
-pub fn analyse_new_cue_tracks(
-    db: &db::Db,
-    mpath: &PathBuf,
-    cue_tracks: Vec<cue::CueTrack>,
-) -> Result<()> {
+pub fn analyse_new_cue_tracks(db: &db::Db, mpath: &PathBuf, cue_tracks: Vec<cue::CueTrack>) -> Result<()> {
     let total = cue_tracks.len();
     let progress = ProgressBar::new(total.try_into().unwrap()).with_style(
         ProgressStyle::default_bar()
@@ -310,11 +298,7 @@ pub fn analyse_new_cue_tracks(
         };
         progress.inc(1);
     }
-    progress.finish_with_message(format!(
-        "{} Analysed. {} Failure(s).",
-        analysed,
-        failed.len()
-    ));
+    progress.finish_with_message(format!("{} Analysed. {} Failure(s).", analysed, failed.len()));
     if !failed.is_empty() {
         let total = failed.len();
         failed.truncate(MAX_ERRORS_TO_SHOW);
@@ -330,13 +314,7 @@ pub fn analyse_new_cue_tracks(
     Ok(())
 }
 
-pub fn analyse_files(
-    db_path: &str,
-    mpaths: &Vec<PathBuf>,
-    dry_run: bool,
-    keep_old: bool,
-    max_num_tracks: usize,
-) {
+pub fn analyse_files(db_path: &str, mpaths: &Vec<PathBuf>, dry_run: bool, keep_old: bool, max_num_tracks: usize) {
     let mut db = db::Db::new(&String::from(db_path));
     let mut track_count_left = max_num_tracks;
 
@@ -396,10 +374,8 @@ pub fn analyse_files(
 
             if !track_paths.is_empty() {
                 match analyse_new_files(&db, &mpath, track_paths) {
-                    Ok(_) => {}
-                    Err(e) => {
-                        log::error!("Analysis returned error: {}", e);
-                    }
+                    Ok(_) => { }
+                    Err(e) => { log::error!("Analysis returned error: {}", e); }
                 }
             } else {
                 log::info!("No new tracks to analyse");
