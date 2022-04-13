@@ -1,6 +1,3 @@
-use crate::cue;
-use crate::db;
-use crate::tags;
 /**
  * Analyse music with Bliss
  *
@@ -8,6 +5,10 @@ use crate::tags;
  * GPLv3 license.
  *
  **/
+
+use crate::cue;
+use crate::db;
+use crate::tags;
 use anyhow::Result;
 use bliss_audio::{analyze_paths, BlissResult, Song};
 use hhmmss::Hhmmss;

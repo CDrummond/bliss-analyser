@@ -5,6 +5,7 @@
  * GPLv3 license.
  *
  **/
+
 extern crate rcue;
 
 use rcue::parser::parse_from_file;

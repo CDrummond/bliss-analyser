@@ -5,6 +5,7 @@
  * GPLv3 license.
  *
  **/
+
 use crate::cue;
 use crate::tags;
 use bliss_audio::{Analysis, AnalysisIndex};

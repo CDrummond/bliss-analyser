@@ -1,4 +1,3 @@
-use crate::db;
 /**
  * Analyse music with Bliss
  *
@@ -6,6 +5,8 @@ use crate::db;
  * GPLv3 license.
  *
  **/
+
+use crate::db;
 use lofty::{Accessor, AudioFile, ItemKey};
 use regex::Regex;
 use std::path::Path;
