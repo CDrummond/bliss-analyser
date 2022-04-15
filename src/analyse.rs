@@ -32,13 +32,7 @@ const MAX_ERRORS_TO_SHOW: usize = 100;
 const MAX_TAG_ERRORS_TO_SHOW: usize = 50;
 const VALID_EXTENSIONS: [&str; 5] = ["m4a", "mp3", "ogg", "flac", "opus"];
 
-fn get_file_list(
-    db: &mut db::Db,
-    mpath: &Path,
-    path: &Path,
-    track_paths: &mut Vec<String>,
-    cue_tracks: &mut Vec<cue::CueTrack>,
-) {
+fn get_file_list(db: &mut db::Db, mpath: &Path, path: &Path, track_paths: &mut Vec<String>, cue_tracks: &mut Vec<cue::CueTrack>) {
     if !path.is_dir() {
         return;
     }
@@ -52,13 +46,7 @@ fn get_file_list(
     }
 }
 
-fn check_dir_entry(
-    db: &mut db::Db,
-    mpath: &Path,
-    entry: DirEntry,
-    track_paths: &mut Vec<String>,
-    cue_tracks: &mut Vec<cue::CueTrack>,
-) {
+fn check_dir_entry(db: &mut db::Db, mpath: &Path, entry: DirEntry, track_paths: &mut Vec<String>, cue_tracks: &mut Vec<cue::CueTrack>) {
     let pb = entry.path();
     if pb.is_dir() {
         let check = pb.join(DONT_ANALYSE);
