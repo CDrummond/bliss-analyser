@@ -15,7 +15,6 @@ use std::io::Write;
 use std::path::PathBuf;
 use std::process;
 mod analyse;
-mod cue;
 mod db;
 mod tags;
 mod upload;
@@ -33,7 +32,7 @@ fn main() {
     let mut dry_run: bool = false;
     let mut task = "".to_string();
     let mut lms_host = "127.0.0.1".to_string();
-    let mut max_num_tracks: usize = 0;
+    let mut max_num_files: usize = 0;
     let mut music_paths: Vec<PathBuf> = Vec::new();
 
     match dirs::home_dir() {
@@ -60,11 +59,11 @@ fn main() {
         arg_parse.refer(&mut music_path).add_option(&["-m", "--music"], Store, &music_path_help);
         arg_parse.refer(&mut db_path).add_option(&["-d", "--db"], Store, &db_path_help);
         arg_parse.refer(&mut logging).add_option(&["-l", "--logging"], Store, &logging_help);
-        arg_parse.refer(&mut keep_old).add_option(&["-k", "--keep-old"], StoreTrue, "Don't remove tracks from DB if they don't exist (used with analyse task)");
+        arg_parse.refer(&mut keep_old).add_option(&["-k", "--keep-old"], StoreTrue, "Don't remove files from DB if they don't exist (used with analyse task)");
         arg_parse.refer(&mut dry_run).add_option(&["-r", "--dry-run"], StoreTrue, "Dry run, only show what needs to be done (used with analyse task)");
         arg_parse.refer(&mut ignore_file).add_option(&["-i", "--ignore"], Store, &ignore_file_help);
         arg_parse.refer(&mut lms_host).add_option(&["-L", "--lms"], Store, &lms_host_help);
-        arg_parse.refer(&mut max_num_tracks).add_option(&["-n", "--numtracks"], Store, "Maximum number of tracks to analyse");
+        arg_parse.refer(&mut max_num_files).add_option(&["-n", "--numfiles"], Store, "Maximum number of files to analyse");
         arg_parse.refer(&mut task).add_argument("task", Store, "Task to perform; analyse, tags, ignore, upload, stopmixer.");
         arg_parse.parse_args_or_exit();
     }
@@ -176,7 +175,7 @@ fn main() {
                 }
                 analyse::update_ignore(&db_path, &ignore_path);
             } else {
-                analyse::analyse_files(&db_path, &music_paths, dry_run, keep_old, max_num_tracks);
+                analyse::analyse_files(&db_path, &music_paths, dry_run, keep_old, max_num_files);
             }
         }
     }

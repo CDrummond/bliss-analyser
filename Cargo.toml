@@ -10,7 +10,7 @@ keywords = ["audio", "song", "similarity"]
 readme = "README.md"
 
 [dependencies]
-bliss-audio =  { git = "https://github.com/Polochon-street/bliss-rs" }
+bliss-audio = "0.5.0"
 argparse = "0.2.2"
 anyhow = "1.0.40"
 rusqlite = { version = "0.25.0", features = ["bundled"] }
@@ -24,9 +24,4 @@ regex = "1"
 substring = "1.4.5"
 ureq = "2.4.0"
 configparser = "3.0.0"
-rcue = { git = "https://github.com/gyng/rcue" }
-hhmmss = "0.1.0"
-num_cpus = "1.13.0"
-tempdir = "0.3.7"
-subprocess = "0.2.8"
 if_chain = "1.0.2"

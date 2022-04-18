@@ -6,33 +6,24 @@
  *
  **/
 
-use crate::cue;
 use crate::db;
 use crate::tags;
 use anyhow::Result;
-use bliss_audio::{analyze_paths, BlissResult, Song};
-use hhmmss::Hhmmss;
+use bliss_audio::{analyze_paths};
 use if_chain::if_chain;
 use indicatif::{ProgressBar, ProgressStyle};
-use num_cpus;
+use std::collections::HashSet;
 use std::convert::TryInto;
-use std::fs;
 use std::fs::{DirEntry, File};
 use std::io::{BufRead, BufReader};
 use std::path::{Path, PathBuf};
-use std::sync::mpsc;
-use std::sync::mpsc::{Receiver, Sender};
-use std::thread;
-use std::time::Duration;
-use subprocess::{Exec, NullFile};
-use tempdir::TempDir;
 
 const DONT_ANALYSE: &str = ".notmusic";
 const MAX_ERRORS_TO_SHOW: usize = 100;
 const MAX_TAG_ERRORS_TO_SHOW: usize = 50;
 const VALID_EXTENSIONS: [&str; 5] = ["m4a", "mp3", "ogg", "flac", "opus"];
 
-fn get_file_list(db: &mut db::Db, mpath: &Path, path: &Path, track_paths: &mut Vec<String>, cue_tracks: &mut Vec<cue::CueTrack>) {
+fn get_file_list(db: &mut db::Db, mpath: &Path, path: &Path, track_paths: &mut Vec<String>) {
     if !path.is_dir() {
         return;
     }
@@ -40,20 +31,20 @@ fn get_file_list(db: &mut db::Db, mpath: &Path, path: &Path, track_paths: &mut V
     if let Ok(items) = path.read_dir() {
         for item in items {
             if let Ok(entry) = item {
-                check_dir_entry(db, mpath, entry, track_paths, cue_tracks);
+                check_dir_entry(db, mpath, entry, track_paths);
             }
         }
     }
 }
 
-fn check_dir_entry(db: &mut db::Db, mpath: &Path, entry: DirEntry, track_paths: &mut Vec<String>, cue_tracks: &mut Vec<cue::CueTrack>) {
+fn check_dir_entry(db: &mut db::Db, mpath: &Path, entry: DirEntry, track_paths: &mut Vec<String>) {
     let pb = entry.path();
     if pb.is_dir() {
         let check = pb.join(DONT_ANALYSE);
         if check.exists() {
             log::info!("Skipping '{}', found '{}'", pb.to_string_lossy(), DONT_ANALYSE);
         } else {
-            get_file_list(db, mpath, &pb, track_paths, cue_tracks);
+            get_file_list(db, mpath, &pb, track_paths);
         }
     } else if pb.is_file() {
         if_chain! {
@@ -62,24 +53,21 @@ fn check_dir_entry(db: &mut db::Db, mpath: &Path, entry: DirEntry, track_paths: 
             if VALID_EXTENSIONS.contains(&&*ext);
             if let Ok(stripped) = pb.strip_prefix(mpath);
             then {
+                let sname = String::from(stripped.to_string_lossy());
                 let mut cue_file = pb.clone();
                 cue_file.set_extension("cue");
                 if cue_file.exists() {
-                    // Found a CUE file, try to parse and then check if tracks exists in DB
-                    let this_cue_tracks = cue::parse(&pb, &cue_file);
-                    for track in this_cue_tracks {
-                        if let Ok(tstripped) = track.track_path.strip_prefix(mpath) {
-                            let sname = String::from(tstripped.to_string_lossy());
-
-                            if let Ok(id) = db.get_rowid(&sname) {
-                                if id<=0 {
-                                    cue_tracks.push(track);
-                                }
-                            }
+                    // For cue files, check if first track is in DB
+                    let mut track_path = pb.clone();
+                    let ext = pb.extension().unwrap().to_string_lossy();
+                    track_path.set_extension(format!("{}{}1", ext, db::CUE_MARKER));
+                    let db_track = String::from(track_path.to_string_lossy());
+                    if let Ok(id) = db.get_rowid(&db_track) {
+                        if id<=0 {
+                            track_paths.push(String::from(cue_file.to_string_lossy()));
                         }
                     }
                 } else {
-                    let sname = String::from(stripped.to_string_lossy());
                     if let Ok(id) = db.get_rowid(&sname) {
                         if id<=0 {
                             track_paths.push(String::from(pb.to_string_lossy()));
@@ -102,41 +90,86 @@ pub fn analyse_new_files(db: &db::Db, mpath: &PathBuf, track_paths: Vec<String>)
     let mut analysed = 0;
     let mut failed: Vec<String> = Vec::new();
     let mut tag_error: Vec<String> = Vec::new();
+    let mut reported_cue:HashSet<String> = HashSet::new();
 
-    log::info!("Analysing new tracks");
+    log::info!("Analysing new files");
     for (path, result) in analyze_paths(track_paths) {
         let pbuff = PathBuf::from(&path);
         let stripped = pbuff.strip_prefix(mpath).unwrap();
         let spbuff = stripped.to_path_buf();
         let sname = String::from(spbuff.to_string_lossy());
         progress.set_message(format!("{}", sname));
+        let mut inc_progress = true; // Only want to increment progress once for cue tracks
         match result {
             Ok(track) => {
                 let cpath = String::from(path);
-                let meta = tags::read(&cpath);
-                if meta.is_empty() {
-                    tag_error.push(sname.clone());
-                }
+                match track.cue_info {
+                    Some(cue) => {
+                        match track.track_number {
+                            Some(track_num) => {
+                                let t_num = track_num.parse::<i32>().unwrap();
+                                if reported_cue.contains(&cpath) {
+                                    inc_progress = false;
+                                } else {
+                                    analysed += 1;
+                                    reported_cue.insert(cpath);
+                                }
+                                let meta = db::Metadata {
+                                    title: track.title.unwrap_or_default().to_string(),
+                                    artist: track.artist.unwrap_or_default().to_string(),
+                                    album: track.album.unwrap_or_default().to_string(),
+                                    album_artist: track.album_artist.unwrap_or_default().to_string(),
+                                    genre: track.genre.unwrap_or_default().to_string(),
+                                    duration: track.duration.as_secs() as u32
+                                };
 
-                db.add_track(&sname, &meta, &track.analysis);
-                analysed += 1;
+                                // Remove prefix from audio_file_path
+                                let pbuff = PathBuf::from(&cue.audio_file_path);
+                                let stripped = pbuff.strip_prefix(mpath).unwrap();
+                                let spbuff = stripped.to_path_buf();
+                                let sname = String::from(spbuff.to_string_lossy());
+
+                                let db_path = format!("{}{}{}", sname, db::CUE_MARKER, t_num);
+                                db.add_track(&db_path, &meta, &track.analysis);
+                            }
+                            None => { failed.push(format!("{} - No track number?", sname)); }
+                        }
+                    }
+                    None => {
+                        // Use lofty to read tags here, and not bliss's, so that if update
+                        // tags is ever used they are from the same source.
+                        let mut meta = tags::read(&cpath);
+                        if meta.is_empty() {
+                            // Lofty failed? Try from bliss...
+                            meta.title = track.title.unwrap_or_default().to_string();
+                            meta.artist = track.artist.unwrap_or_default().to_string();
+                            meta.album = track.album.unwrap_or_default().to_string();
+                            meta.album_artist = track.album_artist.unwrap_or_default().to_string();
+                            meta.genre = track.genre.unwrap_or_default().to_string();
+                            meta.duration = track.duration.as_secs() as u32;
+                        }
+                        if meta.is_empty() {
+                            tag_error.push(sname.clone());
+                        }
+                        db.add_track(&sname, &meta, &track.analysis);
+                        analysed += 1;
+                    }
+                }
             }
             Err(e) => { failed.push(format!("{} - {}", sname, e)); }
         };
 
-        progress.inc(1);
+        if inc_progress {
+            progress.inc(1);
+        }
     }
 
-    progress.finish_with_message(format!(
-        "{} Analysed. {} Failure(s).",
-        analysed,
-        failed.len()
-    ));
+    progress.finish_with_message(format!("{} Analysed. {} Failure(s).", analysed, failed.len()));
     if !failed.is_empty() {
         let total = failed.len();
         failed.truncate(MAX_ERRORS_TO_SHOW);
 
-        log::error!("Failed to analyse the following track(s):");
+        log::error!("Failed to analyse the following file(s):");
         for err in failed {
             log::error!("  {}", err);
         }
@@ -148,155 +181,12 @@ pub fn analyse_new_files(db: &db::Db, mpath: &PathBuf, track_paths: Vec<String>)
         let total = tag_error.len();
         tag_error.truncate(MAX_TAG_ERRORS_TO_SHOW);
 
-        log::error!("Failed to read tags of the following track(s):");
+        log::error!("Failed to read tags of the following file(s):");
         for err in tag_error {
             log::error!("  {}", err);
         }
         if total > MAX_TAG_ERRORS_TO_SHOW {
             log::error!("  + {} other(s)", total - MAX_TAG_ERRORS_TO_SHOW);
-        }
-    }
-    Ok(())
-}
-
-pub fn analyze_cue_tracks(tracks: Vec<cue::CueTrack>) -> mpsc::IntoIter<(cue::CueTrack, BlissResult<Song>)> {
-    let num_cpus = num_cpus::get();
-    let last_track_duration = Duration::new(cue::LAST_TRACK_DURATION, 0);
-
-    #[allow(clippy::type_complexity)]
-    let (tx, rx): (
-        Sender<(cue::CueTrack, BlissResult<Song>)>,
-        Receiver<(cue::CueTrack, BlissResult<Song>)>,
-    ) = mpsc::channel();
-    if tracks.is_empty() {
-        return rx.into_iter();
-    }
-
-    let mut handles = Vec::new();
-    let mut chunk_length = tracks.len() / num_cpus;
-    if chunk_length == 0 {
-        chunk_length = tracks.len();
-    } else if chunk_length == 1 && tracks.len() > num_cpus {
-        chunk_length = 2;
-    }
-
-    for chunk in tracks.chunks(chunk_length) {
-        let tx_thread = tx.clone();
-        let owned_chunk = chunk.to_owned();
-        let child = thread::spawn(move || {
-            let dir = TempDir::new("bliss");
-            if let Err(e) = dir {
-                log::error!("Failed to create temp folder. {}", e);
-                return;
-            }
-
-            let mut idx = 0;
-            let dir = dir.unwrap();
-            for mut cue_track in owned_chunk {
-                let audio_path = String::from(cue_track.audio_path.to_string_lossy());
-                let ext = cue_track.audio_path.extension();
-                let track_path = String::from(cue_track.track_path.to_string_lossy());
-                let mut tmp_file = PathBuf::from(dir.path());
-                if ext.is_some() {
-                    tmp_file.push(format!("{}.{}", idx, ext.unwrap().to_string_lossy()));
-                } else {
-                    tmp_file.push(format!("{}.flac", idx));
-                }
-                idx += 1;
-
-                log::debug!("Extracting '{}'", track_path);
-                let cmd = Exec::cmd("ffmpeg")
-                    .arg("-i")
-                    .arg(&audio_path)
-                    .arg("-ss")
-                    .arg(&cue_track.start.hhmmss())
-                    .arg("-t")
-                    .arg(&cue_track.duration.hhmmss())
-                    .arg("-c")
-                    .arg("copy")
-                    .arg(String::from(tmp_file.to_string_lossy()))
-                    .stderr(NullFile)
-                    .join();
-
-                if let Err(e) = cmd {
-                    log::error!("Failed to call ffmpeg. {}", e);
-                }
-
-                if !cfg!(windows) {
-                    // ffmpeg seeks to break echo on terminal? 'stty echo' restores...
-                    let _ = Exec::cmd("stty").arg("echo").join();
-                }
-
-                if tmp_file.exists() {
-                    log::debug!("Analyzing '{}'", track_path);
-                    let song = Song::from_path(&tmp_file);
-                    if cue_track.duration >= last_track_duration {
-                        // Last track, so read duration from temp file
-                        let meta = tags::read(&String::from(tmp_file.to_string_lossy()));
-                        cue_track.duration = Duration::new(meta.duration as u64, 0);
-                    }
-
-                    tx_thread.send((cue_track, song)).unwrap();
-                    let _ = fs::remove_file(tmp_file);
-                } else {
-                    log::error!("Failed to create temp file");
-                }
-            }
-        });
-        handles.push(child);
-    }
-
-    rx.into_iter()
-}
-
-pub fn analyse_new_cue_tracks(db: &db::Db, mpath: &PathBuf, cue_tracks: Vec<cue::CueTrack>) -> Result<()> {
-    let total = cue_tracks.len();
-    let progress = ProgressBar::new(total.try_into().unwrap()).with_style(
-        ProgressStyle::default_bar()
-            .template("[{elapsed_precise}] [{bar:25}] {percent:>3}% {pos:>6}/{len:6} {wide_msg}")
-            .progress_chars("=> "),
-    );
-
-    let mut analysed = 0;
-    let mut failed: Vec<String> = Vec::new();
-
-    log::info!("Analysing new cue tracks");
-    for (track, result) in analyze_cue_tracks(cue_tracks) {
-        let stripped = track.track_path.strip_prefix(mpath).unwrap();
-        let spbuff = stripped.to_path_buf();
-        let sname = String::from(spbuff.to_string_lossy());
-        progress.set_message(format!("{}", sname));
-        match result {
-            Ok(song) => {
-                let meta = db::Metadata {
-                    title: track.title,
-                    artist: track.artist,
-                    album_artist: track.album_artist,
-                    album: track.album,
-                    genre: track.genre,
-                    duration: track.duration.as_secs() as u32,
-                };
-
-                db.add_track(&sname, &meta, &song.analysis);
-                analysed += 1;
-            }
-            Err(e) => {
-                failed.push(format!("{} - {}", sname, e));
-            }
-        };
-        progress.inc(1);
-    }
-    progress.finish_with_message(format!("{} Analysed. {} Failure(s).", analysed, failed.len()));
-    if !failed.is_empty() {
-        let total = failed.len();
-        failed.truncate(MAX_ERRORS_TO_SHOW);
-
-        log::error!("Failed to analyse the following track(s):");
-        for err in failed {
-            log::error!("  {}", err);
-        }
-        if total > MAX_ERRORS_TO_SHOW {
-            log::error!("  + {} other(s)", total - MAX_ERRORS_TO_SHOW);
         }
     }
     Ok(())
@@ -316,48 +206,30 @@ pub fn analyse_files(db_path: &str, mpaths: &Vec<PathBuf>, dry_run: bool, keep_o
         let mpath = path.clone();
         let cur = path.clone();
         let mut track_paths: Vec<String> = Vec::new();
-        let mut cue_tracks: Vec<cue::CueTrack> = Vec::new();
 
         if mpaths.len() > 1 {
-            log::info!("Looking for new tracks in {}", mpath.to_string_lossy());
+            log::info!("Looking for new files in {}", mpath.to_string_lossy());
         } else {
-            log::info!("Looking for new tracks");
+            log::info!("Looking for new files");
         }
-        get_file_list(&mut db, &mpath, &cur, &mut track_paths, &mut cue_tracks);
+        get_file_list(&mut db, &mpath, &cur, &mut track_paths);
         track_paths.sort();
-        log::info!("Num new tracks: {}", track_paths.len());
-        if !cue_tracks.is_empty() {
-            log::info!("Num new cue tracks: {}", cue_tracks.len());
-        }
+        log::info!("Num new files: {}", track_paths.len());
 
         if dry_run {
-            if !track_paths.is_empty() || !cue_tracks.is_empty() {
+            if !track_paths.is_empty() {
                 log::info!("The following need to be analysed:");
                 for track in track_paths {
                     log::info!("  {}", track);
-                }
-                for track in cue_tracks {
-                    log::info!("  {}", track.track_path.to_string_lossy());
                 }
             }
         } else {
             if max_num_tracks > 0 {
                 if track_paths.len() > track_count_left {
-                    log::info!("Only analysing {} tracks", track_count_left);
+                    log::info!("Only analysing {} files", track_count_left);
                     track_paths.truncate(track_count_left);
                 }
                 track_count_left -= track_paths.len();
-            }
-            if max_num_tracks > 0 {
-                if track_count_left == 0 {
-                    cue_tracks.clear();
-                } else {
-                    if cue_tracks.len() > track_count_left {
-                        log::info!("Only analysing {} cue tracks", track_count_left);
-                        cue_tracks.truncate(track_count_left);
-                    }
-                    track_count_left -= track_paths.len();
-                }
             }
 
             if !track_paths.is_empty() {
@@ -366,17 +238,11 @@ pub fn analyse_files(db_path: &str, mpaths: &Vec<PathBuf>, dry_run: bool, keep_o
                     Err(e) => { log::error!("Analysis returned error: {}", e); }
                 }
             } else {
-                log::info!("No new tracks to analyse");
-            }
-
-            if !cue_tracks.is_empty() {
-                if let Err(e) = analyse_new_cue_tracks(&db, &mpath, cue_tracks) {
-                    log::error!("Cue analysis returned error: {}", e);
-                }
+                log::info!("No new files to analyse");
             }
 
             if max_num_tracks > 0 && track_count_left <= 0 {
-                log::info!("Track limit reached");
+                log::info!("File limit reached");
                 break;
             }
         }

@@ -6,7 +6,6 @@
  *
  **/
 
-use crate::cue;
 use crate::tags;
 use bliss_audio::{Analysis, AnalysisIndex};
 use indicatif::{ProgressBar, ProgressStyle};
@@ -14,6 +13,8 @@ use rusqlite::{params, Connection};
 use std::convert::TryInto;
 use std::path::PathBuf;
 use std::process;
+
+pub const CUE_MARKER: &str = ".CUE_TRACK.";
 
 pub struct FileMetadata {
     pub rowid: usize,
@@ -173,7 +174,7 @@ impl Db {
         for tr in track_iter {
             let mut db_path: String = tr.unwrap().0;
             let orig_path = db_path.clone();
-            match orig_path.find(cue::MARKER) {
+            match orig_path.find(CUE_MARKER) {
                 Some(s) => {
                     db_path.truncate(s);
                 }
@@ -266,7 +267,7 @@ impl Db {
             let mut updated = 0;
             for tr in track_iter {
                 let dbtags = tr.unwrap();
-                if !dbtags.file.contains(cue::MARKER) {
+                if !dbtags.file.contains(CUE_MARKER) {
                     let dtags = Metadata {
                         title: dbtags.title.unwrap_or_default(),
                         artist: dbtags.artist.unwrap_or_default(),
