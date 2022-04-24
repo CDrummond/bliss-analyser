@@ -98,7 +98,6 @@ jobs:
         mkdir releases
         cp target/release/bliss-analyser.exe releases/bliss-analyser.exe
         cp deps/bin/*.dll releases/
-        cp deps/bin/ffmpeg.exe releases/
         cp UserGuide.md releases/README.md
         cp LICENSE releases/
         cp configs/windows.ini releases/config.ini
