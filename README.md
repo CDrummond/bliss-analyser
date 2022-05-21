@@ -16,6 +16,11 @@ To install dependencies on a Debian system:
 apt install -y clang libavcodec-dev libavformat-dev libavutil-dev libavfilter-dev libavdevice-dev pkg-config
 ```
 
+To install dependencies on a Fedora system:
+```
+dnf install ffmpeg-devel clang pkg-config
+```
+
 Build with `cargo build --release`
 
 
