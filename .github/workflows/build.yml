@@ -7,7 +7,7 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  Linux (ffmpeg4):
+  Linux_ffmpeg4:
     runs-on: ubuntu-20.04
 
     steps:
@@ -33,7 +33,7 @@ jobs:
         name: bliss-analyser-linux-x86-ffmpeg4
         path: releases/
 
-  Linux (ffmpeg5):
+  Linux_ffmpeg5:
     runs-on: ubuntu-20.04
 
     steps:
