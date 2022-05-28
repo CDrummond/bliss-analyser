@@ -1,6 +1,7 @@
 0.2.1
 -----
 1. Update version of tag reader library.
+2. Fix checking if CUE already analysed.
 
 0.2.0
 -----
