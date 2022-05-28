@@ -61,16 +61,13 @@ fn check_dir_entry(db: &mut db::Db, mpath: &Path, entry: DirEntry, track_paths: 
                     let mut cue_track_path = pb.clone();
                     let ext = pb.extension().unwrap().to_string_lossy();
                     cue_track_path.set_extension(format!("{}{}1", ext, db::CUE_MARKER));
-                    match cue_track_path.strip_prefix(mpath) {
-                        Ok(cue_track_stripped) => {
-                            let cue_track_sname = String::from(cue_track_stripped.to_string_lossy());
-                            if let Ok(id) = db.get_rowid(&cue_track_sname) {
-                                if id<=0 {
-                                    track_paths.push(String::from(cue_file.to_string_lossy()));
-                                }
+                    if let Ok(cue_track_stripped) = cue_track_path.strip_prefix(mpath) {
+                        let cue_track_sname = String::from(cue_track_stripped.to_string_lossy());
+                        if let Ok(id) = db.get_rowid(&cue_track_sname) {
+                            if id<=0 {
+                                track_paths.push(String::from(cue_file.to_string_lossy()));
                             }
                         }
-                        Err(_) => { }
                     }
                 } else {
                     if let Ok(id) = db.get_rowid(&sname) {
