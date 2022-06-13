@@ -1,5 +1,3 @@
-cargo-features = ["edition2021"]
-
 [package]
 name = "bliss-analyser"
 version = "0.2.1"

@@ -66,6 +66,12 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v1
 
+    - name: Enable 2021 edition
+      run: |
+        echo 'cargo-features = ["edition2021"]' > /tmp/bliss-analyser-Cargo.toml
+        cat Cargo.toml >> /tmp/bliss-analyser-Cargo.toml
+        mv /tmp/bliss-analyser-Cargo.toml Cargo.toml
+
     - name: Build
       run: |
         docker run --rm -v $(pwd):/source dlecan/rust-crosscompiler-arm:stable
