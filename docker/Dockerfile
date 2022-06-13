@@ -12,7 +12,6 @@ RUN apt-get install -y curl git build-essential gcc-multilib musl-tools musl-dev
 
 RUN curl https://sh.rustup.rs -sSf | sh -s -- -y
 ENV PATH="/root/.cargo/bin/:${PATH}"
-RUN rustup default nightly && rustup update
 RUN rustup target add aarch64-unknown-linux-gnu && \
     rustup target add arm-unknown-linux-gnueabihf
 
