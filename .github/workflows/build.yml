@@ -59,23 +59,37 @@ jobs:
         name: bliss-analyser-linux-x86-ffmpeg5
         path: releases/
 
-  Linux_ARM:
+  Linux_ARM64:
     runs-on: ubuntu-20.04
 
     steps:
     - name: Checkout
-      uses: actions/checkout@v1
+      uses: actions/checkout@v2
 
     - name: Build
-      run: |
-        docker run --rm -v $(pwd):/source dlecan/rust-crosscompiler-arm:stable
-        docker build -t bliss-analyser-cross - < docker/Dockerfile
-        docker run --rm -v $PWD/target:/build -v $PWD:/src bliss-analyser-cross
+      uses: uraimo/run-on-arch-action@v2.1.1
+      with:
+        arch: aarch64
+        distro: ubuntu20.04
+
+        # Not required, but speeds up builds by storing container images in a GitHub package registry.
+        githubToken: ${{ github.token }}
+
+        install: |
+          sudo apt-get update && sudo apt-get install build-essential yasm libavutil-dev libavcodec-dev libavformat-dev libavfilter-dev libavdevice-dev libswresample-dev libfftw3-dev ffmpeg -y
+        run: |
+          cargo build --release
+          strip target/release/bliss-analyser
+          mkdir releases
+          cp target/release/bliss-analyser releases/bliss-analyser
+          cp UserGuide.md releases/README.md
+          cp LICENSE releases/
+          cp configs/linux.ini releases/config.ini
 
     - name: Upload artifacts
       uses: actions/upload-artifact@v2
       with:
-        name: bliss-analyser-linux-arm
+        name: bliss-analyser-linux-arm64
         path: releases/
 
   macOS:
