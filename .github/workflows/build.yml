@@ -66,6 +66,10 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v1
 
+    - name: Docker setup
+      run: |
+        docker run --rm -v $(pwd):/source dlecan/rust-crosscompiler-arm:stable
+
     - name: Enable 2021 edition
       run: |
         echo 'cargo-features = ["edition2021"]' > /tmp/bliss-analyser-Cargo.toml
@@ -74,7 +78,6 @@ jobs:
 
     - name: Build
       run: |
-        docker run --rm -v $(pwd):/source dlecan/rust-crosscompiler-arm:nightly
         docker build -t bliss-analyser-cross - < docker/Dockerfile
         docker run --rm -v $PWD/target:/build -v $PWD:/src bliss-analyser-cross
 
