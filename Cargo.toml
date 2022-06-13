@@ -3,6 +3,7 @@ name = "bliss-analyser"
 version = "0.2.1"
 authors = ["Craig Drummond <craig.p.drummond@gmail.com>"]
 edition = "2018"
+cargo-features = ["edition2021"]
 license = "GPL-3.0-only"
 description = "Analyse audio files with bliss-rs"
 repository = "https://github.com/CDrummond/bliss-analyser"
