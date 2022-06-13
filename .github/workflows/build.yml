@@ -74,7 +74,7 @@ jobs:
 
     - name: Build
       run: |
-        docker run --rm -v $(pwd):/source dlecan/rust-crosscompiler-arm:stable
+        docker run --rm -v $(pwd):/source dlecan/rust-crosscompiler-arm:nightly
         docker build -t bliss-analyser-cross - < docker/Dockerfile
         docker run --rm -v $PWD/target:/build -v $PWD:/src bliss-analyser-cross
 
