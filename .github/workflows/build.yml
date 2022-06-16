@@ -75,8 +75,6 @@ jobs:
         install: |
           apt-get update && apt-get install build-essential yasm libavutil-dev libavcodec-dev libavformat-dev libavfilter-dev libavdevice-dev libswresample-dev libfftw3-dev ffmpeg wget -y
         run: |
-          mkdir ~/.cargo
-          sudo mount -t tmpfs -o size=2048m tmpfs ~/.cargo
           wget https://static.rust-lang.org/rustup/dist/aarch64-unknown-linux-gnu/rustup-init
           chmod +x rustup-init
           ./rustup-init -y
