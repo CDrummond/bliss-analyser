@@ -70,7 +70,7 @@ jobs:
       uses: uraimo/run-on-arch-action@v2.2.0
       with:
         arch: aarch64
-        distro: ubuntu20.04
+        distro: bullseye
 
         # Not required, but speeds up builds by storing container images in a GitHub package registry.
         githubToken: ${{ github.token }}
