@@ -76,7 +76,7 @@ jobs:
         githubToken: ${{ github.token }}
 
         install: |
-          sudo apt-get update && sudo apt-get install build-essential yasm libavutil-dev libavcodec-dev libavformat-dev libavfilter-dev libavdevice-dev libswresample-dev libfftw3-dev ffmpeg -y
+          apt-get update && apt-get install cargo build-essential yasm libavutil-dev libavcodec-dev libavformat-dev libavfilter-dev libavdevice-dev libswresample-dev libfftw3-dev ffmpeg -y
         run: |
           cargo build --release
           strip target/release/bliss-analyser
