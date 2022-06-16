@@ -76,8 +76,11 @@ jobs:
         githubToken: ${{ github.token }}
 
         install: |
-          apt-get update && apt-get install cargo build-essential yasm libavutil-dev libavcodec-dev libavformat-dev libavfilter-dev libavdevice-dev libswresample-dev libfftw3-dev ffmpeg -y
+          apt-get update && apt-get install build-essential yasm libavutil-dev libavcodec-dev libavformat-dev libavfilter-dev libavdevice-dev libswresample-dev libfftw3-dev ffmpeg wget -y
         run: |
+          wget https://static.rust-lang.org/rustup/dist/aarch64-unknown-linux-gnu/rustup-init
+          chmod +x rustup-init
+          ./rustup-init -y
           cargo build --release
           strip target/release/bliss-analyser
           mkdir releases
