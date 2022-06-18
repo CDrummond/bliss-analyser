@@ -1,14 +1,19 @@
 # Cross compilation environment for bliss-mixer
 
-FROM debian:stretch
+FROM debian:bullseye
 
 RUN dpkg --add-architecture arm64 && \
     dpkg --add-architecture armhf
 RUN apt-get update
 
-RUN apt-get install -y curl git build-essential gcc-multilib musl-tools musl-dev musl && \
-    apt-get install -y yasm libavutil-dev libavcodec-dev libavformat-dev libavfilter-dev libavdevice-dev libswresample-dev libfftw3-dev ffmpeg && \
-    apt-get install -y crossbuild-essential-armhf crossbuild-essential-arm64
+RUN apt-get install -y curl git pkg-config yasm
+RUN apt-get install -y crossbuild-essential-armhf crossbuild-essential-arm64
+
+RUN apt-get install -y libavutil-dev:arm64 libavcodec-dev:arm64 libavformat-dev:arm64 \
+                       libavfilter-dev:arm64 libavdevice-dev:arm64 libswresample-dev:arm64 libfftw3-dev:arm64
+
+RUN apt-get install -y libavutil-dev:armhf libavcodec-dev:armhf libavformat-dev:armhf \
+                       libavfilter-dev:armhf libavdevice-dev:armhf libswresample-dev:armhf libfftw3-dev:armhf
 
 RUN curl https://sh.rustup.rs -sSf | sh -s -- -y
 ENV PATH="/root/.cargo/bin/:${PATH}"
@@ -27,3 +32,4 @@ RUN mkdir /src
 
 WORKDIR /src
 CMD ["/src/docker/docker-build.sh"]
+
