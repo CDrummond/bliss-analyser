@@ -78,7 +78,7 @@ def make_executable(version):
             os.chdir(td)
             subprocess.call(["chmod", "a+x", "%s/bliss-analyser" % td], shell=False)
             if a == "bliss-analyser-linux-arm":
-                subprocess.call(["chmod", "a+x", "%s/bliss-analyser/bin/bliss-analyser-armhf" % td, "%s/bliss-analyser/bin/bliss-analyser-aarch64" % td], shell=False)
+                subprocess.call(["chmod", "a+x", "%s/bin/bliss-analyser-armhf" % td, "%s/bin/bliss-analyser-aarch64" % td], shell=False)
             shutil.make_archive("%s/%s-%s" % (cwd, a, version), "zip")
             os.chdir(cwd)
 
