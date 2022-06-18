@@ -7,6 +7,7 @@ RUN dpkg --add-architecture arm64 && \
 RUN apt-get update
 
 RUN apt-get install -y curl git pkg-config yasm
+RUN apt-get install -y build-essential clang
 RUN apt-get install -y crossbuild-essential-armhf crossbuild-essential-arm64
 
 RUN apt-get install -y libavutil-dev:arm64 libavcodec-dev:arm64 libavformat-dev:arm64 \
