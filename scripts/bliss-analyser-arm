@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+
+ARCH=`arch`
+SCRIPT_DIR="$( cd -- "$( dirname -- "${BASH_SOURCE[0]:-$0}"; )" &> /dev/null && pwd 2> /dev/null; )";
+
+if [ "$ARCH" = "aarch64" ] ; then
+    $SCRIPT_DIR/aarch64/bliss-analyser $*
+else
+    $SCRIPT_DIR/armhf/bliss-analyser $*
+fi
