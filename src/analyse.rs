@@ -58,13 +58,15 @@ fn check_dir_entry(db: &mut db::Db, mpath: &Path, entry: DirEntry, track_paths: 
                 cue_file.set_extension("cue");
                 if cue_file.exists() {
                     // For cue files, check if first track is in DB
-                    let mut track_path = pb.clone();
+                    let mut cue_track_path = pb.clone();
                     let ext = pb.extension().unwrap().to_string_lossy();
-                    track_path.set_extension(format!("{}{}1", ext, db::CUE_MARKER));
-                    let db_track = String::from(track_path.to_string_lossy());
-                    if let Ok(id) = db.get_rowid(&db_track) {
-                        if id<=0 {
-                            track_paths.push(String::from(cue_file.to_string_lossy()));
+                    cue_track_path.set_extension(format!("{}{}1", ext, db::CUE_MARKER));
+                    if let Ok(cue_track_stripped) = cue_track_path.strip_prefix(mpath) {
+                        let cue_track_sname = String::from(cue_track_stripped.to_string_lossy());
+                        if let Ok(id) = db.get_rowid(&cue_track_sname) {
+                            if id<=0 {
+                                track_paths.push(String::from(cue_file.to_string_lossy()));
+                            }
                         }
                     }
                 } else {
