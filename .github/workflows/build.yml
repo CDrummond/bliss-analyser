@@ -71,10 +71,6 @@ jobs:
       run: |
         docker build -t bliss-analyser-cross - < docker/Dockerfile
         docker run --rm -v $PWD/target:/build -v $PWD:/src bliss-analyser-cross
-        cp UserGuide.md releases/README.md
-        cp LICENSE releases/
-        cp configs/linux.ini releases/config.ini
-        cp scripts/bliss-analyser-arm releases/bliss-analyser
 
     - name: Upload artifacts
       uses: actions/upload-artifact@v2

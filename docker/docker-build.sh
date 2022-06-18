@@ -23,3 +23,7 @@ function build {
 build arm-unknown-linux-gnueabihf arm-linux-gnueabihf-strip bin/bliss-analyser-armhf
 build aarch64-unknown-linux-gnu aarch64-linux-gnu-strip bin/bliss-analyser-aarch64
 
+cp UserGuide.md $DESTDIR/README.md
+cp LICENSE $DESTDIR/
+cp configs/linux.ini $DESTDIR/config.ini
+cp scripts/bliss-analyser-arm $DESTDIR/bliss-analyser
