@@ -4,7 +4,7 @@ ARCH=`arch`
 SCRIPT_DIR="$( cd -- "$( dirname -- "${BASH_SOURCE[0]:-$0}"; )" &> /dev/null && pwd 2> /dev/null; )";
 
 if [ "$ARCH" = "aarch64" ] ; then
-    $SCRIPT_DIR/aarch64/bliss-analyser $*
+    $SCRIPT_DIR/bin/bliss-analyser-aarch64 $*
 else
-    $SCRIPT_DIR/armhf/bliss-analyser $*
+    $SCRIPT_DIR/bin/bliss-analyser-armhf $*
 fi
