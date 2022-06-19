@@ -166,7 +166,8 @@ pub fn analyse_new_files(db: &db::Db, mpath: &PathBuf, track_paths: Vec<String>)
         }
     }
 
-    progress.finish_with_message(format!("{} Analysed. {} Failure(s).", analysed, failed.len()));
+    progress.finish_with_message("Finished!");
+    log::info!("{} Analysed. {} Failure(s).", analysed, failed.len());
     if !failed.is_empty() {
         let total = failed.len();
         failed.truncate(MAX_ERRORS_TO_SHOW);
