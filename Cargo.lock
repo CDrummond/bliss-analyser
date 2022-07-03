@@ -113,7 +113,7 @@ dependencies = [
 
 [[package]]
 name = "bliss-analyser"
-version = "0.2.1"
+version = "0.2.2"
 dependencies = [
  "anyhow",
  "argparse",
@@ -695,9 +695,9 @@ dependencies = [
 
 [[package]]
 name = "lofty"
-version = "0.6.3"
+version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9e09702a8eff21fa1cf105d189d8eea3609d7074ab1503d7c49d5b37b7403a65"
+checksum = "3f4e4309226629ef3486925c6a1b346241abeb30758e307b3ca9cfd66587bf4f"
 dependencies = [
  "base64",
  "byteorder",
