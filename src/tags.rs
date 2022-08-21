@@ -32,8 +32,8 @@ pub fn read(track: &String) -> db::Metadata {
         meta.album_artist = tag.get_string(&ItemKey::AlbumArtist).unwrap_or_default().to_string();
         meta.genre = tag.genre().unwrap_or_default().to_string();
 
-        // Check whether MP3 as numeric genre, and if so covert to text
-        if file.file_type().eq(&lofty::FileType::MP3) {
+        // Check whether MP3 has numeric genre, and if so covert to text
+        if file.file_type().eq(&lofty::FileType::MPEG) {
             match tag.genre() {
                 Some(genre) => {
                     let test = genre.parse::<u8>();
