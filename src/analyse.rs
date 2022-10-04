@@ -96,15 +96,14 @@ pub fn analyse_new_files(db: &db::Db, mpath: &PathBuf, track_paths: Vec<String>)
 
     log::info!("Analysing new files");
     for (path, result) in analyze_paths(track_paths) {
-        let pbuff = PathBuf::from(&path);
-        let stripped = pbuff.strip_prefix(mpath).unwrap();
+        let stripped = path.strip_prefix(mpath).unwrap();
         let spbuff = stripped.to_path_buf();
         let sname = String::from(spbuff.to_string_lossy());
         progress.set_message(format!("{}", sname));
         let mut inc_progress = true; // Only want to increment progress once for cue tracks
         match result {
             Ok(track) => {
-                let cpath = String::from(path);
+                let cpath = String::from(path.to_string_lossy());
                 match track.cue_info {
                     Some(cue) => {
                         match track.track_number {

@@ -10,14 +10,14 @@ keywords = ["audio", "song", "similarity"]
 readme = "README.md"
 
 [dependencies]
-bliss-audio = "0.5.0"
+bliss-audio = { version = "0.6.3", features = [] }
 argparse = "0.2.2"
 anyhow = "1.0.40"
 rusqlite = { version = "0.25.0", features = ["bundled"] }
 log = "0.4.14"
 env_logger = "0.8.4"
 indicatif = "0.16.2"
-lofty = "0.8.0"
+lofty = "0.8.1"
 dirs = "1"
 chrono = "0.4.19"
 regex = "1"

@@ -134,9 +134,9 @@ dependencies = [
 
 [[package]]
 name = "bliss-audio"
-version = "0.5.0"
+version = "0.6.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "947fa29cb8c27448497bdbcbab05a9eb3c1f046a5efd7b684060a6dc587bb761"
+checksum = "f05a136c054403433994ddfc5348ca978d045c855efa2452ba5358b109e98be2"
 dependencies = [
  "bliss-audio-aubio-rs",
  "crossbeam",
@@ -454,9 +454,9 @@ checksum = "7360491ce676a36bf9bb3c56c1aa791658183a54d2744120f27285738d90465a"
 
 [[package]]
 name = "ffmpeg-next"
-version = "5.0.2"
+version = "5.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "70a1fc87054b079ade0b081b023c5fef309cd4bbcb569c09eed2aa39b25a0a11"
+checksum = "a80971eee67be0079a1c8890bde68226fe9bd0441740fd6ddd0cee131486b321"
 dependencies = [
  "bitflags",
  "ffmpeg-sys-next",
@@ -465,9 +465,9 @@ dependencies = [
 
 [[package]]
 name = "ffmpeg-sys-next"
-version = "5.0.1"
+version = "5.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6ba12dea33516e30c160ce557c7e43dd857276368eb1cd0eef4fce6529f2dee5"
+checksum = "d780b36e092254367e2f1f21191992735c8e23f31a5a5a8678db3a79f775021f"
 dependencies = [
  "bindgen",
  "cc",
@@ -693,9 +693,9 @@ dependencies = [
 
 [[package]]
 name = "lofty"
-version = "0.8.0"
+version = "0.8.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "29fa9dc7a42e1a9025c7514630f6b70418ef7446028ed30d8afe8ed2e80ebf19"
+checksum = "863330a778316906983c07e225026b643b170502a96709dbfe6e6168bce53084"
 dependencies = [
  "base64",
  "byteorder",
