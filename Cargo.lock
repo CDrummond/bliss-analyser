@@ -134,9 +134,9 @@ dependencies = [
 
 [[package]]
 name = "bliss-audio"
-version = "0.6.3"
+version = "0.6.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f05a136c054403433994ddfc5348ca978d045c855efa2452ba5358b109e98be2"
+checksum = "613c60447405cd2639c1525fddcdf259b99dfa2e083178b4594ad15db78b50cf"
 dependencies = [
  "bliss-audio-aubio-rs",
  "crossbeam",

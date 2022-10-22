@@ -10,7 +10,7 @@ keywords = ["audio", "song", "similarity"]
 readme = "README.md"
 
 [dependencies]
-bliss-audio = { version = "0.6.3", features = [] }
+bliss-audio = { version = "0.6.5", features = [] }
 argparse = "0.2.2"
 anyhow = "1.0.40"
 rusqlite = { version = "0.25.0", features = ["bundled"] }
