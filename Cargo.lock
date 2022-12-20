@@ -693,15 +693,16 @@ dependencies = [
 
 [[package]]
 name = "lofty"
-version = "0.8.1"
+version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "863330a778316906983c07e225026b643b170502a96709dbfe6e6168bce53084"
+checksum = "8242df2d720c7f2e23bb7829da4447e5a762ccf0a361a01efe1433f554a48400"
 dependencies = [
  "base64",
  "byteorder",
  "cfg-if",
  "flate2",
  "lofty_attr",
+ "log",
  "ogg_pager",
  "once_cell",
  "paste",
@@ -709,9 +710,9 @@ dependencies = [
 
 [[package]]
 name = "lofty_attr"
-version = "0.3.0"
+version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8d906642cda9ed88dfb98ece66d113c5dd73c490da5d11ba4554bf75d78383f8"
+checksum = "3d0d19de3efdb768ecdccb6e904eb4c089ee9c1b59684d09218802e16cae8cc7"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -720,9 +721,9 @@ dependencies = [
 
 [[package]]
 name = "log"
-version = "0.4.14"
+version = "0.4.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "51b9bbe6c47d51fc3e1a9b945965946b4c44142ab8792c50835a980d362c2710"
+checksum = "abb12e687cfb44aa40f41fc3978ef76448f9b6038cad6aef4259d3c095a2382e"
 dependencies = [
  "cfg-if",
 ]

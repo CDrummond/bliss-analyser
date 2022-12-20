@@ -20,7 +20,7 @@ pub fn read(track: &String) -> db::Metadata {
         ..db::Metadata::default()
     };
 
-    if let Ok(file) = lofty::read_from_path(Path::new(track), true) {
+    if let Ok(file) = lofty::read_from_path(Path::new(track)) {
         let tag = match file.primary_tag() {
             Some(primary_tag) => primary_tag,
             None => file.first_tag().expect("Error: No tags found!"),
