@@ -3,7 +3,7 @@
 #
 # LMS-BlissMixer
 #
-# Copyright (c) 2022 Craig Drummond <craig.p.drummond@gmail.com>
+# Copyright (c) 2022-2023 Craig Drummond <craig.p.drummond@gmail.com>
 # MIT license.
 #
 
