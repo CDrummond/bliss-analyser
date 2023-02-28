@@ -1,6 +1,7 @@
 0.2.3
 -----
 1. Add option to limit number of concurrent threads.
+2. Update version of bliss library.
 
 0.2.2
 -----
