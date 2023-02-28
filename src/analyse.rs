@@ -9,14 +9,16 @@
 use crate::db;
 use crate::tags;
 use anyhow::Result;
-use bliss_audio::{analyze_paths};
+use bliss_audio::{analyze_paths_with_cores};
 use if_chain::if_chain;
 use indicatif::{ProgressBar, ProgressStyle};
 use std::collections::HashSet;
 use std::convert::TryInto;
 use std::fs::{DirEntry, File};
 use std::io::{BufRead, BufReader};
+use std::num::NonZeroUsize;
 use std::path::{Path, PathBuf};
+use num_cpus;
 
 const DONT_ANALYSE: &str = ".notmusic";
 const MAX_ERRORS_TO_SHOW: usize = 100;
@@ -81,13 +83,17 @@ fn check_dir_entry(db: &mut db::Db, mpath: &Path, entry: DirEntry, track_paths: 
     }
 }
 
-pub fn analyse_new_files(db: &db::Db, mpath: &PathBuf, track_paths: Vec<String>) -> Result<()> {
+pub fn analyse_new_files(db: &db::Db, mpath: &PathBuf, track_paths: Vec<String>, max_threads: usize) -> Result<()> {
     let total = track_paths.len();
     let progress = ProgressBar::new(total.try_into().unwrap()).with_style(
         ProgressStyle::default_bar()
             .template("[{elapsed_precise}] [{bar:25}] {percent:>3}% {pos:>6}/{len:6} {wide_msg}")
             .progress_chars("=> "),
     );
+    let cpu_threads: NonZeroUsize = match max_threads {
+        0 => NonZeroUsize::new(num_cpus::get()).unwrap(),
+        _ => NonZeroUsize::new(max_threads).unwrap(),
+    };
 
     let mut analysed = 0;
     let mut failed: Vec<String> = Vec::new();
@@ -95,7 +101,7 @@ pub fn analyse_new_files(db: &db::Db, mpath: &PathBuf, track_paths: Vec<String>)
     let mut reported_cue:HashSet<String> = HashSet::new();
 
     log::info!("Analysing new files");
-    for (path, result) in analyze_paths(track_paths) {
+    for (path, result) in analyze_paths_with_cores(track_paths, cpu_threads) {
         let stripped = path.strip_prefix(mpath).unwrap();
         let spbuff = stripped.to_path_buf();
         let sname = String::from(spbuff.to_string_lossy());
@@ -194,7 +200,7 @@ pub fn analyse_new_files(db: &db::Db, mpath: &PathBuf, track_paths: Vec<String>)
     Ok(())
 }
 
-pub fn analyse_files(db_path: &str, mpaths: &Vec<PathBuf>, dry_run: bool, keep_old: bool, max_num_tracks: usize) {
+pub fn analyse_files(db_path: &str, mpaths: &Vec<PathBuf>, dry_run: bool, keep_old: bool, max_num_tracks: usize, max_threads: usize) {
     let mut db = db::Db::new(&String::from(db_path));
     let mut track_count_left = max_num_tracks;
 
@@ -235,7 +241,7 @@ pub fn analyse_files(db_path: &str, mpaths: &Vec<PathBuf>, dry_run: bool, keep_o
             }
 
             if !track_paths.is_empty() {
-                match analyse_new_files(&db, &mpath, track_paths) {
+                match analyse_new_files(&db, &mpath, track_paths, max_threads) {
                     Ok(_) => { }
                     Err(e) => { log::error!("Analysis returned error: {}", e); }
                 }

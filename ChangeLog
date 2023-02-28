@@ -1,3 +1,7 @@
+0.2.3
+-----
+1. Add option to limit number of concurrent threads.
+
 0.2.2
 -----
 1. Update version of tag reader library.

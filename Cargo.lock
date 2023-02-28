@@ -126,6 +126,7 @@ dependencies = [
  "indicatif",
  "lofty",
  "log",
+ "num_cpus",
  "regex",
  "rusqlite",
  "substring",
