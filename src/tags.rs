@@ -7,7 +7,7 @@
  **/
 
 use crate::db;
-use lofty::{Accessor, AudioFile, ItemKey};
+use lofty::{Accessor, AudioFile, ItemKey, TaggedFileExt};
 use regex::Regex;
 use std::path::Path;
 use substring::Substring;
@@ -33,7 +33,7 @@ pub fn read(track: &String) -> db::Metadata {
         meta.genre = tag.genre().unwrap_or_default().to_string();
 
         // Check whether MP3 has numeric genre, and if so covert to text
-        if file.file_type().eq(&lofty::FileType::MPEG) {
+        if file.file_type().eq(&lofty::FileType::Mpeg) {
             match tag.genre() {
                 Some(genre) => {
                     let test = genre.parse::<u8>();
