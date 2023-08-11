@@ -11,7 +11,9 @@ import datetime, os, requests, shutil, subprocess, sys, tempfile, time
 
 GITHUB_TOKEN_FILE = "%s/.config/github-token" % os.path.expanduser('~')
 GITHUB_REPO = "CDrummond/bliss-analyser"
-GITHUB_ARTIFACTS = ["bliss-analyser-linux-x86-ffmpeg4", "bliss-analyser-linux-x86-ffmpeg5", "bliss-analyser-linux-arm", "bliss-analyser-mac", "bliss-analyser-windows"]
+#UNIX_ARTIFICATS = ["bliss-analyser-linux-x86-ffmpeg4", "bliss-analyser-linux-x86-ffmpeg5", "bliss-analyser-linux-arm", "bliss-analyser-mac"]
+UNIX_ARTIFACTS = ["bliss-analyser-linux-x86-ffmpeg4", "bliss-analyser-linux-arm"]
+GITHUB_ARTIFACTS = UNIX_ARTIFACTS + ["bliss-analyser-windows"]
 
 def info(s):
     print("INFO: %s" %s)
@@ -69,7 +71,7 @@ def download_artifacts(version):
 
 def make_executable(version):
     cwd = os.getcwd()
-    for a in ["bliss-analyser-linux-x86-ffmpeg4", "bliss-analyser-linux-x86-ffmpeg5", "bliss-analyser-linux-arm", "bliss-analyser-mac"]:
+    for a in UNIX_ARTIFACTS:
         archive = "%s-%s.zip" % (a, version)
         info("Making analyser executable in %s" % archive)
         with tempfile.TemporaryDirectory() as td:
