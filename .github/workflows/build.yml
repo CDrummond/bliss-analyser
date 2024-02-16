@@ -68,17 +68,28 @@ jobs:
 
     steps:
     - name: Checkout
-      uses: actions/checkout@v2
+      uses: actions/checkout@v4
 
-    - name: Build ARM
+    - name: Build ARM on Bullseye
       run: |
-        docker build -t bliss-analyser-cross - < docker/Dockerfile
+        docker build -t bliss-analyser-cross - < docker/Dockerfile_Bullseye
         docker run --rm -v $PWD/target:/build -v $PWD:/src bliss-analyser-cross
 
     - name: Upload artifacts
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v3
       with:
-        name: bliss-analyser-linux-arm
+        name: bliss-analyser-linux-arm-bullseye
+        path: releases/
+
+    - name: Build ARM on Bookworm
+      run : |
+        docker build -t bliss-analyser-cross - < docker/Dockerfile_Bookworm
+        docker run --rm -v $PWD/target:/build -v $PWD:/src bliss-analyser-cross
+
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: bliss-analyser-linux-arm-bookworm
         path: releases/
 
 # macOs builds are failing: error: could not find system library 'libavutil' required by the 'ffmpeg-sys-next' crate
