@@ -34,5 +34,5 @@ ENV CARGO_HOME /build/cache
 RUN mkdir /src
 
 WORKDIR /src
-CMD ["/src/docker/docker-build.sh"]
+CMD ["/src/docker/docker-build-arm.sh"]
 

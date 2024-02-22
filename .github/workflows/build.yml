@@ -33,34 +33,23 @@ jobs:
         name: bliss-analyser-linux-x86-ffmpeg4
         path: releases/
 
-# Linux ffmpeg5 builds used a ppa which is now paywalled. Therefore until there is a github runner-image
-# Of 24.04 (which should have ffmpeg5?) then these builds are disabled. :(
-#
-#  Linux_ffmpeg5:
-#    runs-on: ubuntu-24.04
-#
-#    steps:
-#    - name: Checkout
-#      uses: actions/checkout@v1
-#
-#    - name: Packages
-#      run: sudo apt-get update && sudo apt-get install build-essential yasm libavutil-dev libavcodec-dev libavformat-dev libavfilter-dev libavdevice-dev libswresample-dev libfftw3-dev ffmpeg -y
-#
-#    - name: Build
-#      run: |
-#        cargo build --release
-#        strip target/release/bliss-analyser
-#        mkdir releases
-#        cp target/release/bliss-analyser releases/bliss-analyser
-#        cp UserGuide.md releases/README.md
-#        cp LICENSE releases/
-#        cp configs/linux.ini releases/config.ini
-#
-#    - name: Upload artifacts
-#      uses: actions/upload-artifact@v2
-#      with:
-#        name: bliss-analyser-linux-x86-ffmpeg5
-#        path: releases/
+  Linux_ffmpeg5:
+    runs-on: ubuntu-20.04
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Build ffmpeg5 version with Docker
+      run: |
+        docker build -t bliss-analyser-linux-x86-ffmpeg5 - < docker/Dockerfile_Ubuntu
+        docker run --rm -v $PWD/target:/build -v $PWD:/src bliss-analyser-linux-x86-ffmpeg5
+
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: bliss-analyser-linux-x86-ffmpeg5
+        path: releases/
 
 
   Linux_ARM:
