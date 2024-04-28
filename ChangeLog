@@ -1,3 +1,7 @@
+0.2.4
+-----
+1. Add support for (DSD) WavPack - thanks to Bart Lauret
+
 0.2.3
 -----
 1. Add option to limit number of concurrent threads.
