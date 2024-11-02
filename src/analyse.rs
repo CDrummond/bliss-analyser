@@ -9,7 +9,7 @@
 use crate::db;
 use crate::tags;
 use anyhow::Result;
-use bliss_audio::{analyze_paths_with_cores};
+use bliss_audio::decoder::{Decoder, ffmpeg::FFmpeg};
 use if_chain::if_chain;
 use indicatif::{ProgressBar, ProgressStyle};
 use std::collections::HashSet;
@@ -101,7 +101,7 @@ pub fn analyse_new_files(db: &db::Db, mpath: &PathBuf, track_paths: Vec<String>,
     let mut reported_cue:HashSet<String> = HashSet::new();
 
     log::info!("Analysing new files");
-    for (path, result) in analyze_paths_with_cores(track_paths, cpu_threads) {
+    for (path, result) in <FFmpeg as Decoder>::analyze_paths_with_cores(track_paths, cpu_threads) {
         let stripped = path.strip_prefix(mpath).unwrap();
         let spbuff = stripped.to_path_buf();
         let sname = String::from(spbuff.to_string_lossy());
@@ -114,7 +114,6 @@ pub fn analyse_new_files(db: &db::Db, mpath: &PathBuf, track_paths: Vec<String>,
                     Some(cue) => {
                         match track.track_number {
                             Some(track_num) => {
-                                let t_num = track_num.parse::<i32>().unwrap();
                                 if reported_cue.contains(&cpath) {
                                     inc_progress = false;
                                 } else {
@@ -136,7 +135,7 @@ pub fn analyse_new_files(db: &db::Db, mpath: &PathBuf, track_paths: Vec<String>,
                                 let spbuff = stripped.to_path_buf();
                                 let sname = String::from(spbuff.to_string_lossy());
 
-                                let db_path = format!("{}{}{}", sname, db::CUE_MARKER, t_num);
+                                let db_path = format!("{}{}{}", sname, db::CUE_MARKER, track_num);
                                 db.add_track(&db_path, &meta, &track.analysis);
                             }
                             None => { failed.push(format!("{} - No track number?", sname)); }
