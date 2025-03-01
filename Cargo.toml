@@ -1,6 +1,6 @@
 [package]
 name = "bliss-analyser"
-version = "0.2.4"
+version = "0.3.0"
 authors = ["Craig Drummond <craig.p.drummond@gmail.com>"]
 edition = "2021"
 license = "GPL-3.0-only"
@@ -27,6 +27,7 @@ if_chain = "1.0.2"
 num_cpus = "1.13.0"
 md5 = "0.7.0"
 hound = "3.5.1"
+which = "7.0.2"
 
 [dependencies.bliss-audio]
 default-features = false

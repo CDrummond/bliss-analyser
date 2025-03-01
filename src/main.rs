@@ -14,6 +14,7 @@ use log::LevelFilter;
 use std::io::Write;
 use std::path::PathBuf;
 use std::process;
+use which::which;
 mod analyse;
 mod db;
 mod ffmpeg;
@@ -91,6 +92,15 @@ fn main() {
         && !task.eq_ignore_ascii_case("upload") && !task.eq_ignore_ascii_case("stopmixer") {
         log::error!("Invalid task ({}) supplied", task);
         process::exit(-1);
+    }
+
+    // Ensure ffmpeg is in PATH...
+    match which("ffmpeg") {
+        Ok(_) => { }
+        Err(_) => {
+            log::error!("'ffmpeg' was not found! Please ensure this in your PATH");
+            process::exit(-1);
+        },
     }
 
     if !config_file.is_empty() {
