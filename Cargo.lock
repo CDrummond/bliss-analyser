@@ -88,34 +88,10 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9d297deb1925b89f2ccc13d7635fa0714f12c87adce1c75356b39ca9b7178567"
 
 [[package]]
-name = "bindgen"
-version = "0.70.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f49d8fed880d473ea71efb9bf597651e77201bdd4893efe54c9e5d65ae04ce6f"
-dependencies = [
- "bitflags 2.6.0",
- "cexpr",
- "clang-sys",
- "itertools",
- "proc-macro2",
- "quote",
- "regex",
- "rustc-hash",
- "shlex",
- "syn 2.0.28",
-]
-
-[[package]]
 name = "bitflags"
 version = "1.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bef38d45163c2f1dde094a7dfd33ccf595c92905c8f8f4fdc18d06fb1037718a"
-
-[[package]]
-name = "bitflags"
-version = "2.6.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b048fb63fd8b5923fc5aa7b340d8e156aec7ec02f0c78fa8a6ddc2613f6f71de"
 
 [[package]]
 name = "blake2b_simd"
@@ -139,10 +115,12 @@ dependencies = [
  "configparser",
  "dirs",
  "env_logger",
+ "hound",
  "if_chain",
  "indicatif",
  "lofty",
  "log",
+ "md5",
  "num_cpus",
  "regex",
  "rusqlite",
@@ -152,15 +130,13 @@ dependencies = [
 
 [[package]]
 name = "bliss-audio"
-version = "0.9.3"
+version = "0.9.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "191f4a248aa795440b59bc9f994fddc21428959d00ddef704e81cced1453411d"
+checksum = "9af3dbc2bc1dd8b43a93d10b1f4752f283c06451f9d3a6e1433fb6bf1c9afc53"
 dependencies = [
  "adler32",
  "bliss-audio-aubio-rs",
  "extended-isolation-forest",
- "ffmpeg-next",
- "ffmpeg-sys-next",
  "log",
  "ndarray",
  "ndarray-stats",
@@ -213,15 +189,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "cexpr"
-version = "0.6.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6fac387a98bb7c37292057cffc56d62ecb629900026402633ae9160df93a8766"
-dependencies = [
- "nom",
-]
-
-[[package]]
 name = "cfg-if"
 version = "1.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -245,17 +212,6 @@ name = "chunked_transfer"
 version = "1.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fff857943da45f546682664a79488be82e69e43c1a7a2307679ab9afb3a66d2e"
-
-[[package]]
-name = "clang-sys"
-version = "1.3.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4cc00842eed744b858222c4c9faf7243aafc6d33f92f96935263ef4d8a41ce21"
-dependencies = [
- "glob",
- "libc",
- "libloading",
-]
 
 [[package]]
 name = "configparser"
@@ -395,31 +351,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7360491ce676a36bf9bb3c56c1aa791658183a54d2744120f27285738d90465a"
 
 [[package]]
-name = "ffmpeg-next"
-version = "7.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "da02698288e0275e442a47fc12ca26d50daf0d48b15398ba5906f20ac2e2a9f9"
-dependencies = [
- "bitflags 2.6.0",
- "ffmpeg-sys-next",
- "libc",
-]
-
-[[package]]
-name = "ffmpeg-sys-next"
-version = "7.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2bc3234d0a4b2f7d083699d0860c6c9dd83713908771b60f94a96f8704adfe45"
-dependencies = [
- "bindgen",
- "cc",
- "libc",
- "num_cpus",
- "pkg-config",
- "vcpkg",
-]
-
-[[package]]
 name = "flate2"
 version = "1.0.34"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -462,12 +393,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "glob"
-version = "0.3.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9b919933a397b79c37e33b77bb2aa3dc8eb6e165ad809e58ff75bc7db2e34574"
-
-[[package]]
 name = "hashbrown"
 version = "0.11.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -505,6 +430,12 @@ name = "hermit-abi"
 version = "0.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "443144c8cdadd93ebf52ddb4056d257f5b52c04d3c804e657d19eb73fc33668b"
+
+[[package]]
+name = "hound"
+version = "3.5.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "62adaabb884c94955b19907d60019f4e145d091c75345379e70d1ee696f7854f"
 
 [[package]]
 name = "humantime"
@@ -591,16 +522,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e74d72e0f9b65b5b4ca49a346af3976df0f9c61d550727f349ecd559f251a26c"
 
 [[package]]
-name = "libloading"
-version = "0.7.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "efbc0f03f9a775e9f6aed295c6a1ba2253c5757a9e03d55c6caa46a681abcddd"
-dependencies = [
- "cfg-if",
- "winapi",
-]
-
-[[package]]
 name = "libm"
 version = "0.2.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -666,6 +587,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "md5"
+version = "0.7.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "490cc448043f947bae3cbee9c203358d62dbee0db12107a74be5c30ccfd09771"
+
+[[package]]
 name = "memchr"
 version = "2.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -679,12 +606,6 @@ checksum = "5aa361d4faea93603064a027415f07bd8e1d5c88c9fbf68bf56a285428fd79ce"
 dependencies = [
  "autocfg",
 ]
-
-[[package]]
-name = "minimal-lexical"
-version = "0.2.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "68354c5c6bd36d73ff3feceb05efa59b6acb7626617f4962be322a825e61f79a"
 
 [[package]]
 name = "miniz_oxide"
@@ -731,17 +652,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "978fe6e6ebc0bf53de533cd456ca2d9de13de13856eda1518a285d7705a213af"
 dependencies = [
  "num-traits",
-]
-
-[[package]]
-name = "nom"
-version = "7.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1b1d11e1ef389c76fe5b81bcaf2ea32cf88b62bc494e19f493d0b30e7a930109"
-dependencies = [
- "memchr",
- "minimal-lexical",
- "version_check",
 ]
 
 [[package]]
@@ -987,7 +897,7 @@ version = "0.25.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5c4b1eaf239b47034fb450ee9cdedd7d0226571689d8823030c4b6c2cb407152"
 dependencies = [
- "bitflags 1.3.2",
+ "bitflags",
  "fallible-iterator",
  "fallible-streaming-iterator",
  "hashlink",
@@ -1007,12 +917,6 @@ dependencies = [
  "constant_time_eq",
  "crossbeam-utils",
 ]
-
-[[package]]
-name = "rustc-hash"
-version = "1.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "08d43f7aa6b08d49f382cde6a7982047c3426db949b1424bc4b7ec9ae12c6ce2"
 
 [[package]]
 name = "rustfft"
@@ -1062,12 +966,6 @@ dependencies = [
  "ring",
  "untrusted",
 ]
-
-[[package]]
-name = "shlex"
-version = "1.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "43b2853a4d09f215c24cc5489c992ce46052d359b5109343cbafbf26bc62f8a3"
 
 [[package]]
 name = "smallvec"

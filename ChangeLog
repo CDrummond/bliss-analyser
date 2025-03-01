@@ -2,6 +2,7 @@
 -----
 1. Add support for (DSD) WavPack - thanks to Bart Lauret
 2. Update version of bliss library.
+3. Use 'ffmpeg' commandline to decode files, and not ffmpeg libraries.
 
 0.2.3
 -----

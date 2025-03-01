@@ -7,9 +7,10 @@
  **/
 
 use crate::db;
+use crate::ffmpeg;
 use crate::tags;
 use anyhow::Result;
-use bliss_audio::decoder::{Decoder, ffmpeg::FFmpeg};
+use bliss_audio::decoder::Decoder;
 use if_chain::if_chain;
 use indicatif::{ProgressBar, ProgressStyle};
 use std::collections::HashSet;
@@ -101,7 +102,7 @@ pub fn analyse_new_files(db: &db::Db, mpath: &PathBuf, track_paths: Vec<String>,
     let mut reported_cue:HashSet<String> = HashSet::new();
 
     log::info!("Analysing new files");
-    for (path, result) in <FFmpeg as Decoder>::analyze_paths_with_cores(track_paths, cpu_threads) {
+    for (path, result) in <ffmpeg::FFmpegCmdDecoder as Decoder>::analyze_paths_with_cores(track_paths, cpu_threads) {
         let stripped = path.strip_prefix(mpath).unwrap();
         let spbuff = stripped.to_path_buf();
         let sname = String::from(spbuff.to_string_lossy());

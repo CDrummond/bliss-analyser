@@ -16,6 +16,7 @@ use std::path::PathBuf;
 use std::process;
 mod analyse;
 mod db;
+mod ffmpeg;
 mod tags;
 mod upload;
 
