@@ -8,7 +8,7 @@ env:
 
 jobs:
   Linux_ffmpeg_x86:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
 
     steps:
     - name: Checkout
@@ -34,8 +34,8 @@ jobs:
         path: releases/
 
 
-  Linux_libav4_x86:
-    runs-on: ubuntu-20.04
+  Ubuntu_22.04_libav_x86:
+    runs-on: ubuntu-22.04
 
     steps:
     - name: Checkout
@@ -43,8 +43,8 @@ jobs:
 
     - name: Packages
       run: sudo apt-get update && sudo apt-get install build-essential yasm libavutil-dev libavcodec-dev libavformat-dev libavfilter-dev libavdevice-dev libswresample-dev libfftw3-dev ffmpeg -y
- 
-    - name: Build libav4 version
+
+    - name: Build 22.04 libav version
       run: |
         cargo build --release --features=libav
         strip target/release/bliss-analyser
@@ -57,37 +57,45 @@ jobs:
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: bliss-analyser-linux-libav4-x86
+        name: bliss-analyser-ubuntu-22.04-libav-x86
         path: releases/
 
 
-  Linux_libav5_x86:
-    runs-on: ubuntu-20.04
+  Ubuntu_24.04_libav_x86:
+    runs-on: ubuntu-24.04
 
     steps:
     - name: Checkout
       uses: actions/checkout@v4
 
-    - name: Build libav5 version with Docker
+    - name: Packages
+      run: sudo apt-get update && sudo apt-get install build-essential yasm libavutil-dev libavcodec-dev libavformat-dev libavfilter-dev libavdevice-dev libswresample-dev libfftw3-dev ffmpeg -y
+
+    - name: Build 24.04 libav version
       run: |
-        docker build -t bliss-analyser-linux-libav5-x86 - < docker/Dockerfile_Ubuntu2404_libav
-        docker run --rm -v $PWD/target:/build -v $PWD:/src bliss-analyser-linux-libav5-x86
+        cargo build --release --features=libav
+        strip target/release/bliss-analyser
+        mkdir releases
+        cp target/release/bliss-analyser releases/bliss-analyser
+        cp UserGuide.md releases/README.md
+        cp LICENSE releases/
+        cp configs/linux.ini releases/config.ini
 
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: bliss-analyser-linux-libav5-x86
+        name: bliss-analyser-ubuntu-24.04-libav-x86
         path: releases/
 
 
   Linux_ffmpeg_arm:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
 
     steps:
     - name: Checkout
       uses: actions/checkout@v4
 
-    - name: Build ARM ffmpeg on Bullseye
+    - name: Build ARM ffmpeg on Debian
       run: |
         docker build -t bliss-analyser-cross - < docker/Dockerfile_Bullseye_ffmpeg
         docker run --rm -v $PWD/target:/build -v $PWD:/src bliss-analyser-cross
@@ -95,23 +103,12 @@ jobs:
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: bliss-analyser-linux-ffmpeg-arm-bullseye
-        path: releases/
-
-    - name: Build ARM ffmpeg on Bookworm
-      run : |
-        docker build -t bliss-analyser-cross - < docker/Dockerfile_Bookworm_ffmpeg
-        docker run --rm -v $PWD/target:/build -v $PWD:/src bliss-analyser-cross
-
-    - name: Upload artifacts
-      uses: actions/upload-artifact@v4
-      with:
-        name: bliss-analyser-linux-ffmpeg-arm-bookworm
+        name: bliss-analyser-linux-ffmpeg-arm
         path: releases/
 
 
-  Linux_libav_arm:
-    runs-on: ubuntu-20.04
+  Debian_libav_arm:
+    runs-on: ubuntu-22.04
 
     steps:
     - name: Checkout
@@ -125,7 +122,7 @@ jobs:
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: bliss-analyser-linux-libav-arm-bullseye
+        name: bliss-analyser-debian-bullseye-libav-arm
         path: releases/
 
     - name: Build ARM libav on Bookworm
@@ -136,7 +133,7 @@ jobs:
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: bliss-analyser-linux-libav-arm-bookworm
+        name: bliss-analyser-debian-bookworm-libav-arm
         path: releases/
 
 
@@ -165,7 +162,7 @@ jobs:
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: bliss-analyser-mac
+        name: bliss-analyser-mac-ffmpeg
         path: releases/
 
 
@@ -208,5 +205,5 @@ jobs:
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: bliss-analyser-windows
+        name: bliss-analyser-windows-libav
         path: releases/

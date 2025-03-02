@@ -3,7 +3,7 @@
 #
 # LMS-BlissMixer
 #
-# Copyright (c) 2022-2023 Craig Drummond <craig.p.drummond@gmail.com>
+# Copyright (c) 2022-2025 Craig Drummond <craig.p.drummond@gmail.com>
 # MIT license.
 #
 
@@ -11,9 +11,11 @@ import datetime, os, requests, shutil, subprocess, sys, tempfile, time
 
 GITHUB_TOKEN_FILE = "%s/.config/github-token" % os.path.expanduser('~')
 GITHUB_REPO = "CDrummond/bliss-analyser"
-#UNIX_ARTIFICATS = ["bliss-analyser-linux-x86-ffmpeg4", "bliss-analyser-linux-x86-ffmpeg5", "bliss-analyser-linux-arm", "bliss-analyser-mac"]
-UNIX_ARTIFACTS = ["bliss-analyser-linux-x86-ffmpeg4", "bliss-analyser-linux-arm"]
-GITHUB_ARTIFACTS = UNIX_ARTIFACTS + ["bliss-analyser-windows"]
+LINUX_ARM_ARTIFACTS = ["bliss-analyser-linux-ffmpeg-arm", "bliss-analyser-debian-bullseye-libav-arm", "bliss-analyser-debian-bookworm-libav-arm"]
+LINUX_X86_ARTIFACTS = ["bliss-analyser-linux-ffmpeg-x86", "bliss-analyser-ubuntu-22.04-libav-x86", "bliss-analyser-ubuntu-24.04-libav-x86"]
+UNIX_ARTIFACTS = LINUX_ARM_ARTIFACTS + LINUX_X86_ARTIFACTS + ["bliss-analyser-mac-ffmpeg"]
+GITHUB_ARTIFACTS = UNIX_ARTIFACTS + ["bliss-analyser-windows-libav"]
+
 
 def info(s):
     print("INFO: %s" %s)
@@ -79,8 +81,10 @@ def make_executable(version):
             os.remove(archive)
             os.chdir(td)
             subprocess.call(["chmod", "a+x", "%s/bliss-analyser" % td], shell=False)
-            if a == "bliss-analyser-linux-arm":
-                subprocess.call(["chmod", "a+x", "%s/bin/bliss-analyser-armhf" % td, "%s/bin/bliss-analyser-aarch64" % td], shell=False)
+            bindir = os.path.join(td, "bin")
+            if os.path.isdir(bindir):
+                for e in os.listdir(bindir):
+                    subprocess.call(["chmod", "a+x", os.path.join(bindir, e)], shell=False)
             shutil.make_archive("%s/%s-%s" % (cwd, a, version), "zip")
             os.chdir(cwd)
 
