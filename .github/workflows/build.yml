@@ -17,7 +17,7 @@ jobs:
     - name: Packages
       run: sudo apt-get update && sudo apt-get install build-essential yasm -y
 
-    - name: Build ffmpeg version
+    - name: Build x86 ffmpeg version
       run: |
         cargo build --release
         strip target/release/bliss-analyser
@@ -30,7 +30,7 @@ jobs:
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: bliss-analyser-linux-ffmpeg-x86
+        name: bliss-analyser-linux-x86-ffmpeg
         path: releases/
 
 
@@ -57,7 +57,7 @@ jobs:
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: bliss-analyser-ubuntu-22.04-libav-x86
+        name: bliss-analyser-ubuntu-22.04-x86-libav
         path: releases/
 
 
@@ -84,7 +84,7 @@ jobs:
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: bliss-analyser-ubuntu-24.04-libav-x86
+        name: bliss-analyser-ubuntu-24.04-x86-libav
         path: releases/
 
 
@@ -103,7 +103,7 @@ jobs:
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: bliss-analyser-linux-ffmpeg-arm
+        name: bliss-analyser-linux-arm-ffmpeg
         path: releases/
 
 
@@ -122,7 +122,7 @@ jobs:
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: bliss-analyser-debian-bullseye-libav-arm
+        name: bliss-analyser-debian-bullseye-arm-libav
         path: releases/
 
     - name: Build ARM libav on Bookworm
@@ -133,7 +133,7 @@ jobs:
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: bliss-analyser-debian-bookworm-libav-arm
+        name: bliss-analyser-debian-bookworm-arm-libav
         path: releases/
 
 

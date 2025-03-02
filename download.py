@@ -11,8 +11,8 @@ import datetime, os, requests, shutil, subprocess, sys, tempfile, time
 
 GITHUB_TOKEN_FILE = "%s/.config/github-token" % os.path.expanduser('~')
 GITHUB_REPO = "CDrummond/bliss-analyser"
-LINUX_ARM_ARTIFACTS = ["bliss-analyser-linux-ffmpeg-arm", "bliss-analyser-debian-bullseye-libav-arm", "bliss-analyser-debian-bookworm-libav-arm"]
-LINUX_X86_ARTIFACTS = ["bliss-analyser-linux-ffmpeg-x86", "bliss-analyser-ubuntu-22.04-libav-x86", "bliss-analyser-ubuntu-24.04-libav-x86"]
+LINUX_ARM_ARTIFACTS = ["bliss-analyser-linux-arm-ffmpeg", "bliss-analyser-debian-bullseye-arm-libav", "bliss-analyser-debian-bookworm-arm-libav"]
+LINUX_X86_ARTIFACTS = ["bliss-analyser-linux-x86-ffmpeg", "bliss-analyser-ubuntu-22.04-x86-libav", "bliss-analyser-ubuntu-24.04-x86-libav"]
 UNIX_ARTIFACTS = LINUX_ARM_ARTIFACTS + LINUX_X86_ARTIFACTS + ["bliss-analyser-mac-ffmpeg"]
 GITHUB_ARTIFACTS = UNIX_ARTIFACTS + ["bliss-analyser-windows-libav"]
 
