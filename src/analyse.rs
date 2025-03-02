@@ -31,30 +31,32 @@ const MAX_ERRORS_TO_SHOW: usize = 100;
 const MAX_TAG_ERRORS_TO_SHOW: usize = 50;
 const VALID_EXTENSIONS: [&str; 6] = ["m4a", "mp3", "ogg", "flac", "opus", "wv"];
 
-fn get_file_list(db: &mut db::Db, mpath: &Path, path: &Path, track_paths: &mut Vec<String>, cue_tracks:&mut Vec<cue::CueTrack>) {
+fn get_file_list(db: &mut db::Db, mpath: &Path, path: &Path, track_paths: &mut Vec<String>, cue_tracks:&mut Vec<cue::CueTrack>, file_count:&mut usize, max_num_files: usize) {
     if !path.is_dir() {
         return;
     }
 
-    if let Ok(items) = path.read_dir() {
-        for item in items {
-            if let Ok(entry) = item {
-                check_dir_entry(db, mpath, entry, track_paths, cue_tracks);
-            }
+    let mut items: Vec<_> = path.read_dir().unwrap().map(|r| r.unwrap()).collect();
+    items.sort_by_key(|dir| dir.path());
+
+    for item in items {
+        check_dir_entry(db, mpath, item, track_paths, cue_tracks, file_count, max_num_files);
+        if max_num_files>0 && *file_count>=max_num_files {
+            break;
         }
     }
 }
 
-fn check_dir_entry(db: &mut db::Db, mpath: &Path, entry: DirEntry, track_paths: &mut Vec<String>, cue_tracks:&mut Vec<cue::CueTrack>) {
+fn check_dir_entry(db: &mut db::Db, mpath: &Path, entry: DirEntry, track_paths: &mut Vec<String>, cue_tracks:&mut Vec<cue::CueTrack>, file_count:&mut usize, max_num_files: usize) {
     let pb = entry.path();
     if pb.is_dir() {
         let check = pb.join(DONT_ANALYSE);
         if check.exists() {
             log::info!("Skipping '{}', found '{}'", pb.to_string_lossy(), DONT_ANALYSE);
-        } else {
-            get_file_list(db, mpath, &pb, track_paths, cue_tracks);
+        } else if max_num_files<=0 || *file_count<max_num_files {
+            get_file_list(db, mpath, &pb, track_paths, cue_tracks, file_count, max_num_files);
         }
-    } else if pb.is_file() {
+    } else if pb.is_file() && (max_num_files<=0 || *file_count<max_num_files) {
         if_chain! {
             if let Some(ext) = pb.extension();
             let ext = ext.to_string_lossy();
@@ -76,6 +78,7 @@ fn check_dir_entry(db: &mut db::Db, mpath: &Path, entry: DirEntry, track_paths: 
                                 let this_cue_tracks = cue::parse(&pb, &cue_file);
                                 for track in this_cue_tracks {
                                     cue_tracks.push(track.clone());
+                                    *file_count+=1;
                                 }
                             }
                         }
@@ -84,6 +87,7 @@ fn check_dir_entry(db: &mut db::Db, mpath: &Path, entry: DirEntry, track_paths: 
                     if let Ok(id) = db.get_rowid(&sname) {
                         if id<=0 {
                             track_paths.push(String::from(pb.to_string_lossy()));
+                            *file_count+=1;
                         }
                     }
                 }
@@ -261,9 +265,8 @@ pub fn analyse_new_cue_tracks(db:&db::Db, mpath: &PathBuf, cue_tracks:Vec<cue::C
     Ok(())
 }
 
-pub fn analyse_files(db_path: &str, mpaths: &Vec<PathBuf>, dry_run: bool, keep_old: bool, max_num_tracks: usize, max_threads: usize) {
+pub fn analyse_files(db_path: &str, mpaths: &Vec<PathBuf>, dry_run: bool, keep_old: bool, max_num_files: usize, max_threads: usize) {
     let mut db = db::Db::new(&String::from(db_path));
-    let mut track_count_left = max_num_tracks;
 
     db.init();
 
@@ -276,13 +279,14 @@ pub fn analyse_files(db_path: &str, mpaths: &Vec<PathBuf>, dry_run: bool, keep_o
         let cur = path.clone();
         let mut track_paths: Vec<String> = Vec::new();
         let mut cue_tracks:Vec<cue::CueTrack> = Vec::new();
+        let mut file_count:usize = 0;
 
         if mpaths.len() > 1 {
             log::info!("Looking for new files in {}", mpath.to_string_lossy());
         } else {
             log::info!("Looking for new files");
         }
-        get_file_list(&mut db, &mpath, &cur, &mut track_paths, &mut cue_tracks);
+        get_file_list(&mut db, &mpath, &cur, &mut track_paths, &mut cue_tracks, &mut file_count, max_num_files);
         track_paths.sort();
         log::info!("Num new files: {}", track_paths.len());
         if !cue_tracks.is_empty() {
@@ -300,25 +304,6 @@ pub fn analyse_files(db_path: &str, mpaths: &Vec<PathBuf>, dry_run: bool, keep_o
                 }
             }
         } else {
-            if max_num_tracks > 0 {
-                if track_paths.len() > track_count_left {
-                    log::info!("Only analysing {} files", track_count_left);
-                    track_paths.truncate(track_count_left);
-                }
-                track_count_left -= track_paths.len();
-            }
-            if max_num_tracks>0 {
-                if track_count_left == 0 {
-                    cue_tracks.clear();
-                } /*else {
-                    if cue_tracks.len()>track_count_left {
-                        log::info!("Only analysing {} cue tracks", track_count_left);
-                        cue_tracks.truncate(track_count_left);
-                    }
-                    track_count_left -= track_paths.len();
-                }*/
-            }
-
             if !track_paths.is_empty() {
                 match analyse_new_files(&db, &mpath, track_paths, max_threads) {
                     Ok(_) => { }
@@ -333,11 +318,6 @@ pub fn analyse_files(db_path: &str, mpaths: &Vec<PathBuf>, dry_run: bool, keep_o
                     Ok(_) => { },
                     Err(e) => { log::error!("Cue analysis returned error: {}", e); }
                 }
-            }
-
-            if max_num_tracks > 0 && track_count_left <= 0 {
-                log::info!("File limit reached");
-                break;
             }
         }
     }
