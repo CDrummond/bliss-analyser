@@ -13,10 +13,11 @@ PowerShell for Windows), as there is no graphical user interface.
 Variants
 --------
 
-`bliss-analyser` can be built to support using either the `ffmpeg` ibraries, or invoking the `ffmpeg` command itself.
+`bliss-analyser` can be built to support using either the `ffmpeg` libraries
+(`libavcodec`, etc.), or invoking the `ffmpeg` command itself.
 
 If the package used ended with `-libav` then `bliss-analyser` has been built
-with the `ffmpeg` libraries. This allows fater decoding of files, but will
+with the `ffmpeg` libraries. This allows faster decoding of files, but will
 require the exact `ffmpeg` library versions to be on your system. (These
 libraries are usually provided with the Windows build).
 
