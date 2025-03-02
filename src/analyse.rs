@@ -171,6 +171,12 @@ pub fn analyse_new_files(db: &db::Db, mpath: &PathBuf, track_paths: Vec<String>,
         }
     }
 
+    // Reset terminal, otherwise typed output does not show? Perhaps Linux only...
+    match std::process::Command::new("stty").arg("sane").spawn() {
+        Ok(_) => { },
+        Err(_)    => { },
+    };
+
     progress.finish_with_message("Finished!");
     log::info!("{} Analysed. {} Failure(s).", analysed, failed.len());
     if !failed.is_empty() {
