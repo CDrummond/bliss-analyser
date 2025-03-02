@@ -8,11 +8,11 @@
 
 use bliss_audio::decoder::Decoder as DecoderTrait;
 use bliss_audio::decoder::PreAnalyzedSong;
-use bliss_audio::BlissResult;
-use byteorder::{LittleEndian, ReadBytesExt};
+use bliss_audio::{BlissError, BlissResult};
 use std::path::Path;
 use std::process::{Command, Stdio};
 use std::io;
+use std::io::Read;
 pub struct FFmpegCmdDecoder;
 
 impl DecoderTrait for FFmpegCmdDecoder {
@@ -32,15 +32,19 @@ impl DecoderTrait for FFmpegCmdDecoder {
                                .spawn() {
             let stdout = child.stdout.as_mut().expect("Failed to capture stdout");
             let mut reader = io::BufReader::new(stdout);
-            let mut buffer: Vec<f32> = Vec::new();
+            let mut buffer: Vec<u8> = Vec::new();
+            reader.read_to_end(&mut buffer).map_err(|e| {
+                BlissError::DecodingError(format!("Could not read the decoded file into a buffer: {}", e))
+            })?;
 
-            while let Ok(sample) = reader.read_f32::<LittleEndian>() {
-                buffer.push(sample);
-            }
-
-            if let Ok(_) = child.wait() {
-                decoded_song.sample_array = buffer;
-            }
+            decoded_song.sample_array = buffer
+                .chunks_exact(4)
+                .map(|x| {
+                    let mut a: [u8; 4] = [0; 4];
+                    a.copy_from_slice(x);
+                    f32::from_le_bytes(a)
+                })
+                .collect();
         }
 
         Ok(decoded_song)
