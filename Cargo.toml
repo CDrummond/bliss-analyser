@@ -25,9 +25,8 @@ ureq = "2.4.0"
 configparser = "3.0.0"
 if_chain = "1.0.2"
 num_cpus = "1.13.0"
-md5 = "0.7.0"
-hound = "3.5.1"
 which = "7.0.2"
+byteorder = "1.4"
 
 [dependencies.bliss-audio]
 default-features = false
