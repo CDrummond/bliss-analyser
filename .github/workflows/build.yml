@@ -74,7 +74,7 @@ jobs:
         docker run --rm -v $PWD/target:/build -v $PWD:/src bliss-analyser-linux-x86-ffmpeg5
 
     - name: Upload artifacts
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: bliss-analyser-linux-x86-libav5
         path: releases/
@@ -93,7 +93,7 @@ jobs:
         docker run --rm -v $PWD/target:/build -v $PWD:/src bliss-analyser-cross
 
     - name: Upload artifacts
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: bliss-analyser-linux-ffmpeg-arm-bullseye
         path: releases/
@@ -104,7 +104,7 @@ jobs:
         docker run --rm -v $PWD/target:/build -v $PWD:/src bliss-analyser-cross
 
     - name: Upload artifacts
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: bliss-analyser-linux-ffmpeg-arm-bookworm
         path: releases/
@@ -123,7 +123,7 @@ jobs:
         docker run --rm -v $PWD/target:/build -v $PWD:/src bliss-analyser-cross
 
     - name: Upload artifacts
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: bliss-analyser-linux-libav-arm-bullseye
         path: releases/
@@ -134,7 +134,7 @@ jobs:
         docker run --rm -v $PWD/target:/build -v $PWD:/src bliss-analyser-cross
 
     - name: Upload artifacts
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: bliss-analyser-linux-libav-arm-bookworm
         path: releases/
