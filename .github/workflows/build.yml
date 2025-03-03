@@ -159,7 +159,7 @@ jobs:
         cargo build --release --features update-aubio-bindings
         strip target/release/bliss-analyser
         cp target/release/bliss-analyser releases/bliss-analyser-x86_64
-        cargo build --target=aarch64-apple-darwin --release
+        cargo build --target=aarch64-apple-darwin --release --features update-aubio-bindings
         strip target/aarch64-apple-darwin/release/bliss-analyser
         cp target/aarch64-apple-darwin/release/bliss-analyser releases/bliss-analyser-arm64
 
