@@ -30,7 +30,7 @@ jobs:
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: bliss-analyser-linux-x86-libav5
+        name: bliss-analyser-linux-ffmpeg-x86
         path: releases/
 
 
@@ -57,7 +57,7 @@ jobs:
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: bliss-analyser-linux-x86-libav4
+        name: bliss-analyser-linux-libav4-x86
         path: releases/
 
 
@@ -70,13 +70,13 @@ jobs:
 
     - name: Build libav5 version with Docker
       run: |
-        docker build -t bliss-analyser-linux-x86-ffmpeg5 - < docker/Dockerfile_Ubuntu2404_libav
-        docker run --rm -v $PWD/target:/build -v $PWD:/src bliss-analyser-linux-x86-ffmpeg5
+        docker build -t bliss-analyser-linux-libav5-x86 - < docker/Dockerfile_Ubuntu2404_libav
+        docker run --rm -v $PWD/target:/build -v $PWD:/src bliss-analyser-linux-libav5-x86
 
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: bliss-analyser-linux-x86-libav5
+        name: bliss-analyser-linux-libav5-x86
         path: releases/
 
 
