@@ -81,39 +81,37 @@ jobs:
         name: bliss-analyser-linux-arm-bookworm
         path: releases/
 
-# macOs builds are failing: error: could not find system library 'libavutil' required by the 'ffmpeg-sys-next' crate
-#  macOS:
-#    runs-on: macos-11.0
-#
-#    steps:
-#    - name: Install Rust
-#      uses: actions-rs/toolchain@v1
-#      with:
-#          toolchain: stable
-#
-#    - name: Checkout
-#      uses: actions/checkout@v2
-#
-#    - name: Install deps
-#      run: |
-#        brew install ffmpeg@5
-#
-#    - name: Build
-#      run: |
-#        mkdir releases
-#        cargo build --release --features=libav
-#        strip target/release/bliss-analyser
-#        cp target/release/bliss-analyser releases/bliss-analyser
-#        cp UserGuide.md releases/README.md
-#        cp LICENSE releases/
-#        cp configs/macos.ini releases/config.ini
-#
-#    - name: Upload artifacts
-#      uses: actions/upload-artifact@v2
-#      with:
-#        name: bliss-analyser-mac
-#        path: releases/
+  macOS:
+    runs-on: macos-11.0
 
+    steps:
+    - name: Install Rust
+      uses: actions-rs/toolchain@v1
+      with:
+          toolchain: stable
+
+    - name: Checkout
+      uses: actions/checkout@v2
+
+    - name: Install deps
+      run: |
+        brew install ffmpeg@5
+
+    - name: Build
+      run: |
+        mkdir releases
+        cargo build --release
+        strip target/release/bliss-analyser
+        cp target/release/bliss-analyser releases/bliss-analyser
+        cp UserGuide.md releases/README.md
+        cp LICENSE releases/
+        cp configs/macos.ini releases/config.ini
+
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v2
+      with:
+        name: bliss-analyser-mac
+        path: releases/
 
   Windows:
     runs-on: windows-2019
