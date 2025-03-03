@@ -12,7 +12,7 @@ jobs:
 
     steps:
     - name: Checkout
-      uses: actions/checkout@v1
+      uses: actions/checkout@v4
 
     - name: Packages
       run: sudo apt-get update && sudo apt-get install build-essential yasm -y
@@ -28,7 +28,7 @@ jobs:
         cp configs/linux.ini releases/config.ini
 
     - name: Upload artifacts
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v4
       with:
         name: bliss-analyser-linux-x86-libav4
         path: releases/
@@ -39,7 +39,7 @@ jobs:
 
     steps:
     - name: Checkout
-      uses: actions/checkout@v1
+      uses: actions/checkout@v4
 
     - name: Packages
       run: sudo apt-get update && sudo apt-get install build-essential yasm libavutil-dev libavcodec-dev libavformat-dev libavfilter-dev libavdevice-dev libswresample-dev libfftw3-dev ffmpeg -y
@@ -55,7 +55,7 @@ jobs:
         cp configs/linux.ini releases/config.ini
 
     - name: Upload artifacts
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v4
       with:
         name: bliss-analyser-linux-x86-libav4
         path: releases/
@@ -141,7 +141,7 @@ jobs:
 
 
   macOS:
-    runs-on: macos-11.0
+    runs-on: macos-13
 
     steps:
     - name: Install Rust
@@ -163,7 +163,7 @@ jobs:
         cp configs/macos.ini releases/config.ini
 
     - name: Upload artifacts
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v4
       with:
         name: bliss-analyser-mac
         path: releases/
@@ -206,7 +206,7 @@ jobs:
         cp c:\Windows\system32\vcruntime140.dll releases
 
     - name: Upload artifacts
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v4
       with:
         name: bliss-analyser-windows
         path: releases/
