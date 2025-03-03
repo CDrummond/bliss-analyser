@@ -156,7 +156,7 @@ jobs:
 
     - name: Build
       run: |
-        cargo build --release --features bindgen
+        cargo build --release --features bliss-audio-aubio-sys/bindgen
         strip target/release/bliss-analyser
         cp target/release/bliss-analyser releases/bliss-analyser-x86_64
         cargo build --target=aarch64-apple-darwin --release
