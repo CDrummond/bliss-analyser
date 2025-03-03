@@ -34,7 +34,7 @@ jobs:
         path: releases/
 
 
-  Ubuntu_22.04_libav_x86:
+  Ubuntu_2204_libav_x86:
     runs-on: ubuntu-22.04
 
     steps:
@@ -61,7 +61,7 @@ jobs:
         path: releases/
 
 
-  Ubuntu_24.04_libav_x86:
+  Ubuntu_2404_libav_x86:
     runs-on: ubuntu-24.04
 
     steps:
