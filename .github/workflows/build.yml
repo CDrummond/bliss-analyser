@@ -93,10 +93,6 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v2
 
-    - name: Install deps
-      run: |
-        brew install ffmpeg@5
-
     - name: Build
       run: |
         mkdir releases
