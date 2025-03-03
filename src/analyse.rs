@@ -116,6 +116,33 @@ fn check_dir_entry(db: &mut db::Db, mpath: &Path, entry: DirEntry, track_paths: 
     }
 }
 
+pub fn show_errors(failed: &mut Vec<String>, tag_error: &mut Vec<String>) {
+    if !failed.is_empty() {
+        let total = failed.len();
+        failed.truncate(MAX_ERRORS_TO_SHOW);
+
+        log::error!("Failed to analyse the following file(s):");
+        for err in failed {
+            log::error!("  {}", err);
+        }
+        if total > MAX_ERRORS_TO_SHOW {
+            log::error!("  + {} other(s)", total - MAX_ERRORS_TO_SHOW);
+        }
+    }
+    if !tag_error.is_empty() {
+        let total = tag_error.len();
+        tag_error.truncate(MAX_TAG_ERRORS_TO_SHOW);
+
+        log::error!("Failed to read tags of the following file(s):");
+        for err in tag_error {
+            log::error!("  {}", err);
+        }
+        if total > MAX_TAG_ERRORS_TO_SHOW {
+            log::error!("  + {} other(s)", total - MAX_TAG_ERRORS_TO_SHOW);
+        }
+    }
+}
+
 #[cfg(feature = "libav")]
 pub fn analyse_new_files(db: &db::Db, mpath: &PathBuf, track_paths: Vec<String>, max_threads: usize) -> Result<()> {
     let total = track_paths.len();
@@ -206,30 +233,7 @@ pub fn analyse_new_files(db: &db::Db, mpath: &PathBuf, track_paths: Vec<String>,
 
     progress.finish_with_message("Finished!");
     log::info!("{} Analysed. {} Failure(s).", analysed, failed.len());
-    if !failed.is_empty() {
-        let total = failed.len();
-        failed.truncate(MAX_ERRORS_TO_SHOW);
-
-        log::error!("Failed to analyse the following file(s):");
-        for err in failed {
-            log::error!("  {}", err);
-        }
-        if total > MAX_ERRORS_TO_SHOW {
-            log::error!("  + {} other(s)", total - MAX_ERRORS_TO_SHOW);
-        }
-    }
-    if !tag_error.is_empty() {
-        let total = tag_error.len();
-        tag_error.truncate(MAX_TAG_ERRORS_TO_SHOW);
-
-        log::error!("Failed to read tags of the following file(s):");
-        for err in tag_error {
-            log::error!("  {}", err);
-        }
-        if total > MAX_TAG_ERRORS_TO_SHOW {
-            log::error!("  + {} other(s)", total - MAX_TAG_ERRORS_TO_SHOW);
-        }
-    }
+    show_errors(&mut failed, &mut tag_error);
     Ok(())
 }
 
@@ -282,30 +286,7 @@ pub fn analyse_new_files(db: &db::Db, mpath: &PathBuf, track_paths: Vec<String>,
 
     progress.finish_with_message("Finished!");
     log::info!("{} Analysed. {} Failure(s).", analysed, failed.len());
-    if !failed.is_empty() {
-        let total = failed.len();
-        failed.truncate(MAX_ERRORS_TO_SHOW);
-
-        log::error!("Failed to analyse the following file(s):");
-        for err in failed {
-            log::error!("  {}", err);
-        }
-        if total > MAX_ERRORS_TO_SHOW {
-            log::error!("  + {} other(s)", total - MAX_ERRORS_TO_SHOW);
-        }
-    }
-    if !tag_error.is_empty() {
-        let total = tag_error.len();
-        tag_error.truncate(MAX_TAG_ERRORS_TO_SHOW);
-
-        log::error!("Failed to read tags of the following file(s):");
-        for err in tag_error {
-            log::error!("  {}", err);
-        }
-        if total > MAX_TAG_ERRORS_TO_SHOW {
-            log::error!("  + {} other(s)", total - MAX_TAG_ERRORS_TO_SHOW);
-        }
-    }
+    show_errors(&mut failed, &mut tag_error);
     Ok(())
 }
 
@@ -361,6 +342,7 @@ pub fn analyse_new_cue_tracks(db:&db::Db, mpath: &PathBuf, cue_tracks:Vec<cue::C
     let results = analyze_cue_streaming(cue_tracks)?;
     let mut analysed = 0;
     let mut failed:Vec<String> = Vec::new();
+    let mut tag_error: Vec<String> = Vec::new();
     let last_track_duration = Duration::new(cue::LAST_TRACK_DURATION, 0);
 
     log::info!("Analysing new cue tracks");
@@ -390,18 +372,7 @@ pub fn analyse_new_cue_tracks(db:&db::Db, mpath: &PathBuf, cue_tracks:Vec<cue::C
         pb.inc(1);
     }
     pb.finish_with_message(format!("{} Analysed. {} Failure(s).", analysed, failed.len()));
-    if !failed.is_empty() {
-        let total = failed.len();
-        failed.truncate(MAX_ERRORS_TO_SHOW);
-
-        log::error!("Failed to analyse the folling track(s):");
-        for err in failed {
-            log::error!("  {}", err);
-        }
-        if total>MAX_ERRORS_TO_SHOW {
-            log::error!("  + {} other(s)", total - MAX_ERRORS_TO_SHOW);
-        }
-    }
+    show_errors(&mut failed, &mut tag_error);
     Ok(())
 }
 
