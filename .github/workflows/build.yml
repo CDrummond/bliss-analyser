@@ -7,7 +7,34 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  Linux_ffmpeg4:
+  Linux_ffmpeg:
+    runs-on: ubuntu-20.04
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v1
+
+    - name: Packages
+      run: sudo apt-get update && sudo apt-get install build-essential yasm -y
+
+    - name: Build ffmpeg version
+      run: |
+        cargo build --release
+        strip target/release/bliss-analyser
+        mkdir releases
+        cp target/release/bliss-analyser releases/bliss-analyser
+        cp UserGuide.md releases/README.md
+        cp LICENSE releases/
+        cp configs/linux.ini releases/config.ini
+
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v2
+      with:
+        name: bliss-analyser-linux-x86-libav4
+        path: releases/
+
+
+  Linux_libav4:
     runs-on: ubuntu-20.04
 
     steps:
@@ -17,7 +44,7 @@ jobs:
     - name: Packages
       run: sudo apt-get update && sudo apt-get install build-essential yasm libavutil-dev libavcodec-dev libavformat-dev libavfilter-dev libavdevice-dev libswresample-dev libfftw3-dev ffmpeg -y
  
-    - name: Build
+    - name: Build libav4 version
       run: |
         cargo build --release --features=libav
         strip target/release/bliss-analyser
@@ -30,56 +57,88 @@ jobs:
     - name: Upload artifacts
       uses: actions/upload-artifact@v2
       with:
-        name: bliss-analyser-linux-x86-ffmpeg4
+        name: bliss-analyser-linux-x86-libav4
         path: releases/
 
-  Linux_ffmpeg5:
+
+  Linux_libav5:
     runs-on: ubuntu-20.04
 
     steps:
     - name: Checkout
       uses: actions/checkout@v4
 
-    - name: Build ffmpeg5 version with Docker
+    - name: Build libav5 version with Docker
       run: |
-        docker build -t bliss-analyser-linux-x86-ffmpeg5 - < docker/Dockerfile_Ubuntu
+        docker build -t bliss-analyser-linux-x86-ffmpeg5 - < docker/Dockerfile_Ubuntu2404_libav
         docker run --rm -v $PWD/target:/build -v $PWD:/src bliss-analyser-linux-x86-ffmpeg5
 
     - name: Upload artifacts
       uses: actions/upload-artifact@v3
       with:
-        name: bliss-analyser-linux-x86-ffmpeg5
+        name: bliss-analyser-linux-x86-libav5
         path: releases/
 
 
-  Linux_ARM:
+  Linux_ARM_ffmpeg:
     runs-on: ubuntu-20.04
 
     steps:
     - name: Checkout
       uses: actions/checkout@v4
 
-    - name: Build ARM on Bullseye
+    - name: Build ARM ffmpeg on Bullseye
       run: |
-        docker build -t bliss-analyser-cross - < docker/Dockerfile_Bullseye
+        docker build -t bliss-analyser-cross - < docker/Dockerfile_Bullseye_ffmpeg
         docker run --rm -v $PWD/target:/build -v $PWD:/src bliss-analyser-cross
 
     - name: Upload artifacts
       uses: actions/upload-artifact@v3
       with:
-        name: bliss-analyser-linux-arm-bullseye
+        name: bliss-analyser-linux-ffmpeg-arm-bullseye
         path: releases/
 
-    - name: Build ARM on Bookworm
+    - name: Build ARM ffmpeg on Bookworm
       run : |
-        docker build -t bliss-analyser-cross - < docker/Dockerfile_Bookworm
+        docker build -t bliss-analyser-cross - < docker/Dockerfile_Bookworm_ffmpeg
         docker run --rm -v $PWD/target:/build -v $PWD:/src bliss-analyser-cross
 
     - name: Upload artifacts
       uses: actions/upload-artifact@v3
       with:
-        name: bliss-analyser-linux-arm-bookworm
+        name: bliss-analyser-linux-ffmpeg-arm-bookworm
         path: releases/
+
+
+  Linux_ARM_libav:
+    runs-on: ubuntu-20.04
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Build ARM libav on Bullseye
+      run: |
+        docker build -t bliss-analyser-cross - < docker/Dockerfile_Bullseye_libav
+        docker run --rm -v $PWD/target:/build -v $PWD:/src bliss-analyser-cross
+
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: bliss-analyser-linux-libav-arm-bullseye
+        path: releases/
+
+    - name: Build ARM libav on Bookworm
+      run : |
+        docker build -t bliss-analyser-cross - < docker/Dockerfile_Bookworm_libav
+        docker run --rm -v $PWD/target:/build -v $PWD:/src bliss-analyser-cross
+
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: bliss-analyser-linux-libav-arm-bookworm
+        path: releases/
+
 
   macOS:
     runs-on: macos-11.0
@@ -108,6 +167,7 @@ jobs:
       with:
         name: bliss-analyser-mac
         path: releases/
+
 
   Windows:
     runs-on: windows-2019
