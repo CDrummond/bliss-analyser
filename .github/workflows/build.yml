@@ -19,7 +19,7 @@ jobs:
  
     - name: Build
       run: |
-        cargo build --release
+        cargo build --release --features=libav
         strip target/release/bliss-analyser
         mkdir releases
         cp target/release/bliss-analyser releases/bliss-analyser
@@ -101,7 +101,7 @@ jobs:
 #    - name: Build
 #      run: |
 #        mkdir releases
-#        cargo build --release
+#        cargo build --release --features=libav
 #        strip target/release/bliss-analyser
 #        cp target/release/bliss-analyser releases/bliss-analyser
 #        cp UserGuide.md releases/README.md
@@ -142,7 +142,7 @@ jobs:
 
     - name: Build
       run: |
-        cargo build --release
+        cargo build --release --features=libav
         mkdir releases
         cp target/release/bliss-analyser.exe releases/bliss-analyser.exe
         cp deps/bin/*.dll releases/
