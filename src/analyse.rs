@@ -8,23 +8,34 @@
 
 use crate::cue;
 use crate::db;
+#[cfg(not(feature = "libav"))]
 use crate::ffmpeg;
 use crate::tags;
 use anyhow::Result;
-use bliss_audio::{decoder::Decoder, BlissResult, Song};
+#[cfg(not(feature = "libav"))]
 use hhmmss::Hhmmss;
 use if_chain::if_chain;
 use indicatif::{ProgressBar, ProgressStyle};
+#[cfg(feature = "libav")]
+use std::collections::HashSet;
 use std::convert::TryInto;
 use std::fs::{DirEntry, File};
 use std::io::{BufRead, BufReader};
 use std::num::NonZeroUsize;
 use std::path::{Path, PathBuf};
+#[cfg(not(feature = "libav"))]
 use std::sync::mpsc;
+#[cfg(not(feature = "libav"))]
 use std::sync::mpsc::{Receiver, Sender};
+#[cfg(not(feature = "libav"))]
 use std::thread;
+#[cfg(not(feature = "libav"))]
 use std::time::Duration;
 use num_cpus;
+#[cfg(feature = "libav")]
+use bliss_audio::{decoder::Decoder, decoder::ffmpeg::FFmpeg};
+#[cfg(not(feature = "libav"))]
+use bliss_audio::{decoder::Decoder, BlissResult, Song};
 
 const DONT_ANALYSE: &str = ".notmusic";
 const MAX_ERRORS_TO_SHOW: usize = 100;
@@ -74,13 +85,22 @@ fn check_dir_entry(db: &mut db::Db, mpath: &Path, entry: DirEntry, track_paths: 
                     if let Ok(cue_track_stripped) = cue_track_path.strip_prefix(mpath) {
                         let cue_track_sname = String::from(cue_track_stripped.to_string_lossy());
                         if let Ok(id) = db.get_rowid(&cue_track_sname) {
+
+                            #[cfg(feature = "libav")]
+                            if id<=0 {
+                                track_paths.push(String::from(cue_file.to_string_lossy()));
+                                *file_count+=1;
+                            }
+
+                            #[cfg(not(feature = "libav"))]
                             if id<=0 {
                                 let this_cue_tracks = cue::parse(&pb, &cue_file);
                                 for track in this_cue_tracks {
                                     cue_tracks.push(track.clone());
-                                    *file_count+=1;
                                 }
+                                *file_count+=1;
                             }
+
                         }
                     }
                 } else {
@@ -96,6 +116,124 @@ fn check_dir_entry(db: &mut db::Db, mpath: &Path, entry: DirEntry, track_paths: 
     }
 }
 
+#[cfg(feature = "libav")]
+pub fn analyse_new_files(db: &db::Db, mpath: &PathBuf, track_paths: Vec<String>, max_threads: usize) -> Result<()> {
+    let total = track_paths.len();
+    let progress = ProgressBar::new(total.try_into().unwrap()).with_style(
+        ProgressStyle::default_bar()
+            .template("[{elapsed_precise}] [{bar:25}] {percent:>3}% {pos:>6}/{len:6} {wide_msg}")
+            .progress_chars("=> "),
+    );
+    let cpu_threads: NonZeroUsize = match max_threads {
+        0 => NonZeroUsize::new(num_cpus::get()).unwrap(),
+        _ => NonZeroUsize::new(max_threads).unwrap(),
+    };
+
+    let mut analysed = 0;
+    let mut failed: Vec<String> = Vec::new();
+    let mut tag_error: Vec<String> = Vec::new();
+    let mut reported_cue:HashSet<String> = HashSet::new();
+
+    log::info!("Analysing new files");
+    for (path, result) in <FFmpeg as Decoder>::analyze_paths_with_cores(track_paths, cpu_threads) {
+        let stripped = path.strip_prefix(mpath).unwrap();
+        let spbuff = stripped.to_path_buf();
+        let sname = String::from(spbuff.to_string_lossy());
+        progress.set_message(format!("{}", sname));
+        let mut inc_progress = true; // Only want to increment progress once for cue tracks
+        match result {
+            Ok(track) => {
+                let cpath = String::from(path.to_string_lossy());
+                match track.cue_info {
+                    Some(cue) => {
+                        match track.track_number {
+                            Some(track_num) => {
+                                if reported_cue.contains(&cpath) {
+                                    inc_progress = false;
+                                } else {
+                                    analysed += 1;
+                                    reported_cue.insert(cpath);
+                                }
+                                let meta = db::Metadata {
+                                    title: track.title.unwrap_or_default().to_string(),
+                                    artist: track.artist.unwrap_or_default().to_string(),
+                                    album: track.album.unwrap_or_default().to_string(),
+                                    album_artist: track.album_artist.unwrap_or_default().to_string(),
+                                    genre: track.genre.unwrap_or_default().to_string(),
+                                    duration: track.duration.as_secs() as u32
+                                };
+
+                                // Remove prefix from audio_file_path
+                                let pbuff = PathBuf::from(&cue.audio_file_path);
+                                let stripped = pbuff.strip_prefix(mpath).unwrap();
+                                let spbuff = stripped.to_path_buf();
+                                let sname = String::from(spbuff.to_string_lossy());
+
+                                let db_path = format!("{}{}{}", sname, db::CUE_MARKER, track_num);
+                                db.add_track(&db_path, &meta, &track.analysis);
+                            }
+                            None => { failed.push(format!("{} - No track number?", sname)); }
+                        }
+                    }
+                    None => {
+                        // Use lofty to read tags here, and not bliss's, so that if update
+                        // tags is ever used they are from the same source.
+                        let mut meta = tags::read(&cpath);
+                        if meta.is_empty() {
+                            // Lofty failed? Try from bliss...
+                            meta.title = track.title.unwrap_or_default().to_string();
+                            meta.artist = track.artist.unwrap_or_default().to_string();
+                            meta.album = track.album.unwrap_or_default().to_string();
+                            meta.album_artist = track.album_artist.unwrap_or_default().to_string();
+                            meta.genre = track.genre.unwrap_or_default().to_string();
+                            meta.duration = track.duration.as_secs() as u32;
+                        }
+                        if meta.is_empty() {
+                            tag_error.push(sname.clone());
+                        }
+                        db.add_track(&sname, &meta, &track.analysis);
+                        analysed += 1;
+                    }
+                }
+            }
+            Err(e) => { failed.push(format!("{} - {}", sname, e)); }
+        };
+
+        if inc_progress {
+            progress.inc(1);
+        }
+    }
+
+    progress.finish_with_message("Finished!");
+    log::info!("{} Analysed. {} Failure(s).", analysed, failed.len());
+    if !failed.is_empty() {
+        let total = failed.len();
+        failed.truncate(MAX_ERRORS_TO_SHOW);
+
+        log::error!("Failed to analyse the following file(s):");
+        for err in failed {
+            log::error!("  {}", err);
+        }
+        if total > MAX_ERRORS_TO_SHOW {
+            log::error!("  + {} other(s)", total - MAX_ERRORS_TO_SHOW);
+        }
+    }
+    if !tag_error.is_empty() {
+        let total = tag_error.len();
+        tag_error.truncate(MAX_TAG_ERRORS_TO_SHOW);
+
+        log::error!("Failed to read tags of the following file(s):");
+        for err in tag_error {
+            log::error!("  {}", err);
+        }
+        if total > MAX_TAG_ERRORS_TO_SHOW {
+            log::error!("  + {} other(s)", total - MAX_TAG_ERRORS_TO_SHOW);
+        }
+    }
+    Ok(())
+}
+
+#[cfg(not(feature = "libav"))]
 pub fn analyse_new_files(db: &db::Db, mpath: &PathBuf, track_paths: Vec<String>, max_threads: usize) -> Result<()> {
     let total = track_paths.len();
     let progress = ProgressBar::new(total.try_into().unwrap()).with_style(
@@ -171,6 +309,7 @@ pub fn analyse_new_files(db: &db::Db, mpath: &PathBuf, track_paths: Vec<String>,
     Ok(())
 }
 
+#[cfg(not(feature = "libav"))]
 pub fn analyze_cue_streaming(tracks: Vec<cue::CueTrack>,) -> BlissResult<Receiver<(cue::CueTrack, BlissResult<Song>)>> {
     let num_cpus = num_cpus::get();
 
@@ -210,6 +349,7 @@ pub fn analyze_cue_streaming(tracks: Vec<cue::CueTrack>,) -> BlissResult<Receive
     Ok(rx)
 }
 
+#[cfg(not(feature = "libav"))]
 pub fn analyse_new_cue_tracks(db:&db::Db, mpath: &PathBuf, cue_tracks:Vec<cue::CueTrack>) -> Result<()> {
     let total = cue_tracks.len();
     let pb = ProgressBar::new(total.try_into().unwrap());
@@ -313,6 +453,7 @@ pub fn analyse_files(db_path: &str, mpaths: &Vec<PathBuf>, dry_run: bool, keep_o
                 log::info!("No new files to analyse");
             }
 
+            #[cfg(not(feature = "libav"))]
             if !cue_tracks.is_empty() {
                 match analyse_new_cue_tracks(&db, &mpath, cue_tracks) {
                     Ok(_) => { },
