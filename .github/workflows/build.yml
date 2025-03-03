@@ -7,7 +7,7 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  Linux_ffmpeg:
+  Linux_ffmpeg_x86:
     runs-on: ubuntu-20.04
 
     steps:
@@ -34,7 +34,7 @@ jobs:
         path: releases/
 
 
-  Linux_libav4:
+  Linux_libav4_x86:
     runs-on: ubuntu-20.04
 
     steps:
@@ -61,7 +61,7 @@ jobs:
         path: releases/
 
 
-  Linux_libav5:
+  Linux_libav5_x86:
     runs-on: ubuntu-20.04
 
     steps:
@@ -80,7 +80,7 @@ jobs:
         path: releases/
 
 
-  Linux_ARM_ffmpeg:
+  Linux_ffmpeg_arm:
     runs-on: ubuntu-20.04
 
     steps:
@@ -110,7 +110,7 @@ jobs:
         path: releases/
 
 
-  Linux_ARM_libav:
+  Linux_libav_arm:
     runs-on: ubuntu-20.04
 
     steps:
