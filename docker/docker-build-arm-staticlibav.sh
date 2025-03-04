@@ -14,7 +14,7 @@ function build {
 	if [[ ! -f /build/$1/release/bliss-analyser ]]; then
 		export RUST_BACKTRACE=full
 		export PKG_CONFIG=${1//unknown-/}-pkg-config
-		BINDGEN_EXTRA_CLANG_ARGS="--sysroot /usr/${1//unknown-/}" cargo build --release --features=staticlibav --target $1
+		BINDGEN_EXTRA_CLANG_ARGS="--sysroot /usr/${1//unknown-/}" cargo build --release --features=libav,staticlibav --target $1
 	fi
 
 	$2 /build/$1/release/bliss-analyser && cp /build/$1/release/bliss-analyser $DESTDIR/$3

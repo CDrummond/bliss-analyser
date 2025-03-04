@@ -46,7 +46,7 @@ jobs:
 
     - name: Build x86 static-libav version
       run: |
-        cargo build --release --features=staticlibav
+        cargo build --release --features=libav,staticlibav
         strip target/release/bliss-analyser
         mkdir releases
         cp target/release/bliss-analyser releases/bliss-analyser
@@ -250,10 +250,10 @@ jobs:
 #
 #    - name: Build
 #      run: |
-#        cargo build --release --features update-aubio-bindings,staticlibav
+#        cargo build --release --features update-aubio-bindings,libav,staticlibav
 #        strip target/release/bliss-analyser
 #        cp target/release/bliss-analyser releases/bliss-analyser-x86_64
-#        cargo build --target=aarch64-apple-darwin --release --features update-aubio-bindings,staticlibav
+#        cargo build --target=aarch64-apple-darwin --release --features update-aubio-bindings,libav,staticlibav
 #        strip target/aarch64-apple-darwin/release/bliss-analyser
 #        cp target/aarch64-apple-darwin/release/bliss-analyser releases/bliss-analyser-arm64
 #
