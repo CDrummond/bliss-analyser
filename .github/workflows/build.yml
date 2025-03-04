@@ -216,7 +216,7 @@ jobs:
           -arch arm64 releases/bliss-analyser-arm64 \
           -output releases/bliss-analyser
 
-    - name: Remove ununsed binaries
+    - name: Remove unused binaries
       run:
         rm releases/bliss-analyser-x86_64 releases/bliss-analyser-arm64
 
@@ -264,7 +264,7 @@ jobs:
 #          -arch arm64 releases/bliss-analyser-arm64 \
 #          -output releases/bliss-analyser
 #
-#    - name: Remove ununsed binaries
+#    - name: Remove unused binaries
 #      run:
 #        rm releases/bliss-analyser-x86_64 releases/bliss-analyser-arm64
 #
