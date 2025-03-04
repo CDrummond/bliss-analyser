@@ -32,7 +32,7 @@ hhmmss = "0.1.0"
 [features]
 libav = ["bliss-audio/ffmpeg"]
 update-aubio-bindings = ["bliss-audio/update-aubio-bindings"]
-staticlibav = ["bliss-audio/ffmpeg","bliss-audio/build-ffmpeg,bliss-audio/ffmpeg-static"]
+staticlibav = ["bliss-audio/ffmpeg", "bliss-audio/build-ffmpeg", "bliss-audio/ffmpeg-static"]
 
 [dependencies.bliss-audio]
 default-features = false
