@@ -13,8 +13,8 @@ GITHUB_TOKEN_FILE = "%s/.config/github-token" % os.path.expanduser('~')
 GITHUB_REPO = "CDrummond/bliss-analyser"
 LINUX_ARM_ARTIFACTS = ["bliss-analyser-linux-arm-ffmpeg", "bliss-analyser-linux-arm-static", "bliss-analyser-debian-bullseye-arm-libav", "bliss-analyser-debian-bookworm-arm-libav"]
 LINUX_X86_ARTIFACTS = ["bliss-analyser-linux-x86-ffmpeg", "bliss-analyser-linux-x86-static", "bliss-analyser-ubuntu-22.04-x86-libav", "bliss-analyser-ubuntu-24.04-x86-libav"]
-MAC_ARTIFACTS = ["bliss-analyser-mac-ffmpeg", "bliss-analyser-mac-libav"]
-WINDOWS_ARTIFACTS = ["bliss-analyser-windows-libav"]
+MAC_ARTIFACTS =       ["bliss-analyser-mac-ffmpeg"]
+WINDOWS_ARTIFACTS =   ["bliss-analyser-windows-libav"]
 UNIX_ARTIFACTS = LINUX_ARM_ARTIFACTS + LINUX_X86_ARTIFACTS + MAC_ARTIFACTS
 GITHUB_ARTIFACTS = UNIX_ARTIFACTS + WINDOWS_ARTIFACTS
 
