@@ -8,6 +8,7 @@
 4. Add ability to specify LMS JSONRPC port.
 5. If new files analysed and 'ignore' file exists then update DB's 'ignore'
    flags.
+6. Add option to write analysis results to files, and use for future scans.
 
 0.2.3
 -----

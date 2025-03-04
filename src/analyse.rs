@@ -42,7 +42,7 @@ const MAX_ERRORS_TO_SHOW: usize = 100;
 const MAX_TAG_ERRORS_TO_SHOW: usize = 50;
 const VALID_EXTENSIONS: [&str; 6] = ["m4a", "mp3", "ogg", "flac", "opus", "wv"];
 
-fn get_file_list(db: &mut db::Db, mpath: &Path, path: &Path, track_paths: &mut Vec<String>, cue_tracks:&mut Vec<cue::CueTrack>, file_count:&mut usize, max_num_files: usize) {
+fn get_file_list(db: &mut db::Db, mpath: &Path, path: &Path, track_paths: &mut Vec<String>, cue_tracks:&mut Vec<cue::CueTrack>, file_count:&mut usize, max_num_files: usize, use_tags: bool, tagged_file_count:&mut usize, dry_run: bool) {
     if !path.is_dir() {
         return;
     }
@@ -51,21 +51,21 @@ fn get_file_list(db: &mut db::Db, mpath: &Path, path: &Path, track_paths: &mut V
     items.sort_by_key(|dir| dir.path());
 
     for item in items {
-        check_dir_entry(db, mpath, item, track_paths, cue_tracks, file_count, max_num_files);
+        check_dir_entry(db, mpath, item, track_paths, cue_tracks, file_count, max_num_files, use_tags, tagged_file_count, dry_run);
         if max_num_files>0 && *file_count>=max_num_files {
             break;
         }
     }
 }
 
-fn check_dir_entry(db: &mut db::Db, mpath: &Path, entry: DirEntry, track_paths: &mut Vec<String>, cue_tracks:&mut Vec<cue::CueTrack>, file_count:&mut usize, max_num_files: usize) {
+fn check_dir_entry(db: &mut db::Db, mpath: &Path, entry: DirEntry, track_paths: &mut Vec<String>, cue_tracks:&mut Vec<cue::CueTrack>, file_count:&mut usize, max_num_files: usize, use_tags: bool, tagged_file_count:&mut usize, dry_run: bool) {
     let pb = entry.path();
     if pb.is_dir() {
         let check = pb.join(DONT_ANALYSE);
         if check.exists() {
             log::info!("Skipping '{}', found '{}'", pb.to_string_lossy(), DONT_ANALYSE);
         } else if max_num_files<=0 || *file_count<max_num_files {
-            get_file_list(db, mpath, &pb, track_paths, cue_tracks, file_count, max_num_files);
+            get_file_list(db, mpath, &pb, track_paths, cue_tracks, file_count, max_num_files, use_tags, tagged_file_count, dry_run);
         }
     } else if pb.is_file() && (max_num_files<=0 || *file_count<max_num_files) {
         if_chain! {
@@ -106,8 +106,22 @@ fn check_dir_entry(db: &mut db::Db, mpath: &Path, entry: DirEntry, track_paths: 
                 } else {
                     if let Ok(id) = db.get_rowid(&sname) {
                         if id<=0 {
-                            track_paths.push(String::from(pb.to_string_lossy()));
-                            *file_count+=1;
+                            let mut tags_used = false;
+                            if use_tags {
+                                let meta = tags::read(&sname, true);
+                                if !meta.is_empty() && !meta.analysis.is_none() {
+                                    if !dry_run {
+                                        db.add_track(&sname, &meta, &meta.analysis.unwrap());
+                                    }
+                                    *tagged_file_count+=1;
+                                    tags_used = true;
+                                }
+                            }
+
+                            if !tags_used {
+                                track_paths.push(String::from(pb.to_string_lossy()));
+                                *file_count+=1;
+                            }
                         }
                     }
                 }
@@ -116,7 +130,7 @@ fn check_dir_entry(db: &mut db::Db, mpath: &Path, entry: DirEntry, track_paths: 
     }
 }
 
-pub fn show_errors(failed: &mut Vec<String>, tag_error: &mut Vec<String>) {
+fn show_errors(failed: &mut Vec<String>, tag_error: &mut Vec<String>) {
     if !failed.is_empty() {
         let total = failed.len();
         failed.truncate(MAX_ERRORS_TO_SHOW);
@@ -144,7 +158,7 @@ pub fn show_errors(failed: &mut Vec<String>, tag_error: &mut Vec<String>) {
 }
 
 #[cfg(feature = "libav")]
-pub fn analyse_new_files(db: &db::Db, mpath: &PathBuf, track_paths: Vec<String>, max_threads: usize) -> Result<()> {
+fn analyse_new_files(db: &db::Db, mpath: &PathBuf, track_paths: Vec<String>, max_threads: usize, use_tags: bool) -> Result<()> {
     let total = track_paths.len();
     let progress = ProgressBar::new(total.try_into().unwrap()).with_style(
         ProgressStyle::default_bar()
@@ -205,7 +219,7 @@ pub fn analyse_new_files(db: &db::Db, mpath: &PathBuf, track_paths: Vec<String>,
                     None => {
                         // Use lofty to read tags here, and not bliss's, so that if update
                         // tags is ever used they are from the same source.
-                        let mut meta = tags::read(&cpath);
+                        let mut meta = tags::read(&cpath, false);
                         if meta.is_empty() {
                             // Lofty failed? Try from bliss...
                             meta.title = track.title.unwrap_or_default().to_string();
@@ -218,10 +232,13 @@ pub fn analyse_new_files(db: &db::Db, mpath: &PathBuf, track_paths: Vec<String>,
                         if meta.is_empty() {
                             tag_error.push(sname.clone());
                         }
+                        if use_tags {
+                            tags::write_analysis(&cpath, &track.analysis);
+                        }
                         db.add_track(&sname, &meta, &track.analysis);
-                        analysed += 1;
                     }
                 }
+                analysed += 1;
             }
             Err(e) => { failed.push(format!("{} - {}", sname, e)); }
         };
@@ -238,7 +255,7 @@ pub fn analyse_new_files(db: &db::Db, mpath: &PathBuf, track_paths: Vec<String>,
 }
 
 #[cfg(not(feature = "libav"))]
-pub fn analyse_new_files(db: &db::Db, mpath: &PathBuf, track_paths: Vec<String>, max_threads: usize) -> Result<()> {
+fn analyse_new_files(db: &db::Db, mpath: &PathBuf, track_paths: Vec<String>, max_threads: usize, use_tags: bool) -> Result<()> {
     let total = track_paths.len();
     let progress = ProgressBar::new(total.try_into().unwrap()).with_style(
         ProgressStyle::default_bar()
@@ -263,9 +280,12 @@ pub fn analyse_new_files(db: &db::Db, mpath: &PathBuf, track_paths: Vec<String>,
         match result {
             Ok(track) => {
                 let cpath = String::from(path.to_string_lossy());
-                let meta = tags::read(&cpath);
+                let meta = tags::read(&cpath, false);
                 if meta.is_empty() {
                     tag_error.push(sname.clone());
+                }
+                if use_tags {
+                    tags::write_analysis(&cpath, &track.analysis);
                 }
                 db.add_track(&sname, &meta, &track.analysis);
                 analysed += 1;
@@ -291,7 +311,7 @@ pub fn analyse_new_files(db: &db::Db, mpath: &PathBuf, track_paths: Vec<String>,
 }
 
 #[cfg(not(feature = "libav"))]
-pub fn analyze_cue_streaming(tracks: Vec<cue::CueTrack>,) -> BlissResult<Receiver<(cue::CueTrack, BlissResult<Song>)>> {
+fn analyze_cue_streaming(tracks: Vec<cue::CueTrack>,) -> BlissResult<Receiver<(cue::CueTrack, BlissResult<Song>)>> {
     let num_cpus = num_cpus::get();
 
     #[allow(clippy::type_complexity)]
@@ -331,7 +351,7 @@ pub fn analyze_cue_streaming(tracks: Vec<cue::CueTrack>,) -> BlissResult<Receive
 }
 
 #[cfg(not(feature = "libav"))]
-pub fn analyse_new_cue_tracks(db:&db::Db, mpath: &PathBuf, cue_tracks:Vec<cue::CueTrack>) -> Result<()> {
+fn analyse_new_cue_tracks(db:&db::Db, mpath: &PathBuf, cue_tracks:Vec<cue::CueTrack>) -> Result<()> {
     let total = cue_tracks.len();
     let progress = ProgressBar::new(total.try_into().unwrap()).with_style(
         ProgressStyle::default_bar()
@@ -359,7 +379,8 @@ pub fn analyse_new_cue_tracks(db:&db::Db, mpath: &PathBuf, cue_tracks:Vec<cue::C
                     album_artist:track.album_artist,
                     album:track.album,
                     genre:track.genre,
-                    duration:if track.duration>=last_track_duration { song.duration.as_secs() as u32 } else { track.duration.as_secs() as u32 }
+                    duration:if track.duration>=last_track_duration { song.duration.as_secs() as u32 } else { track.duration.as_secs() as u32 },
+                    analysis: None
                 };
 
                 db.add_track(&sname, &meta, &song.analysis);
@@ -377,7 +398,7 @@ pub fn analyse_new_cue_tracks(db:&db::Db, mpath: &PathBuf, cue_tracks:Vec<cue::C
     Ok(())
 }
 
-pub fn analyse_files(db_path: &str, mpaths: &Vec<PathBuf>, dry_run: bool, keep_old: bool, max_num_files: usize, max_threads: usize, ignore_path: &PathBuf) {
+pub fn analyse_files(db_path: &str, mpaths: &Vec<PathBuf>, dry_run: bool, keep_old: bool, max_num_files: usize, max_threads: usize, ignore_path: &PathBuf, use_tags: bool) {
     let mut db = db::Db::new(&String::from(db_path));
 
     db.init();
@@ -393,17 +414,21 @@ pub fn analyse_files(db_path: &str, mpaths: &Vec<PathBuf>, dry_run: bool, keep_o
         let mut track_paths: Vec<String> = Vec::new();
         let mut cue_tracks:Vec<cue::CueTrack> = Vec::new();
         let mut file_count:usize = 0;
+        let mut tagged_file_count:usize = 0;
 
         if mpaths.len() > 1 {
             log::info!("Looking for new files in {}", mpath.to_string_lossy());
         } else {
             log::info!("Looking for new files");
         }
-        get_file_list(&mut db, &mpath, &cur, &mut track_paths, &mut cue_tracks, &mut file_count, max_num_files);
+        get_file_list(&mut db, &mpath, &cur, &mut track_paths, &mut cue_tracks, &mut file_count, max_num_files, use_tags, &mut tagged_file_count, dry_run);
         track_paths.sort();
         log::info!("Num new files: {}", track_paths.len());
         if !cue_tracks.is_empty() {
             log::info!("Num new cue tracks: {}", cue_tracks.len());
+        }
+        if use_tags {
+            log::info!("Num tagged files: {}", tagged_file_count);
         }
 
         if dry_run {
@@ -418,7 +443,7 @@ pub fn analyse_files(db_path: &str, mpaths: &Vec<PathBuf>, dry_run: bool, keep_o
             }
         } else {
             if !track_paths.is_empty() {
-                match analyse_new_files(&db, &mpath, track_paths, max_threads) {
+                match analyse_new_files(&db, &mpath, track_paths, max_threads, use_tags) {
                     Ok(_) => { changes_made = true; }
                     Err(e) => { log::error!("Analysis returned error: {}", e); }
                 }

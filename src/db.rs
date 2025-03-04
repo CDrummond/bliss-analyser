@@ -35,6 +35,7 @@ pub struct Metadata {
     pub album: String,
     pub genre: String,
     pub duration: u32,
+    pub analysis: Option<Analysis>,
 }
 
 impl Metadata {
@@ -275,6 +276,7 @@ impl Db {
                         album: dbtags.album.unwrap_or_default(),
                         genre: dbtags.genre.unwrap_or_default(),
                         duration: dbtags.duration,
+                        analysis: None,
                     };
                     progress.set_message(format!("{}", dbtags.file));
 
@@ -282,7 +284,7 @@ impl Db {
                         let track_path = mpath.join(&dbtags.file);
                         if track_path.exists() {
                             let path = String::from(track_path.to_string_lossy());
-                            let ftags = tags::read(&path);
+                            let ftags = tags::read(&path, false);
                             if ftags.is_empty() {
                                 log::error!("Failed to read tags of '{}'", dbtags.file);
                             } else if ftags != dtags {

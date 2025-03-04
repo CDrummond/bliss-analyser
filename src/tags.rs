@@ -7,14 +7,44 @@
  **/
 
 use crate::db;
-use lofty::{Accessor, AudioFile, ItemKey, TaggedFileExt};
+use lofty::{Accessor, AudioFile, ItemKey, Tag, TagExt, TaggedFileExt};
 use regex::Regex;
 use std::path::Path;
 use substring::Substring;
+use bliss_audio::{Analysis, AnalysisIndex};
 
 const MAX_GENRE_VAL: usize = 192;
+const NUM_ANALYSIS_VALS: usize = 20;
+const ANALYSIS_TAG:ItemKey = ItemKey::Script;
+const ANALYSIS_TAG_START: &str = "BLISS_ANALYSIS";
+const ANALYSIS_TAG_VER: u16 = 1;
 
-pub fn read(track: &String) -> db::Metadata {
+pub fn write_analysis(track: &String, analysis: &Analysis) {
+    let value = format!("{},{},{:.24},{:.24},{:.24},{:.24},{:.24},{:.24},{:.24},{:.24},{:.24},{:.24},{:.24},{:.24},{:.24},{:.24},{:.24},{:.24},{:.24},{:.24},{:.24},{:.24}", ANALYSIS_TAG_START, ANALYSIS_TAG_VER,
+                        analysis[AnalysisIndex::Tempo], analysis[AnalysisIndex::Zcr], analysis[AnalysisIndex::MeanSpectralCentroid], analysis[AnalysisIndex::StdDeviationSpectralCentroid], analysis[AnalysisIndex::MeanSpectralRolloff],
+                        analysis[AnalysisIndex::StdDeviationSpectralRolloff], analysis[AnalysisIndex::MeanSpectralFlatness], analysis[AnalysisIndex::StdDeviationSpectralFlatness], analysis[AnalysisIndex::MeanLoudness], analysis[AnalysisIndex::StdDeviationLoudness],
+                        analysis[AnalysisIndex::Chroma1], analysis[AnalysisIndex::Chroma2], analysis[AnalysisIndex::Chroma3], analysis[AnalysisIndex::Chroma4], analysis[AnalysisIndex::Chroma5],
+                        analysis[AnalysisIndex::Chroma6], analysis[AnalysisIndex::Chroma7], analysis[AnalysisIndex::Chroma8], analysis[AnalysisIndex::Chroma9], analysis[AnalysisIndex::Chroma10]);
+
+    if let Ok(mut file) = lofty::read_from_path(Path::new(track)) {
+        let tag = match file.primary_tag_mut() {
+            Some(primary_tag) => primary_tag,
+            None => {
+                if let Some(first_tag) = file.first_tag_mut() {
+                    first_tag
+                } else {
+                    let tag_type = file.primary_tag_type();
+                    file.insert_tag(Tag::new(tag_type));
+                    file.primary_tag_mut().unwrap()
+                }
+            },
+        };
+        tag.insert_text(ANALYSIS_TAG, value);
+        let _ = tag.save_to_path(Path::new(track));
+    }
+}
+
+pub fn read(track: &String, read_analysis: bool) -> db::Metadata {
     let mut meta = db::Metadata {
         duration: 180,
         ..db::Metadata::default()
@@ -71,6 +101,48 @@ pub fn read(track: &String) -> db::Metadata {
         }
 
         meta.duration = file.properties().duration().as_secs() as u32;
+
+        if read_analysis {
+            let analysis_string = tag.get_string(&ANALYSIS_TAG).unwrap_or("");
+            if analysis_string.len()>(ANALYSIS_TAG_START.len()+(NUM_ANALYSIS_VALS*8)) {
+                let parts = analysis_string.split(",");
+                let mut index = 0;
+                let mut vals = [0.; NUM_ANALYSIS_VALS];
+                for part in parts {
+                    if 0==index {
+                        if part!=ANALYSIS_TAG_START {
+                            break;
+                        }
+                    } else if 1==index {
+                        match part.parse::<u16>() {
+                            Ok(ver) => {
+                                if ver!=ANALYSIS_TAG_VER {
+                                    break;
+                                }
+                            },
+                            Err(_) => {
+                                break;
+                            }
+                        }
+                    } else if (index - 2) < NUM_ANALYSIS_VALS {
+                        match part.parse::<f32>() {
+                            Ok(val) => {
+                                vals[index - 2] = val;
+                            },
+                            Err(_) => {
+                                break;
+                            }
+                        }
+                    } else {
+                        break;
+                    }
+                    index += 1;
+                }
+                if index == (NUM_ANALYSIS_VALS+2) {
+                    meta.analysis = Some(Analysis::new(vals));
+                }
+            }
+        }
     }
 
     meta
