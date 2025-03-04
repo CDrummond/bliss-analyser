@@ -199,7 +199,8 @@ fn main() {
                 }
                 analyse::update_ignore(&db_path, &ignore_path);
             } else {
-                analyse::analyse_files(&db_path, &music_paths, dry_run, keep_old, max_num_files, max_threads);
+                let ignore_path = PathBuf::from(&ignore_file);
+                analyse::analyse_files(&db_path, &music_paths, dry_run, keep_old, max_num_files, max_threads, &ignore_path);
             }
         }
     }

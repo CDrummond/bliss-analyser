@@ -6,6 +6,8 @@
    defualt. Pass "--features=libav" to cargo to build against ffmpeg
    libraries.
 4. Add ability to specify LMS JSONRPC port.
+5. If new files analysed and 'ignore' file exists then update DB's 'ignore'
+   flags.
 
 0.2.3
 -----

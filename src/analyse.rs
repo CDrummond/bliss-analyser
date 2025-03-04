@@ -376,7 +376,7 @@ pub fn analyse_new_cue_tracks(db:&db::Db, mpath: &PathBuf, cue_tracks:Vec<cue::C
     Ok(())
 }
 
-pub fn analyse_files(db_path: &str, mpaths: &Vec<PathBuf>, dry_run: bool, keep_old: bool, max_num_files: usize, max_threads: usize) {
+pub fn analyse_files(db_path: &str, mpaths: &Vec<PathBuf>, dry_run: bool, keep_old: bool, max_num_files: usize, max_threads: usize, ignore_path: &PathBuf) {
     let mut db = db::Db::new(&String::from(db_path));
 
     db.init();
@@ -385,6 +385,7 @@ pub fn analyse_files(db_path: &str, mpaths: &Vec<PathBuf>, dry_run: bool, keep_o
         db.remove_old(mpaths, dry_run);
     }
 
+    let mut changes_made = false;
     for path in mpaths {
         let mpath = path.clone();
         let cur = path.clone();
@@ -417,7 +418,7 @@ pub fn analyse_files(db_path: &str, mpaths: &Vec<PathBuf>, dry_run: bool, keep_o
         } else {
             if !track_paths.is_empty() {
                 match analyse_new_files(&db, &mpath, track_paths, max_threads) {
-                    Ok(_) => { }
+                    Ok(_) => { changes_made = true; }
                     Err(e) => { log::error!("Analysis returned error: {}", e); }
                 }
             } else {
@@ -427,7 +428,7 @@ pub fn analyse_files(db_path: &str, mpaths: &Vec<PathBuf>, dry_run: bool, keep_o
             #[cfg(not(feature = "libav"))]
             if !cue_tracks.is_empty() {
                 match analyse_new_cue_tracks(&db, &mpath, cue_tracks) {
-                    Ok(_) => { },
+                    Ok(_) => { changes_made = true; },
                     Err(e) => { log::error!("Cue analysis returned error: {}", e); }
                 }
             }
@@ -435,6 +436,10 @@ pub fn analyse_files(db_path: &str, mpaths: &Vec<PathBuf>, dry_run: bool, keep_o
     }
 
     db.close();
+    if changes_made && ignore_path.exists() && ignore_path.is_file() {
+        log::info!("Updating 'ignore' flags");
+        update_ignore(&db_path, &ignore_path);
+    }
 }
 
 pub fn read_tags(db_path: &str, mpaths: &Vec<PathBuf>) {
