@@ -241,7 +241,7 @@ jobs:
 
     - name: Install deps
       run: |
-        brew install pkg-config ffmpeg
+        brew install pkg-config ffmpeg nasm
 
     - name: Install Rust support for ARM64 & prepare environment
       run: |
