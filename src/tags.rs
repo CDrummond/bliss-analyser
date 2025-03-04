@@ -7,7 +7,7 @@
  **/
 
 use crate::db;
-use lofty::{Accessor, AudioFile, ItemKey, Tag, TagExt, TaggedFileExt};
+use lofty::{Accessor, AudioFile, ItemKey, ItemValue, Tag, TagExt, TaggedFileExt, TagItem};
 use regex::Regex;
 use std::path::Path;
 use substring::Substring;
@@ -15,7 +15,7 @@ use bliss_audio::{Analysis, AnalysisIndex};
 
 const MAX_GENRE_VAL: usize = 192;
 const NUM_ANALYSIS_VALS: usize = 20;
-const ANALYSIS_TAG:ItemKey = ItemKey::Script;
+const ANALYSIS_TAG:ItemKey = ItemKey::Comment;
 const ANALYSIS_TAG_START: &str = "BLISS_ANALYSIS";
 const ANALYSIS_TAG_VER: u16 = 1;
 
@@ -39,7 +39,8 @@ pub fn write_analysis(track: &String, analysis: &Analysis) {
                 }
             },
         };
-        tag.insert_text(ANALYSIS_TAG, value);
+
+        tag.push(TagItem::new(ANALYSIS_TAG, ItemValue::Text(value)));
         let _ = tag.save_to_path(Path::new(track));
     }
 }
@@ -103,43 +104,46 @@ pub fn read(track: &String, read_analysis: bool) -> db::Metadata {
         meta.duration = file.properties().duration().as_secs() as u32;
 
         if read_analysis {
-            let analysis_string = tag.get_string(&ANALYSIS_TAG).unwrap_or("");
-            if analysis_string.len()>(ANALYSIS_TAG_START.len()+(NUM_ANALYSIS_VALS*8)) {
-                let parts = analysis_string.split(",");
-                let mut index = 0;
-                let mut vals = [0.; NUM_ANALYSIS_VALS];
-                for part in parts {
-                    if 0==index {
-                        if part!=ANALYSIS_TAG_START {
-                            break;
-                        }
-                    } else if 1==index {
-                        match part.parse::<u16>() {
-                            Ok(ver) => {
-                                if ver!=ANALYSIS_TAG_VER {
+            let entries = tag.get_strings(&ANALYSIS_TAG);
+            for entry in entries {
+                if entry.len()>(ANALYSIS_TAG_START.len()+(NUM_ANALYSIS_VALS*8)) && entry.starts_with(ANALYSIS_TAG_START) {
+                    let parts = entry.split(",");
+                    let mut index = 0;
+                    let mut vals = [0.; NUM_ANALYSIS_VALS];
+                    for part in parts {
+                        if 0==index {
+                            if part!=ANALYSIS_TAG_START {
+                                break;
+                            }
+                        } else if 1==index {
+                            match part.parse::<u16>() {
+                                Ok(ver) => {
+                                    if ver!=ANALYSIS_TAG_VER {
+                                        break;
+                                    }
+                                },
+                                Err(_) => {
                                     break;
                                 }
-                            },
-                            Err(_) => {
-                                break;
                             }
-                        }
-                    } else if (index - 2) < NUM_ANALYSIS_VALS {
-                        match part.parse::<f32>() {
-                            Ok(val) => {
-                                vals[index - 2] = val;
-                            },
-                            Err(_) => {
-                                break;
+                        } else if (index - 2) < NUM_ANALYSIS_VALS {
+                            match part.parse::<f32>() {
+                                Ok(val) => {
+                                    vals[index - 2] = val;
+                                },
+                                Err(_) => {
+                                    break;
+                                }
                             }
+                        } else {
+                            break;
                         }
-                    } else {
-                        break;
+                        index += 1;
                     }
-                    index += 1;
-                }
-                if index == (NUM_ANALYSIS_VALS+2) {
-                    meta.analysis = Some(Analysis::new(vals));
+                    if index == (NUM_ANALYSIS_VALS+2) {
+                        meta.analysis = Some(Analysis::new(vals));
+                    }
+                    break;
                 }
             }
         }
