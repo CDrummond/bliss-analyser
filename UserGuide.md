@@ -133,6 +133,8 @@ analysis results. This will default to `bliss.db` in the current folder.
 * `lms` specifies the hostname, or IP address, of your LMS server. This is used
 when uploading the database file to LMS. This defaults to `127.0.0.1` If your LMS is
 password protected then use `user:pass@server` - e.g. `lms=pi:abc123@127.0.0.1`
+* `json` specifies the JSONRPC port number of your LMS server. This will defaul to
+9000.
 * `ignore` specifies the name and location of a file containing items to ignore
 in mixes. See the `Ignore` section later on for more details.
 
@@ -156,6 +158,7 @@ analysis will be performed, instead the logging will inform you how many new
 tracks are to be analysed and how many old tracks are left in the database.
 * `-i` / `--ignore` Name and location of the file containing items to ignore.
 * `-L` / `--lms` Hostname, or IP address, of your LMS server.
+* `-J` / `--json` JSONRPC port number of your LMS server.
 * `-n` / `--numtracks` Specify maximum number of tracks to analyse.
 
 Equivalent items specified in the INI config file (detailed above) will override

@@ -17,24 +17,24 @@ fn fail(msg: &str) {
     process::exit(-1);
 }
 
-pub fn stop_mixer(lms: &String) {
+pub fn stop_mixer(lms_host: &String, json_port: u16) {
     let stop_req = "{\"id\":1, \"method\":\"slim.request\",\"params\":[\"\",[\"blissmixer\",\"stop\"]]}";
 
     log::info!("Asking plugin to stop mixer");
-    let req = ureq::post(&format!("http://{}:9000/jsonrpc.js", lms)).send_string(&stop_req);
+    let req = ureq::post(&format!("http://{}:{}/jsonrpc.js", lms_host, json_port)).send_string(&stop_req);
     if let Err(e) = req {
         log::error!("Failed to ask plugin to stop mixer. {}", e);
     }
 }
 
-pub fn upload_db(db_path: &String, lms: &String) {
+pub fn upload_db(db_path: &String, lms_host: &String, json_port: u16) {
     // First tell LMS to restart the mixer in upload mode
     let start_req = "{\"id\":1, \"method\":\"slim.request\",\"params\":[\"\",[\"blissmixer\",\"start-upload\"]]}";
     let mut port: u16 = 0;
 
     log::info!("Requesting LMS plugin to allow uploads");
 
-    match ureq::post(&format!("http://{}:9000/jsonrpc.js", lms)).send_string(&start_req) {
+    match ureq::post(&format!("http://{}:{}/jsonrpc.js", lms_host, json_port)).send_string(&start_req) {
         Ok(resp) => match resp.into_string() {
             Ok(text) => match text.find("\"port\":") {
                 Some(s) => {
@@ -69,13 +69,13 @@ pub fn upload_db(db_path: &String, lms: &String) {
             Ok(meta) => {
                 let buffered_reader = BufReader::new(file);
                 log::info!("Length: {}", meta.len());
-                match ureq::put(&format!("http://{}:{}/upload", lms, port))
+                match ureq::put(&format!("http://{}:{}/upload", lms_host, port))
                     .set("Content-Length", &meta.len().to_string())
                     .set("Content-Type", "application/octet-stream")
                     .send(buffered_reader) {
                     Ok(_) => {
                         log::info!("Database uploaded");
-                        stop_mixer(lms);
+                        stop_mixer(lms_host, json_port);
                     }
                     Err(e) => { fail(&format!("Failed to upload database. {}", e)); }
                 }

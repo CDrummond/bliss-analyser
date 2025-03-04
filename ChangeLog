@@ -5,6 +5,7 @@
 3. Use 'ffmpeg' commandline to decode files, and not ffmpeg libraries by
    defualt. Pass "--features=libav" to cargo to build against ffmpeg
    libraries.
+4. Add ability to specify LMS JSONRPC port.
 
 0.2.3
 -----
