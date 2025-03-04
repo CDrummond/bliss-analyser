@@ -21,6 +21,11 @@ with the `ffmpeg` libraries. This allows faster decoding of files, but will
 require the exact `ffmpeg` library versions to be on your system. (These
 libraries are usually provided with the Windows build).
 
+If the package used ended with `-static` then `bliss-analyser` has been built
+with the `ffmpeg` libraries - but these have been statically linked. This
+allows faster decoding of files, and a more portable binary - however, this
+_may_ reduce the number of supported file formats.
+
 If the package used ended with `-ffmpeg`, then `bliss-analyser` requires you
 also have the `ffmpeg` application installed and in your `$PATH`. These
 builds are roughly 46% slower at analysis, but are more portable as they can
@@ -34,7 +39,7 @@ Quick guide
 
 2. Install ffmpeg if using Linux or macOS.
 
-3. Edit the supplied `config.ini` in the current folder to set appropiate values
+3. Edit the supplied `config.ini` in the current folder to set appropriate values
 for `music` and `lms` - e.g.:
 ```
 [Bliss]
@@ -153,7 +158,7 @@ tracks are to be analysed and how many old tracks are left in the database.
 * `-L` / `--lms` Hostname, or IP address, of your LMS server.
 * `-n` / `--numtracks` Specify maximum number of tracks to analyse.
 
-Equivalent items specied in the INI config file (detailed above) will override
+Equivalent items specified in the INI config file (detailed above) will override
 any specified on the commandline.
 
 `bliss-analyser` requires one extra parameter, which is used to determine the
@@ -198,7 +203,7 @@ tracks/hour.
 CUE files
 ---------
 
-If the anlyser encounters an audio file with a matching CUE file (e.g.
+If the analyser encounters an audio file with a matching CUE file (e.g.
 `album.flac` and `album.cue` in same folder) then it will attempt to analyse the
 individual tracks contained within.
 
@@ -319,7 +324,7 @@ The SQL LIKE lines do sub-string matching. So '%Dance%' will match any genre
 string that contains 'Dance' - e.g. 'Classical Dance'. The 4 lines with 'Rock'
 show how you can explicitly look for an exact match. The 1st line means 'Rock'
 is the only genre, 2nd means 'Rock' is the first genre, 3rd means 'Rock' is the
-last genre, and 4th means 'Rock' is amongs other genres.
+last genre, and 4th means 'Rock' is amongst other genres.
 
 Assuming `config.ini` is in the current folder and contains valid entries, this
 is accomplished as follows:
