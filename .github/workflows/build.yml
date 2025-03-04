@@ -34,6 +34,33 @@ jobs:
         path: releases/
 
 
+  Linux_static_x86:
+    runs-on: ubuntu-22.04
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Packages
+      run: sudo apt-get update && sudo apt-get install build-essential yasm -y
+
+    - name: Build x86 static-libav version
+      run: |
+        cargo build --release --features=staticlibav
+        strip target/release/bliss-analyser
+        mkdir releases
+        cp target/release/bliss-analyser releases/bliss-analyser
+        cp UserGuide.md releases/README.md
+        cp LICENSE releases/
+        cp configs/linux.ini releases/config.ini
+
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: bliss-analyser-linux-x86
+        path: releases/
+
+
   Ubuntu_2204_libav_x86:
     runs-on: ubuntu-22.04
 
@@ -107,6 +134,25 @@ jobs:
         path: releases/
 
 
+  Linux_static_arm:
+    runs-on: ubuntu-22.04
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Build ARM static-libav on Debian
+      run: |
+        docker build -t bliss-analyser-cross - < docker/Dockerfile_Bullseye_static
+        docker run --rm -v $PWD/target:/build -v $PWD:/src bliss-analyser-cross
+
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: bliss-analyser-linux-arm
+        path: releases/
+
+
   Debian_libav_arm:
     runs-on: ubuntu-22.04
 
@@ -160,6 +206,54 @@ jobs:
         strip target/release/bliss-analyser
         cp target/release/bliss-analyser releases/bliss-analyser-x86_64
         cargo build --target=aarch64-apple-darwin --release --features update-aubio-bindings
+        strip target/aarch64-apple-darwin/release/bliss-analyser
+        cp target/aarch64-apple-darwin/release/bliss-analyser releases/bliss-analyser-arm64
+
+    - name: Build fat binary
+      run: |
+        lipo -create \
+          -arch x86_64 releases/bliss-analyser-x86_64 \
+          -arch arm64 releases/bliss-analyser-arm64 \
+          -output releases/bliss-analyser
+
+    - name: Remove ununsed binaries
+      run:
+        rm releases/bliss-analyser-x86_64 releases/bliss-analyser-arm64
+
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: bliss-analyser-mac-ffmpeg
+        path: releases/
+
+
+  macOS_staticlibav:
+    runs-on: macos-13
+
+    steps:
+    - name: Install Rust
+      uses: actions-rs/toolchain@v1
+      with:
+          toolchain: stable
+
+    - name: Checkout
+      uses: actions/checkout@v2
+
+    - name: Install deps
+      run: |
+        brew install pkg-config ffmpeg
+
+    - name: Install Rust support for ARM64 & prepare environment
+      run: |
+        rustup target add aarch64-apple-darwin
+        mkdir releases
+
+    - name: Build
+      run: |
+        cargo build --release --features update-aubio-bindings,staticlibav
+        strip target/release/bliss-analyser
+        cp target/release/bliss-analyser releases/bliss-analyser-x86_64
+        cargo build --target=aarch64-apple-darwin --release --features update-aubio-bindings,staticlibav
         strip target/aarch64-apple-darwin/release/bliss-analyser
         cp target/aarch64-apple-darwin/release/bliss-analyser releases/bliss-analyser-arm64
 
