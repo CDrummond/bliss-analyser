@@ -333,11 +333,11 @@ pub fn analyze_cue_streaming(tracks: Vec<cue::CueTrack>,) -> BlissResult<Receive
 #[cfg(not(feature = "libav"))]
 pub fn analyse_new_cue_tracks(db:&db::Db, mpath: &PathBuf, cue_tracks:Vec<cue::CueTrack>) -> Result<()> {
     let total = cue_tracks.len();
-    let pb = ProgressBar::new(total.try_into().unwrap());
-    let style = ProgressStyle::default_bar()
-        .template("[{elapsed_precise}] [{bar:25}] {percent:>3}% {pos:>6}/{len:6} {wide_msg}")
-        .progress_chars("=> ");
-    pb.set_style(style);
+    let progress = ProgressBar::new(total.try_into().unwrap()).with_style(
+        ProgressStyle::default_bar()
+            .template("[{elapsed_precise}] [{bar:25}] {percent:>3}% {pos:>6}/{len:6} {wide_msg}")
+            .progress_chars("=> "),
+    );
 
     let results = analyze_cue_streaming(cue_tracks)?;
     let mut analysed = 0;
@@ -350,7 +350,7 @@ pub fn analyse_new_cue_tracks(db:&db::Db, mpath: &PathBuf, cue_tracks:Vec<cue::C
         let stripped = track.track_path.strip_prefix(mpath).unwrap();
         let spbuff = stripped.to_path_buf();
         let sname = String::from(spbuff.to_string_lossy());
-        pb.set_message(format!("{}", sname));
+        progress.set_message(format!("{}", sname));
         match result {
             Ok(song) => {
                 let meta = db::Metadata {
@@ -369,9 +369,10 @@ pub fn analyse_new_cue_tracks(db:&db::Db, mpath: &PathBuf, cue_tracks:Vec<cue::C
                 failed.push(format!("{} - {}", sname, e));
             }
         };
-        pb.inc(1);
+        progress.inc(1);
     }
-    pb.finish_with_message(format!("{} Analysed. {} Failure(s).", analysed, failed.len()));
+    progress.finish_with_message("Finished!");
+    log::info!("{} Analysed. {} Failure(s).", analysed, failed.len());
     show_errors(&mut failed, &mut tag_error);
     Ok(())
 }
