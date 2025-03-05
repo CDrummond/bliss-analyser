@@ -9,6 +9,7 @@
 5. If new files analysed and 'ignore' file exists then update DB's 'ignore'
    flags.
 6. Add option to write analysis results to files, and use for future scans.
+7. If log level set to 'trace' then set this level for the Bliss library too.
 
 0.2.3
 -----
