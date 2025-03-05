@@ -142,8 +142,8 @@ pub fn read(track: &String, read_analysis: bool) -> db::Metadata {
                     }
                     if index == (NUM_ANALYSIS_VALS+2) {
                         meta.analysis = Some(Analysis::new(vals));
+                        break;
                     }
-                    break;
                 }
             }
         }
