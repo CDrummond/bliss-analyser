@@ -40,6 +40,20 @@ pub fn write_analysis(track: &String, analysis: &Analysis) {
             },
         };
 
+        // Remove any existing analysis result tag
+        let entries = tag.get_strings(&ANALYSIS_TAG);
+        let mut keep: Vec<ItemValue> = Vec::new();
+        for entry in entries {
+            if !entry.starts_with(ANALYSIS_TAG_START) {
+                keep.push(ItemValue::Text(entry.to_string()));
+            }
+        }
+        tag.remove_key(&ANALYSIS_TAG);
+        for k in keep {
+            tag.push(TagItem::new(ANALYSIS_TAG, k));
+        }
+
+        // Store analysis results
         tag.push(TagItem::new(ANALYSIS_TAG, ItemValue::Text(value)));
         let _ = tag.save_to_path(Path::new(track));
     }
