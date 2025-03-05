@@ -3,13 +3,16 @@
 1. Add support for (DSD) WavPack - thanks to Bart Lauret
 2. Update version of bliss library.
 3. Use 'ffmpeg' commandline to decode files, and not ffmpeg libraries by
-   defualt. Pass "--features=libav" to cargo to build against ffmpeg
-   libraries.
+   defualt. Pass '--features=libav' to cargo to build against ffmpeg
+   libraries. Pass '--features=libav,libavstatic' to cargo to build against
+   ffmpeg libraries, and statically link these in.
 4. Add ability to specify LMS JSONRPC port.
 5. If new files analysed and 'ignore' file exists then update DB's 'ignore'
    flags.
 6. Add option to write analysis results to files, and use for future scans.
 7. If log level set to 'trace' then set this level for the Bliss library too.
+8. Enable support for '.dsf' files, but only if compiled against ffmpeg
+   libraries.
 
 0.2.3
 -----

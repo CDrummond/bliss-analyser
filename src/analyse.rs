@@ -40,6 +40,10 @@ use bliss_audio::{decoder::Decoder, BlissResult, Song};
 const DONT_ANALYSE: &str = ".notmusic";
 const MAX_ERRORS_TO_SHOW: usize = 100;
 const MAX_TAG_ERRORS_TO_SHOW: usize = 50;
+
+#[cfg(feature = "libav")]
+const VALID_EXTENSIONS: [&str; 7] = ["m4a", "mp3", "ogg", "flac", "opus", "wv", "dsf"];
+#[cfg(not(feature = "libav"))]
 const VALID_EXTENSIONS: [&str; 6] = ["m4a", "mp3", "ogg", "flac", "opus", "wv"];
 
 fn get_file_list(db: &mut db::Db, mpath: &Path, path: &Path, track_paths: &mut Vec<String>, cue_tracks:&mut Vec<cue::CueTrack>, file_count:&mut usize, max_num_files: usize, use_tags: bool, tagged_file_count:&mut usize, dry_run: bool) {
@@ -201,7 +205,8 @@ fn analyse_new_files(db: &db::Db, mpath: &PathBuf, track_paths: Vec<String>, max
                                     album: track.album.unwrap_or_default().to_string(),
                                     album_artist: track.album_artist.unwrap_or_default().to_string(),
                                     genre: track.genre.unwrap_or_default().to_string(),
-                                    duration: track.duration.as_secs() as u32
+                                    duration: track.duration.as_secs() as u32,
+                                    analysis: None
                                 };
 
                                 // Remove prefix from audio_file_path
