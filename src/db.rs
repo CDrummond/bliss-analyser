@@ -6,6 +6,8 @@
  *
  **/
 
+ #[cfg(not(feature = "libav"))]
+use crate::ffmpeg;
 use crate::tags;
 use bliss_audio::{Analysis, AnalysisIndex};
 use indicatif::{ProgressBar, ProgressStyle};
@@ -284,7 +286,13 @@ impl Db {
                         let track_path = mpath.join(&dbtags.file);
                         if track_path.exists() {
                             let path = String::from(track_path.to_string_lossy());
-                            let ftags = tags::read(&path, false);
+                            let mut ftags = tags::read(&path, false);
+
+                            #[cfg(not(feature = "libav"))]
+                            if ftags.is_empty() {
+                                ftags = ffmpeg::read_tags(&path);
+                            }
+
                             if ftags.is_empty() {
                                 log::error!("Failed to read tags of '{}'", dbtags.file);
                             } else if ftags != dtags {
