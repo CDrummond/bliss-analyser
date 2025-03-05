@@ -40,11 +40,7 @@ use bliss_audio::{decoder::Decoder, BlissResult, Song};
 const DONT_ANALYSE: &str = ".notmusic";
 const MAX_ERRORS_TO_SHOW: usize = 100;
 const MAX_TAG_ERRORS_TO_SHOW: usize = 50;
-
-#[cfg(feature = "libav")]
 const VALID_EXTENSIONS: [&str; 7] = ["m4a", "mp3", "ogg", "flac", "opus", "wv", "dsf"];
-#[cfg(not(feature = "libav"))]
-const VALID_EXTENSIONS: [&str; 6] = ["m4a", "mp3", "ogg", "flac", "opus", "wv"];
 
 fn get_file_list(db: &mut db::Db, mpath: &Path, path: &Path, track_paths: &mut Vec<String>, cue_tracks:&mut Vec<cue::CueTrack>, file_count:&mut usize, max_num_files: usize, use_tags: bool, tagged_file_count:&mut usize, dry_run: bool) {
     if !path.is_dir() {
@@ -285,7 +281,10 @@ fn analyse_new_files(db: &db::Db, mpath: &PathBuf, track_paths: Vec<String>, max
         match result {
             Ok(track) => {
                 let cpath = String::from(path.to_string_lossy());
-                let meta = tags::read(&cpath, false);
+                let mut meta = tags::read(&cpath, false);
+                if meta.is_empty() {
+                    meta = ffmpeg::read_tags(&cpath);
+                }
                 if meta.is_empty() {
                     tag_error.push(sname.clone());
                 }

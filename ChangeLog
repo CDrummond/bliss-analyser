@@ -11,8 +11,7 @@
    flags.
 6. Add option to write analysis results to files, and use for future scans.
 7. If log level set to 'trace' then set this level for the Bliss library too.
-8. Enable support for '.dsf' files, but only if compiled against ffmpeg
-   libraries.
+8. Enable support for '.dsf' files.
 
 0.2.3
 -----
