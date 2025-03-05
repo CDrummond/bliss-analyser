@@ -7,7 +7,10 @@
  **/
 
 use crate::db;
-use lofty::{Accessor, AudioFile, ItemKey, ItemValue, Tag, TagExt, TaggedFileExt, TagItem};
+use lofty::config::WriteOptions;
+use lofty::file::FileType;
+use lofty::prelude::{Accessor, AudioFile, ItemKey, TagExt, TaggedFileExt};
+use lofty::tag::{ItemValue, Tag, TagItem};
 use regex::Regex;
 use std::path::Path;
 use substring::Substring;
@@ -55,7 +58,7 @@ pub fn write_analysis(track: &String, analysis: &Analysis) {
 
         // Store analysis results
         tag.push(TagItem::new(ANALYSIS_TAG, ItemValue::Text(value)));
-        let _ = tag.save_to_path(Path::new(track));
+        let _ = tag.save_to_path(Path::new(track), WriteOptions::default());
     }
 }
 
@@ -78,7 +81,7 @@ pub fn read(track: &String, read_analysis: bool) -> db::Metadata {
         meta.genre = tag.genre().unwrap_or_default().to_string();
 
         // Check whether MP3 has numeric genre, and if so covert to text
-        if file.file_type().eq(&lofty::FileType::Mpeg) {
+        if file.file_type().eq(&FileType::Mpeg) {
             match tag.genre() {
                 Some(genre) => {
                     let test = genre.parse::<u8>();
