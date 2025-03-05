@@ -75,7 +75,7 @@ fn main() {
         arg_parse.refer(&mut lms_json_port).add_option(&["-J", "--json"], Store, &lms_json_port_help);
         arg_parse.refer(&mut max_num_files).add_option(&["-n", "--numfiles"], Store, "Maximum number of files to analyse");
         arg_parse.refer(&mut max_threads).add_option(&["-t", "--threads"], Store, "Maximum number of threads to use for analysis");
-        arg_parse.refer(&mut use_tags).add_option(&["-T", "--tags"], StoreTrue, "Read/write analysis results from/to source fles");
+        arg_parse.refer(&mut use_tags).add_option(&["-T", "--tags"], StoreTrue, "Read/write analysis results from/to source files");
         arg_parse.refer(&mut task).add_argument("task", Store, "Task to perform; analyse, tags, ignore, upload, stopmixer.");
         arg_parse.parse_args_or_exit();
     }
