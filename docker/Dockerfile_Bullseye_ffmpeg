@@ -1,4 +1,4 @@
-# Cross compilation environment for bliss-mixer
+# Cross compilation environment for bliss-analyser
 
 FROM debian:bullseye
 
