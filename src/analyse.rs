@@ -8,11 +8,11 @@
 
 use crate::cue;
 use crate::db;
-#[cfg(not(feature = "libav"))]
+#[cfg(feature = "ffmpeg")]
 use crate::ffmpeg;
 use crate::tags;
 use anyhow::Result;
-#[cfg(not(feature = "libav"))]
+#[cfg(feature = "ffmpeg")]
 use hhmmss::Hhmmss;
 use if_chain::if_chain;
 use indicatif::{ProgressBar, ProgressStyle};
@@ -23,18 +23,18 @@ use std::fs::{DirEntry, File};
 use std::io::{BufRead, BufReader};
 use std::num::NonZeroUsize;
 use std::path::{Path, PathBuf};
-#[cfg(not(feature = "libav"))]
+#[cfg(feature = "ffmpeg")]
 use std::sync::mpsc;
-#[cfg(not(feature = "libav"))]
+#[cfg(feature = "ffmpeg")]
 use std::sync::mpsc::{Receiver, Sender};
-#[cfg(not(feature = "libav"))]
+#[cfg(feature = "ffmpeg")]
 use std::thread;
-#[cfg(not(feature = "libav"))]
+#[cfg(feature = "ffmpeg")]
 use std::time::Duration;
 use num_cpus;
 #[cfg(feature = "libav")]
 use bliss_audio::{decoder::Decoder, decoder::ffmpeg::FFmpeg};
-#[cfg(not(feature = "libav"))]
+#[cfg(feature = "ffmpeg")]
 use bliss_audio::{decoder::Decoder, BlissResult, Song};
 
 const DONT_ANALYSE: &str = ".notmusic";
@@ -92,7 +92,7 @@ fn check_dir_entry(db: &mut db::Db, mpath: &Path, entry: DirEntry, track_paths: 
                                 *file_count+=1;
                             }
 
-                            #[cfg(not(feature = "libav"))]
+                            #[cfg(feature = "ffmpeg")]
                             if id<=0 {
                                 let this_cue_tracks = cue::parse(&pb, &cue_file);
                                 for track in this_cue_tracks {
@@ -255,7 +255,7 @@ fn analyse_new_files(db: &db::Db, mpath: &PathBuf, track_paths: Vec<String>, max
     Ok(())
 }
 
-#[cfg(not(feature = "libav"))]
+#[cfg(feature = "ffmpeg")]
 fn analyse_new_files(db: &db::Db, mpath: &PathBuf, track_paths: Vec<String>, max_threads: usize, use_tags: bool) -> Result<()> {
     let total = track_paths.len();
     let progress = ProgressBar::new(total.try_into().unwrap()).with_style(
@@ -314,7 +314,7 @@ fn analyse_new_files(db: &db::Db, mpath: &PathBuf, track_paths: Vec<String>, max
     Ok(())
 }
 
-#[cfg(not(feature = "libav"))]
+#[cfg(feature = "ffmpeg")]
 fn analyze_cue_streaming(tracks: Vec<cue::CueTrack>,) -> BlissResult<Receiver<(cue::CueTrack, BlissResult<Song>)>> {
     let num_cpus = num_cpus::get();
 
@@ -354,7 +354,7 @@ fn analyze_cue_streaming(tracks: Vec<cue::CueTrack>,) -> BlissResult<Receiver<(c
     Ok(rx)
 }
 
-#[cfg(not(feature = "libav"))]
+#[cfg(feature = "ffmpeg")]
 fn analyse_new_cue_tracks(db:&db::Db, mpath: &PathBuf, cue_tracks:Vec<cue::CueTrack>) -> Result<()> {
     let total = cue_tracks.len();
     let progress = ProgressBar::new(total.try_into().unwrap()).with_style(
@@ -455,7 +455,7 @@ pub fn analyse_files(db_path: &str, mpaths: &Vec<PathBuf>, dry_run: bool, keep_o
                 log::info!("No new files to analyse");
             }
 
-            #[cfg(not(feature = "libav"))]
+            #[cfg(feature = "ffmpeg")]
             if !cue_tracks.is_empty() {
                 match analyse_new_cue_tracks(&db, &mpath, cue_tracks) {
                     Ok(_) => { changes_made = true; },

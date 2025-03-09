@@ -8,17 +8,17 @@
 
 extern crate rcue;
 
-#[cfg(not(feature = "libav"))]
+#[cfg(feature = "ffmpeg")]
 use crate::db;
-#[cfg(not(feature = "libav"))]
+#[cfg(feature = "ffmpeg")]
 use rcue::parser::parse_from_file;
 use std::path::PathBuf;
-#[cfg(not(feature = "libav"))]
+#[cfg(feature = "ffmpeg")]
 use std::time::Duration;
 
-#[cfg(not(feature = "libav"))]
+#[cfg(feature = "ffmpeg")]
 pub const LAST_TRACK_DURATION:u64 = 60*60*24;
-#[cfg(not(feature = "libav"))]
+#[cfg(feature = "ffmpeg")]
 const GENRE:&str = "GENRE";
 
 #[cfg(feature = "libav")]
@@ -27,7 +27,7 @@ pub struct CueTrack {
     pub track_path:PathBuf
 }
 
-#[cfg(not(feature = "libav"))]
+#[cfg(feature = "ffmpeg")]
 #[derive(Clone)]
 pub struct CueTrack {
     pub audio_path:PathBuf,
@@ -41,7 +41,7 @@ pub struct CueTrack {
     pub duration:Duration
 }
 
-#[cfg(not(feature = "libav"))]
+#[cfg(feature = "ffmpeg")]
 pub fn parse(audio_path:&PathBuf, cue_path:&PathBuf) -> Vec<CueTrack> {
     let mut resp:Vec<CueTrack> = Vec::new();
 

@@ -34,7 +34,7 @@ To install dependencies on a Fedora system:
 dnf install clang pkg-config
 ```
 
-Build with `cargo build --release`
+Build with `cargo build --release --features=ffmpeg`
 
 `ffmpeg` is then a run-time dependency, and should be installed on any system where this application
 is to be run - it should also be in the users `$PATH`

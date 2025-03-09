@@ -6,7 +6,7 @@
  *
  **/
 
- #[cfg(not(feature = "libav"))]
+ #[cfg(feature = "ffmpeg")]
 use crate::ffmpeg;
 use crate::tags;
 use bliss_audio::{Analysis, AnalysisIndex};
@@ -288,7 +288,7 @@ impl Db {
                             let path = String::from(track_path.to_string_lossy());
                             let mut ftags = tags::read(&path, false);
 
-                            #[cfg(not(feature = "libav"))]
+                            #[cfg(feature = "ffmpeg")]
                             if ftags.is_empty() {
                                 ftags = ffmpeg::read_tags(&path);
                             }

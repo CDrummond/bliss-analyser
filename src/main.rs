@@ -14,12 +14,12 @@ use log::LevelFilter;
 use std::io::Write;
 use std::path::PathBuf;
 use std::process;
-#[cfg(not(feature = "libav"))]
+#[cfg(feature = "ffmpeg")]
 use which::which;
 mod analyse;
 mod cue;
 mod db;
-#[cfg(not(feature = "libav"))]
+#[cfg(feature = "ffmpeg")]
 mod ffmpeg;
 mod tags;
 mod upload;
@@ -104,7 +104,7 @@ fn main() {
     }
 
     // Ensure ffmpeg is in PATH...
-    #[cfg(not(feature = "libav"))]
+    #[cfg(feature = "ffmpeg")]
     match which("ffmpeg") {
         Ok(_) => { }
         Err(_) => {
