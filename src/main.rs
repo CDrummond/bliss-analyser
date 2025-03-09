@@ -142,6 +142,10 @@ fn main() {
                         Some(val) => { ignore_file = val; }
                         None => { }
                     }
+                    match config.get(TOP_LEVEL_INI_TAG, "tags") {
+                        Some(val) => { use_tags = val.eq("true"); }
+                        None => { }
+                    }
                 }
                 Err(e) => {
                     log::error!("Failed to load config file. {}", e);

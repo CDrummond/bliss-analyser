@@ -122,6 +122,7 @@ music=/home/user/Music
 db=bliss.db
 lms=127.0.0.1
 ignore=ignore.txt
+tags=true
 ```
 
 The following items are supported:
@@ -137,7 +138,9 @@ password protected then use `user:pass@server` - e.g. `lms=pi:abc123@127.0.0.1`
 9000.
 * `ignore` specifies the name and location of a file containing items to ignore
 in mixes. See the `Ignore` section later on for more details.
-
+* `tags` specifies whether analysis results should be written to, and re-read from,
+files. Set to `true` or `false`. If enabled, then results are stored in a `COMMENT`
+tag that starts with `BLISS_ANALYSIS`
 
 
 Command-line parameters
@@ -160,6 +163,7 @@ tracks are to be analysed and how many old tracks are left in the database.
 * `-L` / `--lms` Hostname, or IP address, of your LMS server.
 * `-J` / `--json` JSONRPC port number of your LMS server.
 * `-n` / `--numtracks` Specify maximum number of tracks to analyse.
+* `-T` / `--tags` Write anlysis results to file tags, and read from file tags.
 
 Equivalent items specified in the INI config file (detailed above) will override
 any specified on the commandline.
