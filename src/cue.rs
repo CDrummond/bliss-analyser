@@ -6,6 +6,7 @@
  *
  **/
 
+ #[cfg(feature = "ffmpeg")]
 extern crate rcue;
 
 #[cfg(feature = "ffmpeg")]

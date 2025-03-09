@@ -286,6 +286,7 @@ impl Db {
                         let track_path = mpath.join(&dbtags.file);
                         if track_path.exists() {
                             let path = String::from(track_path.to_string_lossy());
+                            #[allow(unused_mut)] // ftags is mutable if using ffmpeg on commandline
                             let mut ftags = tags::read(&path, false);
 
                             #[cfg(feature = "ffmpeg")]
