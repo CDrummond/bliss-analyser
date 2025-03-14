@@ -11,10 +11,10 @@ import datetime, os, requests, shutil, subprocess, sys, tempfile, time
 
 GITHUB_TOKEN_FILE = "%s/.config/github-token" % os.path.expanduser('~')
 GITHUB_REPO = "CDrummond/bliss-analyser"
-LINUX_ARM_ARTIFACTS = ["bliss-analyser-linux-arm-ffmpeg", "bliss-analyser-linux-arm-static", "bliss-analyser-debian-bullseye-arm-libav", "bliss-analyser-debian-bookworm-arm-libav"]
-LINUX_X86_ARTIFACTS = ["bliss-analyser-linux-x86-ffmpeg", "bliss-analyser-linux-x86-static", "bliss-analyser-ubuntu-22.04-x86-libav", "bliss-analyser-ubuntu-24.04-x86-libav"]
-MAC_ARTIFACTS =       ["bliss-analyser-mac-ffmpeg"]
-WINDOWS_ARTIFACTS =   ["bliss-analyser-windows-libav"]
+LINUX_ARM_ARTIFACTS = ["bliss-analyser-linux-arm-ffmpeg", "bliss-analyser-linux-arm-static", "bliss-analyser-debian-bullseye-arm-libav", "bliss-analyser-debian-bookworm-arm-libav", "bliss-analyser-linux-arm-symphonia"]
+LINUX_X86_ARTIFACTS = ["bliss-analyser-linux-x86-ffmpeg", "bliss-analyser-linux-x86-static", "bliss-analyser-ubuntu-22.04-x86-libav", "bliss-analyser-ubuntu-24.04-x86-libav", "bliss-analyser-linux-x86-symphonia"]
+MAC_ARTIFACTS =       ["bliss-analyser-mac-ffmpeg", "bliss-analyser-mac-symphonia"]
+WINDOWS_ARTIFACTS =   ["bliss-analyser-windows-libav", "bliss-analyser-windows-symphonia"]
 UNIX_ARTIFACTS = LINUX_ARM_ARTIFACTS + LINUX_X86_ARTIFACTS + MAC_ARTIFACTS
 GITHUB_ARTIFACTS = UNIX_ARTIFACTS + WINDOWS_ARTIFACTS
 
@@ -70,7 +70,6 @@ def download_artifacts(version):
                     f.write(chunk)
         if not os.path.exists(dest):
             info("Failed to download %s" % item)
-            break
 
 
 def make_executable(version):

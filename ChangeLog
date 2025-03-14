@@ -3,10 +3,8 @@
 1. Add support for (DSD) WavPack - thanks to Bart Lauret
 2. Update version of tag reader library.
 3. Update version of bliss library.
-4. Use 'ffmpeg' commandline to decode files, and not ffmpeg libraries by
-   default. Pass '--features=libav' to cargo to build against ffmpeg
-   libraries. Pass '--features=libav,libavstatic' to cargo to build against
-   ffmpeg libraries, and statically link these in.
+4. Allow builds to either use dynamic ffmpeg libraries, static ffmpeg
+   libraries, symphonia, or ffmpeg on commandline.
 5. Add ability to specify LMS JSONRPC port.
 6. If new files analysed and 'ignore' file exists then update DB's 'ignore'
    flags.

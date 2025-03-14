@@ -22,7 +22,7 @@ pub const LAST_TRACK_DURATION:u64 = 60*60*24;
 #[cfg(feature = "ffmpeg")]
 const GENRE:&str = "GENRE";
 
-#[cfg(feature = "libav")]
+#[cfg(not(feature = "ffmpeg"))]
 #[derive(Clone)]
 pub struct CueTrack {
     pub track_path:PathBuf

@@ -115,6 +115,33 @@ jobs:
         path: releases/
 
 
+  Linux_symphonia_x86:
+    runs-on: ubuntu-22.04
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Packages
+      run: sudo apt-get update && sudo apt-get install build-essential yasm -y
+
+    - name: Build x86 static-libav version
+      run: |
+        cargo build --release --features=symphonia
+        strip target/release/bliss-analyser
+        mkdir releases
+        cp target/release/bliss-analyser releases/bliss-analyser
+        cp UserGuide.md releases/README.md
+        cp LICENSE releases/
+        cp configs/linux.ini releases/config.ini
+
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: bliss-analyser-linux-x86-symphonia
+        path: releases/
+
+
   Linux_ffmpeg_arm:
     runs-on: ubuntu-22.04
 
@@ -180,6 +207,25 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: bliss-analyser-debian-bookworm-arm-libav
+        path: releases/
+
+
+  Linux_symphonia_arm:
+    runs-on: ubuntu-22.04
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Build ARM symphonia on Debian
+      run: |
+        docker build -t bliss-analyser-cross - < docker/Dockerfile_Bullseye_symphonia
+        docker run --rm -v $PWD/target:/build -v $PWD:/src bliss-analyser-cross
+
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: bliss-analyser-linux-arm-symphonia
         path: releases/
 
 
@@ -308,6 +354,54 @@ jobs:
 #        path: releases/
 
 
+  macOS_symphonia:
+    runs-on: macos-13
+
+    steps:
+    - name: Install Rust
+      uses: actions-rs/toolchain@v1
+      with:
+          toolchain: stable
+
+    - name: Checkout
+      uses: actions/checkout@v2
+
+    - name: Install deps
+      run: |
+        brew install pkg-config
+
+    - name: Install Rust support for ARM64 & prepare environment
+      run: |
+        rustup target add aarch64-apple-darwin
+        mkdir releases
+
+    - name: Build
+      run: |
+        cargo build --release --features update-aubio-bindings,symphonia
+        strip target/release/bliss-analyser
+        cp target/release/bliss-analyser releases/bliss-analyser-x86_64
+        cargo build --target=aarch64-apple-darwin --release --features update-aubio-bindings,symphonia
+        strip target/aarch64-apple-darwin/release/bliss-analyser
+        cp target/aarch64-apple-darwin/release/bliss-analyser releases/bliss-analyser-arm64
+
+    - name: Build fat binary
+      run: |
+        lipo -create \
+          -arch x86_64 releases/bliss-analyser-x86_64 \
+          -arch arm64 releases/bliss-analyser-arm64 \
+          -output releases/bliss-analyser
+
+    - name: Remove unused binaries
+      run:
+        rm releases/bliss-analyser-x86_64 releases/bliss-analyser-arm64
+
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: bliss-analyser-mac-symphonia
+        path: releases/
+
+
   Windows_libav:
     runs-on: windows-2019
 
@@ -348,4 +442,35 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: bliss-analyser-windows-libav
+        path: releases/
+
+
+  Windows_symphonia:
+    runs-on: windows-2019
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+
+    - name: Install Rust
+      uses: actions-rs/toolchain@v1
+      with:
+        toolchain: stable
+        override: true
+        components: rustfmt, clippy
+
+    - name: Build
+      run: |
+        cargo build --release --features=symphonia
+        mkdir releases
+        cp target/release/bliss-analyser.exe releases/bliss-analyser.exe
+        cp UserGuide.md releases/README.md
+        cp LICENSE releases/
+        cp configs/windows.ini releases/config.ini
+        cp c:\Windows\system32\vcruntime140.dll releases
+
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: bliss-analyser-windows-symphonia
         path: releases/

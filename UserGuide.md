@@ -14,7 +14,8 @@ Variants
 --------
 
 `bliss-analyser` can be built to support using either the `ffmpeg` libraries
-(`libavcodec`, etc.), or invoking the `ffmpeg` command itself.
+(`libavcodec`, etc.), `symphonia` library, or invoking the `ffmpeg` command
+itself.
 
 If the package used ended with `-libav` then `bliss-analyser` has been built
 with the `ffmpeg` libraries. This allows faster decoding of files, but will
@@ -30,6 +31,11 @@ If the package used ended with `-ffmpeg`, then `bliss-analyser` requires you
 also have the `ffmpeg` application installed and in your `$PATH`. These
 builds are roughly 46% slower at analysis, but are more portable as they can
 use any `ffmpeg` version.
+
+If the package used ended with `-symphonia` then `bliss-analyser` has been built
+with the `symphonia` libraries. This allows a more portable binary, but at a
+*much* slower decdoding speed (and anlysis results are not the same as those
+produced by `ffmpeg`/`libav`).
 
 
 Quick guide

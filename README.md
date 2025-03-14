@@ -7,16 +7,26 @@ bliss analysis. This is then intended to be used by [Bliss Mixer](https://github
 
 # Building
 
-This application can be built in 3 variants:
+This application can be built in 4 variants:
 
-1. Using command-line `ffmpeg` to decode files
-2. Using `libavcodec`, etc, to decode files
+1. Using command-line `ffmpeg` to decode files.
+2. Using `libavcodec`, etc, to decode files.
 3. Using `libavcodec`, etc, to decode files, but statically linked to `libavcodec`, etc.
+24. Using `symphonia` to decode files.
 
 
-Using `libavcodec` is about 70% faster, but might have issues with library, versioning, etc.
-Using `libavcodec` statically linked my reduce supported file formats.
-Using `ffmpeg` whilst slower produces a more portable application.
+`libavcodec` is the fastest (about 70% faster than `ffmpeg` commandline, and about
+3 times faster than `symphonia`), but might have issues with library, versioning, etc.,
+unless these libraries are statically linked in.
+
+`libavcodec` statically linked may reduce supported file formats.
+
+`ffmpeg` whilst slower then `libavcodec` produces a more portable application.
+
+`symphonia` also produced a more ortable application, but is *much* slower to decode
+files, and does not produce identical analysis results. Therefore, it is not advisable
+to mix files nalysed with `ffmpeg` (any varaint) and `sympnonia`.
+
 
 ## Build for 'ffmpeg' command-line usage
 
@@ -78,6 +88,25 @@ dnf install ffmpeg-devel clang pkg-config
 ```
 
 Build with `cargo build --release --features=libav,libavstatic`
+
+
+## Build for 'symphonia'
+
+`clang`, and `pkg-config` are required to build, as well as
+[Rust](https://www.rust-lang.org/tools/install)
+
+To install dependencies on a Debian system:
+
+```
+apt install -y clang pkg-config
+```
+
+To install dependencies on a Fedora system:
+```
+dnf install clang pkg-config
+```
+
+Build with `cargo build --release --features=symphonia`
 
 
 # Usage
