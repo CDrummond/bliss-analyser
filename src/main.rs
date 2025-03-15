@@ -84,9 +84,10 @@ fn main() {
         || logging.eq_ignore_ascii_case("warn") || logging.eq_ignore_ascii_case("error")) {
         logging = String::from("info");
     }
-    let bliss_level = if logging.eq_ignore_ascii_case("trace") { LevelFilter::Trace } else { LevelFilter::Error };
+    let other_level = if logging.eq_ignore_ascii_case("trace") { LevelFilter::Trace } else { LevelFilter::Error };
     let mut builder = env_logger::Builder::from_env(env_logger::Env::default().filter_or("XXXXXXXX", logging));
-    builder.filter(Some("bliss_audio"), bliss_level);
+    builder.filter(Some("bliss_audio"), other_level);
+    builder.filter(Some("symphonia"), other_level);
     builder.format(|buf, record| {
         writeln!(buf, "[{} {:.1}] {}", Local::now().format("%Y-%m-%d %H:%M:%S"), record.level(), record.args())
     });
