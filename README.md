@@ -23,7 +23,7 @@ unless these libraries are statically linked in.
 
 `ffmpeg` whilst slower then `libavcodec` produces a more portable application.
 
-`symphonia` also produced a more portable application, but is slower to decode
+`symphonia` also produced a more portable application, but is slightly slower to decode
 files, and does not produce identical analysis results. Therefore, it is not advisable
 to mix files analysed with `ffmpeg` (any variant) and `symphonia`.
 

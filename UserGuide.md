@@ -34,8 +34,8 @@ use any `ffmpeg` version.
 
 If the package used ended with `-symphonia` then `bliss-analyser` has been built
 with the `symphonia` libraries. This allows a more portable binary, but at a
-slower decoding speed and produces analysis results that are not the same as
-those produced by `ffmpeg`/`libav`.
+slightly slower decoding speed (than `libav`) and produces analysis results that
+are not the same as those produced by `ffmpeg`/`libav`.
 
 
 Quick guide
