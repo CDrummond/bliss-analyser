@@ -254,6 +254,9 @@ jobs:
         cargo build --target=aarch64-apple-darwin --release --features ffmpeg,update-aubio-bindings
         strip target/aarch64-apple-darwin/release/bliss-analyser
         cp target/aarch64-apple-darwin/release/bliss-analyser releases/bliss-analyser-arm64
+        cp UserGuide.md releases/README.md
+        cp LICENSE releases/
+        cp configs/macos.ini releases/config.ini
 
     - name: Build fat binary
       run: |
@@ -302,6 +305,9 @@ jobs:
 #        cargo build --target=aarch64-apple-darwin --release --features update-aubio-bindings,libav,staticlibav
 #        strip target/aarch64-apple-darwin/release/bliss-analyser
 #        cp target/aarch64-apple-darwin/release/bliss-analyser releases/bliss-analyser-arm64
+#        cp UserGuide.md releases/README.md
+#        cp LICENSE releases/
+#        cp configs/macos.ini releases/config.ini
 #
 #    - name: Build fat binary
 #      run: |
@@ -383,6 +389,9 @@ jobs:
         cargo build --target=aarch64-apple-darwin --release --features update-aubio-bindings,symphonia
         strip target/aarch64-apple-darwin/release/bliss-analyser
         cp target/aarch64-apple-darwin/release/bliss-analyser releases/bliss-analyser-arm64
+        cp UserGuide.md releases/README.md
+        cp LICENSE releases/
+        cp configs/macos.ini releases/config.ini
 
     - name: Build fat binary
       run: |
