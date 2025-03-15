@@ -206,7 +206,7 @@ dependencies = [
 [[package]]
 name = "bliss-audio"
 version = "0.9.4"
-source = "git+https://github.com/Polochon-street/bliss-rs.git#006927ac16752ff2e00bfe0d6b7756f67fa822c0"
+source = "git+https://github.com/Polochon-street/bliss-rs.git?rev=006927ac16752ff2e00bfe0d6b7756f67fa822c0#006927ac16752ff2e00bfe0d6b7756f67fa822c0"
 dependencies = [
  "adler32",
  "bliss-audio-aubio-rs",
