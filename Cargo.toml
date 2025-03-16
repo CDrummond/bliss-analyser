@@ -39,6 +39,6 @@ symphonia = ["bliss-audio/symphonia-all", "bliss-audio/symphonia-aiff", "bliss-a
 [dependencies.bliss-audio]
 default-features = false
 features = ["aubio-static"]
-# version = "0.9.4"
-git = "https://github.com/Polochon-street/bliss-rs.git"
-rev = "006927ac16752ff2e00bfe0d6b7756f67fa822c0"
+version = "0.10.0"
+#git = "https://github.com/Polochon-street/bliss-rs.git"
+#rev = "006927ac16752ff2e00bfe0d6b7756f67fa822c0"

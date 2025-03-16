@@ -33,7 +33,7 @@ use std::thread;
 use std::time::Duration;
 use num_cpus;
 #[cfg(feature = "libav")]
-use bliss_audio::{decoder::Decoder, decoder::ffmpeg::FFmpeg};
+use bliss_audio::{decoder::Decoder, decoder::ffmpeg::FFmpegDecoder};
 #[cfg(feature = "ffmpeg")]
 use bliss_audio::{decoder::Decoder, BlissResult, Song};
 #[cfg(feature = "symphonia")]
@@ -178,7 +178,7 @@ fn analyse_new_files(db: &db::Db, mpath: &PathBuf, track_paths: Vec<String>, max
     let mut reported_cue:HashSet<String> = HashSet::new();
 
     log::info!("Analysing new files");
-    for (path, result) in <FFmpeg as Decoder>::analyze_paths_with_cores(track_paths, cpu_threads) {
+    for (path, result) in <FFmpegDecoder as Decoder>::analyze_paths_with_cores(track_paths, cpu_threads) {
         let stripped = path.strip_prefix(mpath).unwrap();
         let spbuff = stripped.to_path_buf();
         let sname = String::from(spbuff.to_string_lossy());
