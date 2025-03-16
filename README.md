@@ -68,8 +68,13 @@ dnf install ffmpeg-devel clang pkg-config
 
 Build with `cargo build --release --features=libav`
 
+If building on a Raspberry Pi, then `rpi` also needs to be passed to `--features`, e.g.
+`cargo build --release --features=libav,rpi`
+
 The resultant application will be less portable, due to dependencies on `libavcodec` libraries (and
 their dependencies).
+
+
 
 ## Build for 'libavcodec' library usage, statically linked
 
@@ -88,6 +93,10 @@ dnf install ffmpeg-devel clang pkg-config
 ```
 
 Build with `cargo build --release --features=libav,libavstatic`
+
+If building on a Raspberry Pi, then `rpi` also needs to be passed to `--features`, e.g.
+`cargo build --release --features=libav,libavstatic,rpi`
+
 
 
 ## Build for 'symphonia'
