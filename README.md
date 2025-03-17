@@ -9,45 +9,24 @@ bliss analysis. This is then intended to be used by [Bliss Mixer](https://github
 
 This application can be built in 4 variants:
 
-1. Using command-line `ffmpeg` to decode files.
-2. Using `libavcodec`, etc, to decode files.
-3. Using `libavcodec`, etc, to decode files, but statically linked to `libavcodec`, etc.
-24. Using `symphonia` to decode files.
+1. Using `libavcodec`, etc, to decode files.
+2. Using `libavcodec`, etc, to decode files, but statically linked to `libavcodec`, etc.
+3. Using `symphonia` to decode files.
+4. Using command-line `ffmpeg` to decode files.
 
 
-`libavcodec` is the fastest (about 70% faster than `ffmpeg` commandline, and about
-3 times faster than `symphonia`), but might have issues with library, versioning, etc.,
-unless these libraries are statically linked in.
+`libavcodec` is the fastest (~15% faster than `symphonia`, ~50% faster than `ffmpeg`
+commandline), but might have issues with library, versioning, etc., unless these
+libraries are statically linked in. `libavcodec` statically linked may reduce supported
+file formats, but is more portable.
 
-`libavcodec` statically linked may reduce supported file formats.
+`symphonia` also produces a more portable application, is only slightly slower to decode
+files, but has more limited codec support, and does not produce identical analysis results.
+Therefore, it is not advisable to mix files analysed with `ffmpeg` (any variant) and
+`symphonia`.
 
-`ffmpeg` whilst slower then `libavcodec` produces a more portable application.
-
-`symphonia` also produced a more portable application, but is slightly slower to decode
-files, and does not produce identical analysis results. Therefore, it is not advisable
-to mix files analysed with `ffmpeg` (any variant) and `symphonia`.
-
-
-## Build for 'ffmpeg' command-line usage
-
-`clang` and `pkg-config` are required to build, as well as
-[Rust](https://www.rust-lang.org/tools/install)
-
-To install dependencies on a Debian system:
-
-```
-apt install -y clang pkg-config
-```
-
-To install dependencies on a Fedora system:
-```
-dnf install clang pkg-config
-```
-
-Build with `cargo build --release --features=ffmpeg`
-
-`ffmpeg` is then a run-time dependency, and should be installed on any system where this application
-is to be run - it should also be in the users `$PATH`
+Command-line `ffmpeg` whilst being the slowest, produces a more portable application, and
+supports a wider range of codecs.
 
 
 ## Build for 'libavcodec' library usage
@@ -116,6 +95,30 @@ dnf install clang pkg-config
 ```
 
 Build with `cargo build --release --features=symphonia`
+
+
+
+## Build for 'ffmpeg' command-line usage
+
+`clang` and `pkg-config` are required to build, as well as
+[Rust](https://www.rust-lang.org/tools/install)
+
+To install dependencies on a Debian system:
+
+```
+apt install -y clang pkg-config
+```
+
+To install dependencies on a Fedora system:
+```
+dnf install clang pkg-config
+```
+
+Build with `cargo build --release --features=ffmpeg`
+
+`ffmpeg` is then a run-time dependency, and should be installed on any system where this application
+is to be run - it should also be in the users `$PATH`
+
 
 
 # Usage

@@ -27,15 +27,15 @@ with the `ffmpeg` libraries - but these have been statically linked. This
 allows faster decoding of files, and a more portable binary - however, this
 _may_ reduce the number of supported file formats.
 
-If the package used ended with `-ffmpeg`, then `bliss-analyser` requires you
-also have the `ffmpeg` application installed and in your `$PATH`. These
-builds are roughly 46% slower at analysis, but are more portable as they can
-use any `ffmpeg` version.
-
 If the package used ended with `-symphonia` then `bliss-analyser` has been built
 with the `symphonia` libraries. This allows a more portable binary, but at a
 slightly slower decoding speed (than `libav`) and produces analysis results that
 are not the same as those produced by `ffmpeg`/`libav`.
+
+If the package used ended with `-ffmpeg`, then `bliss-analyser` requires you
+also have the `ffmpeg` application installed and in your `$PATH`. These
+builds are roughly 50% slower at analysis, but are more portable as they can
+use (alomost) any `ffmpeg` version.
 
 
 Quick guide
@@ -43,7 +43,8 @@ Quick guide
 
 1. Install the `Bliss Mixer` LMS plugin.
 
-2. Install ffmpeg if using Linux or macOS.
+2. Install `ffmpeg` if using Linux or macOS (and using `-libav` or `-ffmpeg`
+package (see `Varaints` (above))).
 
 3. Edit the supplied `config.ini` in the current folder to set appropriate values
 for `music` and `lms` - e.g.:
@@ -73,8 +74,10 @@ Installation
 ============
 
 For Windows no extra installation steps are required, as all dependencies are
-bundled within its ZIP file. However, both the Linux and macOS versions require
-that `ffmpeg` be installed.
+bundled within its ZIP file. However, if using a `-libav` or `-ffmpeg` package (see
+`Varaints` (above)), both the Linux and macOS versions require that `ffmpeg` be
+installed - if using a `-static` or `-symphinia` package, then no additional
+dependencies are used.
 
 
 Linux
