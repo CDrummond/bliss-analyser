@@ -32,12 +32,13 @@ use std::thread;
 #[cfg(feature = "ffmpeg")]
 use std::time::Duration;
 use num_cpus;
+use bliss_audio::decoder::Decoder;
 #[cfg(feature = "libav")]
-use bliss_audio::{decoder::Decoder, decoder::ffmpeg::FFmpegDecoder};
-#[cfg(feature = "ffmpeg")]
-use bliss_audio::{decoder::Decoder, BlissResult, Song};
+use bliss_audio::decoder::ffmpeg::FFmpegDecoder as SongDecoder;
 #[cfg(feature = "symphonia")]
-use bliss_audio::{decoder::Decoder, decoder::symphonia::SymphoniaDecoder};
+use bliss_audio::decoder::symphonia::SymphoniaDecoder as SongDecoder;
+#[cfg(feature = "ffmpeg")]
+use bliss_audio::{BlissResult, Song};
 
 const DONT_ANALYSE: &str = ".notmusic";
 const MAX_ERRORS_TO_SHOW: usize = 100;
@@ -159,7 +160,7 @@ fn show_errors(failed: &mut Vec<String>, tag_error: &mut Vec<String>) {
     }
 }
 
-#[cfg(feature = "libav")]
+#[cfg(not(feature = "ffmpeg"))]
 fn analyse_new_files(db: &db::Db, mpath: &PathBuf, track_paths: Vec<String>, max_threads: usize, use_tags: bool) -> Result<()> {
     let total = track_paths.len();
     let progress = ProgressBar::new(total.try_into().unwrap()).with_style(
@@ -178,7 +179,7 @@ fn analyse_new_files(db: &db::Db, mpath: &PathBuf, track_paths: Vec<String>, max
     let mut reported_cue:HashSet<String> = HashSet::new();
 
     log::info!("Analysing new files");
-    for (path, result) in <FFmpegDecoder as Decoder>::analyze_paths_with_cores(track_paths, cpu_threads) {
+    for (path, result) in SongDecoder::analyze_paths_with_cores(track_paths, cpu_threads) {
         let stripped = path.strip_prefix(mpath).unwrap();
         let spbuff = stripped.to_path_buf();
         let sname = String::from(spbuff.to_string_lossy());
@@ -232,93 +233,6 @@ fn analyse_new_files(db: &db::Db, mpath: &PathBuf, track_paths: Vec<String>, max
                             meta.genre = track.genre.unwrap_or_default().to_string();
                             meta.duration = track.duration.as_secs() as u32;
                         }
-                        if meta.is_empty() {
-                            tag_error.push(sname.clone());
-                        }
-                        if use_tags {
-                            tags::write_analysis(&cpath, &track.analysis);
-                        }
-                        db.add_track(&sname, &meta, &track.analysis);
-                    }
-                }
-                analysed += 1;
-            }
-            Err(e) => { failed.push(format!("{} - {}", sname, e)); }
-        };
-
-        if inc_progress {
-            progress.inc(1);
-        }
-    }
-
-    progress.finish_with_message("Finished!");
-    log::info!("{} Analysed. {} Failure(s).", analysed, failed.len());
-    show_errors(&mut failed, &mut tag_error);
-    Ok(())
-}
-
-#[cfg(feature = "symphonia")]
-fn analyse_new_files(db: &db::Db, mpath: &PathBuf, track_paths: Vec<String>, max_threads: usize, use_tags: bool) -> Result<()> {
-    let total = track_paths.len();
-    let progress = ProgressBar::new(total.try_into().unwrap()).with_style(
-        ProgressStyle::default_bar()
-            .template("[{elapsed_precise}] [{bar:25}] {percent:>3}% {pos:>6}/{len:6} {wide_msg}")
-            .progress_chars("=> "),
-    );
-    let cpu_threads: NonZeroUsize = match max_threads {
-        0 => NonZeroUsize::new(num_cpus::get()).unwrap(),
-        _ => NonZeroUsize::new(max_threads).unwrap(),
-    };
-
-    let mut analysed = 0;
-    let mut failed: Vec<String> = Vec::new();
-    let mut tag_error: Vec<String> = Vec::new();
-    let mut reported_cue:HashSet<String> = HashSet::new();
-
-    log::info!("Analysing new files");
-    for (path, result) in <SymphoniaDecoder as Decoder>::analyze_paths_with_cores(track_paths, cpu_threads) {
-        let stripped = path.strip_prefix(mpath).unwrap();
-        let spbuff = stripped.to_path_buf();
-        let sname = String::from(spbuff.to_string_lossy());
-        progress.set_message(format!("{}", sname));
-        let mut inc_progress = true; // Only want to increment progress once for cue tracks
-        match result {
-            Ok(track) => {
-                let cpath = String::from(path.to_string_lossy());
-                match track.cue_info {
-                    Some(cue) => {
-                        match track.track_number {
-                            Some(track_num) => {
-                                if reported_cue.contains(&cpath) {
-                                    inc_progress = false;
-                                } else {
-                                    analysed += 1;
-                                    reported_cue.insert(cpath);
-                                }
-                                let meta = db::Metadata {
-                                    title: track.title.unwrap_or_default().to_string(),
-                                    artist: track.artist.unwrap_or_default().to_string(),
-                                    album: track.album.unwrap_or_default().to_string(),
-                                    album_artist: track.album_artist.unwrap_or_default().to_string(),
-                                    genre: track.genre.unwrap_or_default().to_string(),
-                                    duration: track.duration.as_secs() as u32,
-                                    analysis: None
-                                };
-
-                                // Remove prefix from audio_file_path
-                                let pbuff = PathBuf::from(&cue.audio_file_path);
-                                let stripped = pbuff.strip_prefix(mpath).unwrap();
-                                let spbuff = stripped.to_path_buf();
-                                let sname = String::from(spbuff.to_string_lossy());
-
-                                let db_path = format!("{}{}{}", sname, db::CUE_MARKER, track_num);
-                                db.add_track(&db_path, &meta, &track.analysis);
-                            }
-                            None => { failed.push(format!("{} - No track number?", sname)); }
-                        }
-                    }
-                    None => {
-                        let meta = tags::read(&cpath, false);
                         if meta.is_empty() {
                             tag_error.push(sname.clone());
                         }

@@ -205,8 +205,9 @@ dependencies = [
 
 [[package]]
 name = "bliss-audio"
-version = "0.9.4"
-source = "git+https://github.com/Polochon-street/bliss-rs.git?rev=006927ac16752ff2e00bfe0d6b7756f67fa822c0#006927ac16752ff2e00bfe0d6b7756f67fa822c0"
+version = "0.10.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "000abff3621dffbae7e9b7574791d587001768224cedcb169158706b0f0ce0e2"
 dependencies = [
  "adler32",
  "bliss-audio-aubio-rs",
