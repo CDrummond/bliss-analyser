@@ -35,6 +35,7 @@ update-aubio-bindings = ["bliss-audio/update-aubio-bindings"]
 staticlibav = ["bliss-audio/build-ffmpeg", "bliss-audio/ffmpeg-static"]
 ffmpeg = ["dep:which", "dep:rcue", "dep:hhmmss"]
 symphonia = ["bliss-audio/symphonia-all", "bliss-audio/symphonia-aiff", "bliss-audio/symphonia-alac"]
+rpi = ["bliss-audio/rpi"]
 
 [dependencies.bliss-audio]
 default-features = false
