@@ -1,6 +1,7 @@
 0.4.0
 -----
 1. Add action to export results from database to files.
+2. Add option to preserve file modification time when writing tags.
 
 0.3.0
 -----

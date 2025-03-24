@@ -150,6 +150,8 @@ in mixes. See the `Ignore` section later on for more details.
 * `tags` specifies whether analysis results should be written to, and re-read from,
 files. Set to `true` or `false`. If enabled, then results are stored in a `COMMENT`
 tag that starts with `BLISS_ANALYSIS`
+* `preserve` specifies whether file modification time should be preserved when
+writing tags. Set to `true` or `false`.
 
 
 Command-line parameters
@@ -173,6 +175,7 @@ tracks are to be analysed and how many old tracks are left in the database.
 * `-J` / `--json` JSONRPC port number of your LMS server.
 * `-n` / `--numtracks` Specify maximum number of tracks to analyse.
 * `-T` / `--tags` Write analysis results to file tags, and read from file tags.
+* `-p' / '--preserve` Attempt to preserve file modification time when writing tags.
 
 Equivalent items specified in the INI config file (detailed above) will override
 any specified on the commandline.

@@ -12,8 +12,11 @@ use lofty::file::FileType;
 use lofty::prelude::{Accessor, AudioFile, ItemKey, TagExt, TaggedFileExt};
 use lofty::tag::{ItemValue, Tag, TagItem};
 use regex::Regex;
+use std::fs::File;
+use std::fs;
 use std::path::Path;
 use substring::Substring;
+use std::time::SystemTime;
 use bliss_audio::{Analysis, AnalysisIndex};
 
 const MAX_GENRE_VAL: usize = 192;
@@ -22,7 +25,7 @@ const ANALYSIS_TAG:ItemKey = ItemKey::Comment;
 const ANALYSIS_TAG_START: &str = "BLISS_ANALYSIS";
 const ANALYSIS_TAG_VER: u16 = 1;
 
-pub fn write_analysis(track: &String, analysis: &Analysis) {
+pub fn write_analysis(track: &String, analysis: &Analysis, preserve_mod_times: bool) {
     let value = format!("{},{},{:.24},{:.24},{:.24},{:.24},{:.24},{:.24},{:.24},{:.24},{:.24},{:.24},{:.24},{:.24},{:.24},{:.24},{:.24},{:.24},{:.24},{:.24},{:.24},{:.24}", ANALYSIS_TAG_START, ANALYSIS_TAG_VER,
                         analysis[AnalysisIndex::Tempo], analysis[AnalysisIndex::Zcr], analysis[AnalysisIndex::MeanSpectralCentroid], analysis[AnalysisIndex::StdDeviationSpectralCentroid], analysis[AnalysisIndex::MeanSpectralRolloff],
                         analysis[AnalysisIndex::StdDeviationSpectralRolloff], analysis[AnalysisIndex::MeanSpectralFlatness], analysis[AnalysisIndex::StdDeviationSpectralFlatness], analysis[AnalysisIndex::MeanLoudness], analysis[AnalysisIndex::StdDeviationLoudness],
@@ -58,7 +61,23 @@ pub fn write_analysis(track: &String, analysis: &Analysis) {
 
         // Store analysis results
         tag.push(TagItem::new(ANALYSIS_TAG, ItemValue::Text(value)));
+        let now = SystemTime::now();
+        let mut mod_time = now;
+        if preserve_mod_times {
+            if let Ok(fmeta) = fs::metadata(track) {
+                if let Ok(time) = fmeta.modified() {
+                    mod_time = time;
+                }
+            }
+        }
         let _ = tag.save_to_path(Path::new(track), WriteOptions::default());
+        if preserve_mod_times {
+            if mod_time<now {
+                if let Ok(f) = File::open(track) {
+                    let _ = f.set_modified(mod_time);
+                }
+            }
+        }
     }
 }
 

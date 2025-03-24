@@ -344,7 +344,7 @@ impl Db {
         }
     }
 
-    pub fn export(&self, mpaths: &Vec<PathBuf>) {
+    pub fn export(&self, mpaths: &Vec<PathBuf>, preserve_mod_times: bool) {
         let total = self.get_track_count();
         if total > 0 {
             let progress = ProgressBar::new(total.try_into().unwrap()).with_style(
@@ -377,7 +377,7 @@ impl Db {
                             let spath = String::from(track_path.to_string_lossy());
                             let meta = tags::read(&spath, true);
                             if  meta.is_empty() || meta.analysis.is_none() || meta.analysis.unwrap()!=dbtags.analysis {
-                                tags::write_analysis(&spath, &dbtags.analysis);
+                                tags::write_analysis(&spath, &dbtags.analysis, preserve_mod_times);
                                 updated+=1;
                             }
                             break;

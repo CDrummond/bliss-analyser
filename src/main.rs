@@ -42,6 +42,7 @@ fn main() {
     let mut music_paths: Vec<PathBuf> = Vec::new();
     let mut max_threads: usize = 0;
     let mut use_tags = false;
+    let mut preserve_mod_times = false;
 
     match dirs::home_dir() {
         Some(path) => {
@@ -76,6 +77,7 @@ fn main() {
         arg_parse.refer(&mut max_num_files).add_option(&["-n", "--numfiles"], Store, "Maximum number of files to analyse");
         arg_parse.refer(&mut max_threads).add_option(&["-t", "--threads"], Store, "Maximum number of threads to use for analysis");
         arg_parse.refer(&mut use_tags).add_option(&["-T", "--tags"], StoreTrue, "Read/write analysis results from/to source files");
+        arg_parse.refer(&mut preserve_mod_times).add_option(&["-p", "--preserve"], StoreTrue, "Preserve modification time when writing tags to files");
         arg_parse.refer(&mut task).add_argument("task", Store, "Task to perform; analyse, tags, ignore, upload, export, stopmixer.");
         arg_parse.parse_args_or_exit();
     }
@@ -147,6 +149,10 @@ fn main() {
                         Some(val) => { use_tags = val.eq("true"); }
                         None => { }
                     }
+                    match config.get(TOP_LEVEL_INI_TAG, "preserve") {
+                        Some(val) => { preserve_mod_times = val.eq("true"); }
+                        None => { }
+                    }
                 }
                 Err(e) => {
                     log::error!("Failed to load config file. {}", e);
@@ -207,10 +213,10 @@ fn main() {
                 }
                 analyse::update_ignore(&db_path, &ignore_path);
             } else if task.eq_ignore_ascii_case("export") {
-                analyse::export(&db_path, &music_paths);
+                analyse::export(&db_path, &music_paths, preserve_mod_times);
             } else {
                 let ignore_path = PathBuf::from(&ignore_file);
-                analyse::analyse_files(&db_path, &music_paths, dry_run, keep_old, max_num_files, max_threads, &ignore_path, use_tags);
+                analyse::analyse_files(&db_path, &music_paths, dry_run, keep_old, max_num_files, max_threads, &ignore_path, use_tags, preserve_mod_times);
             }
         }
     }

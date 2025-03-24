@@ -161,7 +161,7 @@ fn show_errors(failed: &mut Vec<String>, tag_error: &mut Vec<String>) {
 }
 
 #[cfg(not(feature = "ffmpeg"))]
-fn analyse_new_files(db: &db::Db, mpath: &PathBuf, track_paths: Vec<String>, max_threads: usize, use_tags: bool) -> Result<()> {
+fn analyse_new_files(db: &db::Db, mpath: &PathBuf, track_paths: Vec<String>, max_threads: usize, use_tags: bool, preserve_mod_times: bool) -> Result<()> {
     let total = track_paths.len();
     let progress = ProgressBar::new(total.try_into().unwrap()).with_style(
         ProgressStyle::default_bar()
@@ -237,7 +237,7 @@ fn analyse_new_files(db: &db::Db, mpath: &PathBuf, track_paths: Vec<String>, max
                             tag_error.push(sname.clone());
                         }
                         if use_tags {
-                            tags::write_analysis(&cpath, &track.analysis);
+                            tags::write_analysis(&cpath, &track.analysis, preserve_mod_times);
                         }
                         db.add_track(&sname, &meta, &track.analysis);
                     }
@@ -259,7 +259,7 @@ fn analyse_new_files(db: &db::Db, mpath: &PathBuf, track_paths: Vec<String>, max
 }
 
 #[cfg(feature = "ffmpeg")]
-fn analyse_new_files(db: &db::Db, mpath: &PathBuf, track_paths: Vec<String>, max_threads: usize, use_tags: bool) -> Result<()> {
+fn analyse_new_files(db: &db::Db, mpath: &PathBuf, track_paths: Vec<String>, max_threads: usize, use_tags: bool, preserve_mod_times: bool) -> Result<()> {
     let total = track_paths.len();
     let progress = ProgressBar::new(total.try_into().unwrap()).with_style(
         ProgressStyle::default_bar()
@@ -292,7 +292,7 @@ fn analyse_new_files(db: &db::Db, mpath: &PathBuf, track_paths: Vec<String>, max
                     tag_error.push(sname.clone());
                 }
                 if use_tags {
-                    tags::write_analysis(&cpath, &track.analysis);
+                    tags::write_analysis(&cpath, &track.analysis, preserve_mod_times);
                 }
                 db.add_track(&sname, &meta, &track.analysis);
                 analysed += 1;
@@ -405,7 +405,7 @@ fn analyse_new_cue_tracks(db:&db::Db, mpath: &PathBuf, cue_tracks:Vec<cue::CueTr
     Ok(())
 }
 
-pub fn analyse_files(db_path: &str, mpaths: &Vec<PathBuf>, dry_run: bool, keep_old: bool, max_num_files: usize, max_threads: usize, ignore_path: &PathBuf, use_tags: bool) {
+pub fn analyse_files(db_path: &str, mpaths: &Vec<PathBuf>, dry_run: bool, keep_old: bool, max_num_files: usize, max_threads: usize, ignore_path: &PathBuf, use_tags: bool, preserve_mod_times: bool) {
     let mut db = db::Db::new(&String::from(db_path));
 
     db.init();
@@ -450,7 +450,7 @@ pub fn analyse_files(db_path: &str, mpaths: &Vec<PathBuf>, dry_run: bool, keep_o
             }
         } else {
             if !track_paths.is_empty() {
-                match analyse_new_files(&db, &mpath, track_paths, max_threads, use_tags) {
+                match analyse_new_files(&db, &mpath, track_paths, max_threads, use_tags, preserve_mod_times) {
                     Ok(_) => { changes_made = true; }
                     Err(e) => { log::error!("Analysis returned error: {}", e); }
                 }
@@ -482,10 +482,10 @@ pub fn read_tags(db_path: &str, mpaths: &Vec<PathBuf>) {
     db.close();
 }
 
-pub fn export(db_path: &str, mpaths: &Vec<PathBuf>) {
+pub fn export(db_path: &str, mpaths: &Vec<PathBuf>, preserve_mod_times: bool) {
     let db = db::Db::new(&String::from(db_path));
     db.init();
-    db.export(&mpaths);
+    db.export(&mpaths, preserve_mod_times);
     db.close();
 }
 
