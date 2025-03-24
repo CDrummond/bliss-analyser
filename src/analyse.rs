@@ -482,6 +482,13 @@ pub fn read_tags(db_path: &str, mpaths: &Vec<PathBuf>) {
     db.close();
 }
 
+pub fn export(db_path: &str, mpaths: &Vec<PathBuf>) {
+    let db = db::Db::new(&String::from(db_path));
+    db.init();
+    db.export(&mpaths);
+    db.close();
+}
+
 pub fn update_ignore(db_path: &str, ignore_path: &PathBuf) {
     let file = File::open(ignore_path).unwrap();
     let reader = BufReader::new(file);

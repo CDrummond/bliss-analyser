@@ -143,7 +143,7 @@ analysis results. This will default to `bliss.db` in the current folder.
 * `lms` specifies the hostname, or IP address, of your LMS server. This is used
 when uploading the database file to LMS. This defaults to `127.0.0.1` If your LMS is
 password protected then use `user:pass@server` - e.g. `lms=pi:abc123@127.0.0.1`
-* `json` specifies the JSONRPC port number of your LMS server. This will defaul to
+* `json` specifies the JSONRPC port number of your LMS server. This will default to
 9000.
 * `ignore` specifies the name and location of a file containing items to ignore
 in mixes. See the `Ignore` section later on for more details.
@@ -172,7 +172,7 @@ tracks are to be analysed and how many old tracks are left in the database.
 * `-L` / `--lms` Hostname, or IP address, of your LMS server.
 * `-J` / `--json` JSONRPC port number of your LMS server.
 * `-n` / `--numtracks` Specify maximum number of tracks to analyse.
-* `-T` / `--tags` Write anlysis results to file tags, and read from file tags.
+* `-T` / `--tags` Write analysis results to file tags, and read from file tags.
 
 Equivalent items specified in the INI config file (detailed above) will override
 any specified on the commandline.
@@ -187,6 +187,7 @@ required task. This takes the following values:
 any changes.
 * `ignore` Reads the `ignore` file and updates the database to flag tracks as
 to be ignored for mixes.
+* `export` Exports tags from DB and stores within the audio files.
 
 
 
@@ -354,6 +355,27 @@ is accomplished as follows:
 ```
 .\bliss-analyser.exe ignore
 ```
+
+
+
+Exporting Analysis
+==================
+
+If you have analysis results stored within the SQLite DB, and not within the files
+themselves, then you can use the `export` action to copy these analysis results from
+the DB and into the files.
+
+(Linux / macOS)
+```
+./bliss-analyser export
+```
+
+(Windows)
+```
+.\bliss-analyser.exe export
+```
+
+*NOTE* Exporting of analysis results is not implemented for CUE tracks.
 
 
 

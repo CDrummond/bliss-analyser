@@ -29,6 +29,11 @@ pub struct FileMetadata {
     pub duration: u32,
 }
 
+struct AnalysisResults {
+    pub file: String,
+    pub analysis: Analysis,
+}
+
 #[derive(Default, PartialEq)]
 pub struct Metadata {
     pub title: String,
@@ -336,6 +341,52 @@ impl Db {
             if let Err(e) = cmd {
                 log::error!("Failed set Ignore column for '{}'. {}", line, e);
             }
+        }
+    }
+
+    pub fn export(&self, mpaths: &Vec<PathBuf>) {
+        let total = self.get_track_count();
+        if total > 0 {
+            let progress = ProgressBar::new(total.try_into().unwrap()).with_style(
+                ProgressStyle::default_bar()
+                    .template(
+                        "[{elapsed_precise}] [{bar:25}] {percent:>3}% {pos:>6}/{len:6} {wide_msg}",
+                    )
+                    .progress_chars("=> "),
+            );
+
+            let mut stmt = self.conn.prepare("SELECT File, Tempo, Zcr, MeanSpectralCentroid, StdDevSpectralCentroid, MeanSpectralRolloff, StdDevSpectralRolloff, MeanSpectralFlatness, StdDevSpectralFlatness, MeanLoudness, StdDevLoudness, Chroma1, Chroma2, Chroma3, Chroma4, Chroma5, Chroma6, Chroma7, Chroma8, Chroma9, Chroma10 FROM Tracks ORDER BY File ASC;").unwrap();
+            let track_iter = stmt
+                .query_map([], |row| {
+                    Ok(AnalysisResults {
+                        file: row.get(0)?,
+                        analysis: Analysis::new([row.get(1)?, row.get(2)?, row.get(3)?, row.get(4)?, row.get(5)?, row.get(6)?, row.get(7)?, row.get(8)?, row.get(9)?, row.get(10)?, row.get(11)?, row.get(12)?, row.get(13)?, row.get(14)?, row.get(15)?, row.get(16)?, row.get(17)?, row.get(18)?, row.get(19)?, row.get(20)?]),
+                    })
+                })
+                .unwrap();
+
+            let mut updated = 0;
+            for tr in track_iter {
+                let dbtags = tr.unwrap();
+                if !dbtags.file.contains(CUE_MARKER) {
+                    progress.set_message(format!("{}", dbtags.file));
+
+                    for mpath in mpaths {
+                        let track_path = mpath.join(&dbtags.file);
+                        if track_path.exists() {
+                            let spath = String::from(track_path.to_string_lossy());
+                            let meta = tags::read(&spath, true);
+                            if  meta.is_empty() || meta.analysis.is_none() || meta.analysis.unwrap()!=dbtags.analysis {
+                                tags::write_analysis(&spath, &dbtags.analysis);
+                                updated+=1;
+                            }
+                            break;
+                        }
+                    }
+                }
+                progress.inc(1);
+            }
+            progress.finish_with_message(format!("{} Updated.", updated))
         }
     }
 }
