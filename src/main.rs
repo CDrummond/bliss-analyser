@@ -101,7 +101,7 @@ fn main() {
     }
 
     if !task.eq_ignore_ascii_case("analyse") && !task.eq_ignore_ascii_case("tags") && !task.eq_ignore_ascii_case("ignore")
-        && !task.eq_ignore_ascii_case("upload") && !task.eq_ignore_ascii_case("stopmixer") {
+        && !task.eq_ignore_ascii_case("upload") && !task.eq_ignore_ascii_case("export") && !task.eq_ignore_ascii_case("stopmixer") {
         log::error!("Invalid task ({}) supplied", task);
         process::exit(-1);
     }
