@@ -143,8 +143,7 @@ analysis results. This will default to `bliss.db` in the current folder.
 * `lms` specifies the hostname, or IP address, of your LMS server. This is used
 when uploading the database file to LMS. This defaults to `127.0.0.1` If your LMS is
 password protected then use `user:pass@server` - e.g. `lms=pi:abc123@127.0.0.1`
-* `json` specifies the JSONRPC port number of your LMS server. This will default to
-9000.
+* `json` specifies the JSONRPC port number of your LMS server. This will default to `9000`.
 * `ignore` specifies the name and location of a file containing items to ignore
 in mixes. See the `Ignore` section later on for more details.
 * `tags` specifies whether analysis results should be written to, and re-read from,
