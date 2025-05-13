@@ -21,12 +21,11 @@ use bliss_audio::{Analysis, AnalysisIndex};
 
 const MAX_GENRE_VAL: usize = 192;
 const NUM_ANALYSIS_VALS: usize = 20;
-const ANALYSIS_TAG:ItemKey = ItemKey::Comment;
-const ANALYSIS_TAG_START: &str = "BLISS_ANALYSIS";
+const ANALYSIS_TAG: &str = "BLISS_ANALYSIS";
 const ANALYSIS_TAG_VER: u16 = 1;
 
 pub fn write_analysis(track: &String, analysis: &Analysis, preserve_mod_times: bool) {
-    let value = format!("{},{},{:.24},{:.24},{:.24},{:.24},{:.24},{:.24},{:.24},{:.24},{:.24},{:.24},{:.24},{:.24},{:.24},{:.24},{:.24},{:.24},{:.24},{:.24},{:.24},{:.24}", ANALYSIS_TAG_START, ANALYSIS_TAG_VER,
+    let value = format!("{},{:.24},{:.24},{:.24},{:.24},{:.24},{:.24},{:.24},{:.24},{:.24},{:.24},{:.24},{:.24},{:.24},{:.24},{:.24},{:.24},{:.24},{:.24},{:.24},{:.24}", ANALYSIS_TAG_VER,
                         analysis[AnalysisIndex::Tempo], analysis[AnalysisIndex::Zcr], analysis[AnalysisIndex::MeanSpectralCentroid], analysis[AnalysisIndex::StdDeviationSpectralCentroid], analysis[AnalysisIndex::MeanSpectralRolloff],
                         analysis[AnalysisIndex::StdDeviationSpectralRolloff], analysis[AnalysisIndex::MeanSpectralFlatness], analysis[AnalysisIndex::StdDeviationSpectralFlatness], analysis[AnalysisIndex::MeanLoudness], analysis[AnalysisIndex::StdDeviationLoudness],
                         analysis[AnalysisIndex::Chroma1], analysis[AnalysisIndex::Chroma2], analysis[AnalysisIndex::Chroma3], analysis[AnalysisIndex::Chroma4], analysis[AnalysisIndex::Chroma5],
@@ -46,23 +45,13 @@ pub fn write_analysis(track: &String, analysis: &Analysis, preserve_mod_times: b
             },
         };
 
-        // Remove any existing analysis result tag
-        let entries = tag.get_strings(&ANALYSIS_TAG);
-        let mut keep: Vec<ItemValue> = Vec::new();
-        for entry in entries {
-            if !entry.starts_with(ANALYSIS_TAG_START) {
-                keep.push(ItemValue::Text(entry.to_string()));
-            }
-        }
-        tag.remove_key(&ANALYSIS_TAG);
-        for k in keep {
-            tag.push(TagItem::new(ANALYSIS_TAG, k));
-        }
-
         // Store analysis results
-        tag.push(TagItem::new(ANALYSIS_TAG, ItemValue::Text(value)));
+        let tag_key = ItemKey::Unknown(ANALYSIS_TAG.to_string());
+        tag.remove_key(&tag_key);
+        tag.insert_unchecked(TagItem::new(tag_key, ItemValue::Text(value)));
         let now = SystemTime::now();
         let mut mod_time = now;
+
         if preserve_mod_times {
             if let Ok(fmeta) = fs::metadata(track) {
                 if let Ok(time) = fmeta.modified() {
@@ -79,6 +68,49 @@ pub fn write_analysis(track: &String, analysis: &Analysis, preserve_mod_times: b
             }
         }
     }
+}
+
+fn read_analysis_string(tag_str: &str, start_tag_pos:usize, version_pos:usize) -> Option<Analysis> {
+    let parts = tag_str.split(",");
+    let mut index = 0;
+    let mut num_read_vals = 0;
+    let mut vals = [0.; NUM_ANALYSIS_VALS];
+    let val_start_pos = version_pos+1;
+    for part in parts {
+        if index==start_tag_pos && start_tag_pos<version_pos {
+            if part!=ANALYSIS_TAG {
+                break;
+            }
+        } else if index==version_pos {
+            match part.parse::<u16>() {
+                Ok(ver) => {
+                    if ver!=ANALYSIS_TAG_VER {
+                        break;
+                    }
+                },
+                Err(_) => {
+                    break;
+                }
+            }
+        } else if (index - val_start_pos) < NUM_ANALYSIS_VALS {
+            match part.parse::<f32>() {
+                Ok(val) => {
+                    num_read_vals += 1;
+                    vals[index - val_start_pos] = val;
+                },
+                Err(_) => {
+                    break;
+                }
+            }
+        } else {
+            break;
+        }
+        index += 1;
+    }
+    if num_read_vals == NUM_ANALYSIS_VALS {
+        return Some(Analysis::new(vals));
+    }
+    None
 }
 
 pub fn read(track: &String, read_analysis: bool) -> db::Metadata {
@@ -140,45 +172,28 @@ pub fn read(track: &String, read_analysis: bool) -> db::Metadata {
         meta.duration = file.properties().duration().as_secs() as u32;
 
         if read_analysis {
-            let entries = tag.get_strings(&ANALYSIS_TAG);
-            for entry in entries {
-                if entry.len()>(ANALYSIS_TAG_START.len()+(NUM_ANALYSIS_VALS*8)) && entry.starts_with(ANALYSIS_TAG_START) {
-                    let parts = entry.split(",");
-                    let mut index = 0;
-                    let mut vals = [0.; NUM_ANALYSIS_VALS];
-                    for part in parts {
-                        if 0==index {
-                            if part!=ANALYSIS_TAG_START {
-                                break;
-                            }
-                        } else if 1==index {
-                            match part.parse::<u16>() {
-                                Ok(ver) => {
-                                    if ver!=ANALYSIS_TAG_VER {
-                                        break;
-                                    }
-                                },
-                                Err(_) => {
-                                    break;
-                                }
-                            }
-                        } else if (index - 2) < NUM_ANALYSIS_VALS {
-                            match part.parse::<f32>() {
-                                Ok(val) => {
-                                    vals[index - 2] = val;
-                                },
-                                Err(_) => {
-                                    break;
-                                }
-                            }
-                        } else {
-                            break;
+            match tag.get_string(&ItemKey::Unknown(ANALYSIS_TAG.to_string())) {
+                Some(tag_str) => {
+                    match read_analysis_string(tag_str, 100, 0) {
+                        Some(analysis) => {
+                            meta.analysis = Some(analysis);
                         }
-                        index += 1;
+                        None => { }
                     }
-                    if index == (NUM_ANALYSIS_VALS+2) {
-                        meta.analysis = Some(Analysis::new(vals));
-                        break;
+                }
+                None => {
+                    // Old, stored in comment
+                    let entries = tag.get_strings(&ItemKey::Comment);
+                    for entry in entries {
+                        if entry.len()>(ANALYSIS_TAG.len()+(NUM_ANALYSIS_VALS*8)) && entry.starts_with(ANALYSIS_TAG) {
+                            match read_analysis_string(entry, 0, 1) {
+                                Some(analysis) => {
+                                    meta.analysis = Some(analysis);
+                                    break;
+                                }
+                                None => { }
+                            }
+                        }
                     }
                 }
             }

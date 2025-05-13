@@ -111,7 +111,7 @@ fn check_dir_entry(db: &mut db::Db, mpath: &Path, entry: DirEntry, track_paths: 
                         if id<=0 {
                             let mut tags_used = false;
                             if use_tags {
-                                let meta = tags::read(&sname, true);
+                                let meta = tags::read(&String::from(pb.to_string_lossy()), true);
                                 if !meta.is_empty() && !meta.analysis.is_none() {
                                     if !dry_run {
                                         db.add_track(&sname, &meta, &meta.analysis.unwrap());
@@ -430,12 +430,16 @@ pub fn analyse_files(db_path: &str, mpaths: &Vec<PathBuf>, dry_run: bool, keep_o
         }
         get_file_list(&mut db, &mpath, &cur, &mut track_paths, &mut cue_tracks, &mut file_count, max_num_files, use_tags, &mut tagged_file_count, dry_run);
         track_paths.sort();
-        log::info!("Num new files: {}", track_paths.len());
+        if use_tags {
+            log::info!("New untagged files: {}", track_paths.len());
+        } else {
+            log::info!("New files: {}", track_paths.len());
+        }
         if !cue_tracks.is_empty() {
-            log::info!("Num new cue tracks: {}", cue_tracks.len());
+            log::info!("New cue tracks: {}", cue_tracks.len());
         }
         if use_tags {
-            log::info!("Num tagged files: {}", tagged_file_count);
+            log::info!("New tagged files: {}", tagged_file_count);
         }
 
         if dry_run {

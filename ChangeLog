@@ -1,3 +1,8 @@
+0.5.0
+-----
+1. Store analysis in BLISS_ANALYSIS tag, not in a COMMENT tag.
+2. Fix read of tags during analysis phase.
+
 0.4.0
 -----
 1. Add action to export results from database to files.
