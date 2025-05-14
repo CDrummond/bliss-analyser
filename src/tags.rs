@@ -129,7 +129,19 @@ pub fn read(track: &String, read_analysis: bool) -> db::Metadata {
         meta.artist = tag.artist().unwrap_or_default().to_string();
         meta.album = tag.album().unwrap_or_default().to_string();
         meta.album_artist = tag.get_string(&ItemKey::AlbumArtist).unwrap_or_default().to_string();
-        meta.genre = tag.genre().unwrap_or_default().to_string();
+
+        // If file has multiple genre tags then read all.
+        let genres = tag.get_strings(&ItemKey::Genre);
+        let mut genre_list:Vec<String> = Vec::new();
+
+        for genre in genres {
+            genre_list.push(genre.to_string());
+        }
+        if genre_list.len()>1 {
+            meta.genre = genre_list.join(";");
+        } else {
+            meta.genre = tag.genre().unwrap_or_default().to_string();
+        }
 
         // Check whether MP3 has numeric genre, and if so covert to text
         if file.file_type().eq(&FileType::Mpeg) {
