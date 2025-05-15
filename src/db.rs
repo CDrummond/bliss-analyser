@@ -13,6 +13,8 @@ use bliss_audio::{Analysis, AnalysisIndex};
 use indicatif::{ProgressBar, ProgressStyle};
 use rusqlite::{params, Connection};
 use std::convert::TryInto;
+use std::fs::File;
+use std::io::{BufRead, BufReader};
 use std::num::NonZeroUsize;
 use std::path::PathBuf;
 use std::process;
@@ -443,4 +445,35 @@ impl Db {
             let _ = thread.join();
         }
     }
+}
+
+pub fn read_tags(db_path: &str, mpaths: &Vec<PathBuf>) {
+    let db = Db::new(&String::from(db_path));
+    db.init();
+    db.update_tags(&mpaths);
+    db.close();
+}
+
+pub fn export(db_path: &str, mpaths: &Vec<PathBuf>, max_threads: usize, preserve_mod_times: bool) {
+    let db = Db::new(&String::from(db_path));
+    db.init();
+    db.export(&mpaths, max_threads, preserve_mod_times);
+    db.close();
+}
+
+pub fn update_ignore(db_path: &str, ignore_path: &PathBuf) {
+    let file = File::open(ignore_path).unwrap();
+    let reader = BufReader::new(file);
+    let db = Db::new(&String::from(db_path));
+    db.init();
+
+    db.clear_ignore();
+    let mut lines = reader.lines();
+    while let Some(Ok(line)) = lines.next() {
+        if !line.is_empty() && !line.starts_with("#") {
+            db.set_ignore(&line);
+        }
+    }
+
+    db.close();
 }

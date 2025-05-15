@@ -200,7 +200,7 @@ fn main() {
             }
 
             if task.eq_ignore_ascii_case("tags") {
-                analyse::read_tags(&db_path, &music_paths);
+                db::read_tags(&db_path, &music_paths);
             } else if task.eq_ignore_ascii_case("ignore") {
                 let ignore_path = PathBuf::from(&ignore_file);
                 if !ignore_path.exists() {
@@ -211,9 +211,9 @@ fn main() {
                     log::error!("Ignore file ({}) is not a file", ignore_file);
                     process::exit(-1);
                 }
-                analyse::update_ignore(&db_path, &ignore_path);
+                db::update_ignore(&db_path, &ignore_path);
             } else if task.eq_ignore_ascii_case("export") {
-                analyse::export(&db_path, &music_paths, max_threads, preserve_mod_times);
+                db::export(&db_path, &music_paths, max_threads, preserve_mod_times);
             } else {
                 let ignore_path = PathBuf::from(&ignore_file);
                 analyse::analyse_files(&db_path, &music_paths, dry_run, keep_old, max_num_files, max_threads, &ignore_path, use_tags, preserve_mod_times);
