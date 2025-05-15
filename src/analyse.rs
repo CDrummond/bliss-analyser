@@ -486,10 +486,10 @@ pub fn read_tags(db_path: &str, mpaths: &Vec<PathBuf>) {
     db.close();
 }
 
-pub fn export(db_path: &str, mpaths: &Vec<PathBuf>, preserve_mod_times: bool) {
+pub fn export(db_path: &str, mpaths: &Vec<PathBuf>, max_threads: usize, preserve_mod_times: bool) {
     let db = db::Db::new(&String::from(db_path));
     db.init();
-    db.export(&mpaths, preserve_mod_times);
+    db.export(&mpaths, max_threads, preserve_mod_times);
     db.close();
 }
 

@@ -24,13 +24,14 @@ const NUM_ANALYSIS_VALS: usize = 20;
 const ANALYSIS_TAG: &str = "BLISS_ANALYSIS";
 const ANALYSIS_TAG_VER: u16 = 1;
 
-pub fn write_analysis(track: &String, analysis: &Analysis, preserve_mod_times: bool) {
+pub fn write_analysis(track: &String, analysis: &Analysis, preserve_mod_times: bool) -> bool {
     let value = format!("{},{:.24},{:.24},{:.24},{:.24},{:.24},{:.24},{:.24},{:.24},{:.24},{:.24},{:.24},{:.24},{:.24},{:.24},{:.24},{:.24},{:.24},{:.24},{:.24},{:.24}", ANALYSIS_TAG_VER,
                         analysis[AnalysisIndex::Tempo], analysis[AnalysisIndex::Zcr], analysis[AnalysisIndex::MeanSpectralCentroid], analysis[AnalysisIndex::StdDeviationSpectralCentroid], analysis[AnalysisIndex::MeanSpectralRolloff],
                         analysis[AnalysisIndex::StdDeviationSpectralRolloff], analysis[AnalysisIndex::MeanSpectralFlatness], analysis[AnalysisIndex::StdDeviationSpectralFlatness], analysis[AnalysisIndex::MeanLoudness], analysis[AnalysisIndex::StdDeviationLoudness],
                         analysis[AnalysisIndex::Chroma1], analysis[AnalysisIndex::Chroma2], analysis[AnalysisIndex::Chroma3], analysis[AnalysisIndex::Chroma4], analysis[AnalysisIndex::Chroma5],
                         analysis[AnalysisIndex::Chroma6], analysis[AnalysisIndex::Chroma7], analysis[AnalysisIndex::Chroma8], analysis[AnalysisIndex::Chroma9], analysis[AnalysisIndex::Chroma10]);
 
+    let mut written = false;
     if let Ok(mut file) = lofty::read_from_path(Path::new(track)) {
         let tag = match file.primary_tag_mut() {
             Some(primary_tag) => primary_tag,
@@ -59,15 +60,18 @@ pub fn write_analysis(track: &String, analysis: &Analysis, preserve_mod_times: b
                 }
             }
         }
-        let _ = tag.save_to_path(Path::new(track), WriteOptions::default());
-        if preserve_mod_times {
-            if mod_time<now {
-                if let Ok(f) = File::open(track) {
-                    let _ = f.set_modified(mod_time);
+        if let Ok(_) = tag.save_to_path(Path::new(track), WriteOptions::default()) {
+            if preserve_mod_times {
+                if mod_time<now {
+                    if let Ok(f) = File::open(track) {
+                        let _ = f.set_modified(mod_time);
+                    }
                 }
             }
+            written = true;
         }
     }
+    written
 }
 
 fn read_analysis_string(tag_str: &str, start_tag_pos:usize, version_pos:usize) -> Option<Analysis> {

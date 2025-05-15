@@ -13,8 +13,12 @@ use bliss_audio::{Analysis, AnalysisIndex};
 use indicatif::{ProgressBar, ProgressStyle};
 use rusqlite::{params, Connection};
 use std::convert::TryInto;
+use std::num::NonZeroUsize;
 use std::path::PathBuf;
 use std::process;
+use std::thread;
+use std::thread::JoinHandle;
+use num_cpus;
 
 pub const CUE_MARKER: &str = ".CUE_TRACK.";
 
@@ -29,6 +33,7 @@ pub struct FileMetadata {
     pub duration: u32,
 }
 
+#[derive(Clone)]
 struct AnalysisResults {
     pub file: String,
     pub analysis: Analysis,
@@ -344,9 +349,51 @@ impl Db {
         }
     }
 
-    pub fn export(&self, mpaths: &Vec<PathBuf>, preserve_mod_times: bool) {
-        let total = self.get_track_count();
-        if total > 0 {
+    pub fn export(&self, mpaths: &Vec<PathBuf>, max_threads: usize, preserve_mod_times: bool) {
+        log::info!("Querying database");
+        let mut tracks:Vec<AnalysisResults> = Vec::new();
+        let mut stmt = self.conn.prepare("SELECT File, Tempo, Zcr, MeanSpectralCentroid, StdDevSpectralCentroid, MeanSpectralRolloff, StdDevSpectralRolloff, MeanSpectralFlatness, StdDevSpectralFlatness, MeanLoudness, StdDevLoudness, Chroma1, Chroma2, Chroma3, Chroma4, Chroma5, Chroma6, Chroma7, Chroma8, Chroma9, Chroma10 FROM Tracks ORDER BY File ASC;").unwrap();
+        let track_iter = stmt
+            .query_map([], |row| {
+                Ok(AnalysisResults {
+                    file: row.get(0)?,
+                    analysis: Analysis::new([row.get(1)?, row.get(2)?, row.get(3)?, row.get(4)?, row.get(5)?, row.get(6)?, row.get(7)?, row.get(8)?, row.get(9)?, row.get(10)?, row.get(11)?, row.get(12)?, row.get(13)?, row.get(14)?, row.get(15)?, row.get(16)?, row.get(17)?, row.get(18)?, row.get(19)?, row.get(20)?]),
+                })
+            })
+            .unwrap();
+
+        for tr in track_iter {
+            let dbtags = tr.unwrap();
+            if !dbtags.file.contains(CUE_MARKER) {
+                for mpath in mpaths {
+                    let track_path = mpath.join(dbtags.file.clone());
+                    if track_path.exists() {
+                        tracks.push(AnalysisResults{file:String::from(track_path.to_string_lossy()), analysis:dbtags.analysis});
+                    }
+                }
+            }
+        }
+
+        let total = tracks.len();
+        if total <= 0 {
+            log::info!("Nothing to export");
+            return;
+        }
+        log::info!("Starting export");
+        let cpu_threads: NonZeroUsize = match max_threads {
+            0 => NonZeroUsize::new(num_cpus::get()).unwrap(),
+            _ => NonZeroUsize::new(max_threads).unwrap(),
+        }.into();
+        let num_threads = cpu_threads.into();
+        let chunk_size = total/cpu_threads;
+        let mut threads: Vec<JoinHandle<()>> = vec![];
+
+        let (sender, receiver) = std::sync::mpsc::channel();
+        let reporting_thread = std::thread::spawn(move || {
+            let mut processed = 0;
+            let mut had_tags = 0;
+            let mut failed_to_write = 0;
+            let mut exported = 0;
             let progress = ProgressBar::new(total.try_into().unwrap()).with_style(
                 ProgressStyle::default_bar()
                     .template(
@@ -354,39 +401,46 @@ impl Db {
                     )
                     .progress_chars("=> "),
             );
-
-            let mut stmt = self.conn.prepare("SELECT File, Tempo, Zcr, MeanSpectralCentroid, StdDevSpectralCentroid, MeanSpectralRolloff, StdDevSpectralRolloff, MeanSpectralFlatness, StdDevSpectralFlatness, MeanLoudness, StdDevLoudness, Chroma1, Chroma2, Chroma3, Chroma4, Chroma5, Chroma6, Chroma7, Chroma8, Chroma9, Chroma10 FROM Tracks ORDER BY File ASC;").unwrap();
-            let track_iter = stmt
-                .query_map([], |row| {
-                    Ok(AnalysisResults {
-                        file: row.get(0)?,
-                        analysis: Analysis::new([row.get(1)?, row.get(2)?, row.get(3)?, row.get(4)?, row.get(5)?, row.get(6)?, row.get(7)?, row.get(8)?, row.get(9)?, row.get(10)?, row.get(11)?, row.get(12)?, row.get(13)?, row.get(14)?, row.get(15)?, row.get(16)?, row.get(17)?, row.get(18)?, row.get(19)?, row.get(20)?]),
-                    })
-                })
-                .unwrap();
-
-            let mut updated = 0;
-            for tr in track_iter {
-                let dbtags = tr.unwrap();
-                if !dbtags.file.contains(CUE_MARKER) {
-                    progress.set_message(format!("{}", dbtags.file));
-
-                    for mpath in mpaths {
-                        let track_path = mpath.join(&dbtags.file);
-                        if track_path.exists() {
-                            let spath = String::from(track_path.to_string_lossy());
-                            let meta = tags::read(&spath, true);
-                            if  meta.is_empty() || meta.analysis.is_none() || meta.analysis.unwrap()!=dbtags.analysis {
-                                tags::write_analysis(&spath, &dbtags.analysis, preserve_mod_times);
-                                updated+=1;
-                            }
-                            break;
+            for resp in receiver {
+                progress.inc(1);
+                processed+=1;
+                if resp==0 {
+                    had_tags+=1;
+                } else if resp==1 {
+                    failed_to_write+=1;
+                } else {
+                    exported+=1;
+                }
+                if processed == total {
+                    break;
+                }
+            }
+            progress.finish_with_message(format!("Finished!"));
+            log::info!("{} Exported. {} Existing. {} Failure(s).", exported, had_tags, failed_to_write);
+        });
+        threads.push(reporting_thread);
+        for thread in 0..num_threads {
+            let tid:usize = thread;
+            let start = tid * chunk_size;
+            let end = if tid+1 == num_threads { total } else { start + chunk_size };
+            let sndr = sender.clone();
+            let trks = Vec::from_iter(tracks[start..end].iter().cloned());
+            threads.push(thread::spawn(move || {
+                for track in trks {
+                    let mut updated = 0;
+                    let meta = tags::read(&track.file, true);
+                    if  meta.is_empty() || meta.analysis.is_none() || meta.analysis.unwrap()!=track.analysis {
+                        updated = 1;
+                        if tags::write_analysis(&track.file, &track.analysis, preserve_mod_times) {
+                            updated = 2;
                         }
                     }
+                    sndr.send(updated).unwrap();
                 }
-                progress.inc(1);
-            }
-            progress.finish_with_message(format!("{} Updated.", updated))
+            }));
+        }
+        for thread in threads {
+            let _ = thread.join();
         }
     }
 }

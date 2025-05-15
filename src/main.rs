@@ -213,7 +213,7 @@ fn main() {
                 }
                 analyse::update_ignore(&db_path, &ignore_path);
             } else if task.eq_ignore_ascii_case("export") {
-                analyse::export(&db_path, &music_paths, preserve_mod_times);
+                analyse::export(&db_path, &music_paths, max_threads, preserve_mod_times);
             } else {
                 let ignore_path = PathBuf::from(&ignore_file);
                 analyse::analyse_files(&db_path, &music_paths, dry_run, keep_old, max_num_files, max_threads, &ignore_path, use_tags, preserve_mod_times);
