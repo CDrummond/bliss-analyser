@@ -147,9 +147,13 @@ password protected then use `user:pass@server` - e.g. `lms=pi:abc123@127.0.0.1`
 to `9000`.
 * `ignore` specifies the name and location of a file containing items to ignore
 in mixes. See the `Ignore` section later on for more details.
-* `tags` specifies whether analysis results should be written to, and re-read from,
-files. Set to `true` or `false`. If enabled, then results are stored in a `COMMENT`
-tag that starts with `BLISS_ANALYSIS`
+* `read_tags` specifies whether analysis results should be read from files. Set
+to `true` or `false`. If enabled, then results are read from a tag named `BLISS_ANALYSIS`.
+* `write_tags` specifies whether analysis results should be written to files. Set
+to `true` or `false`. If enabled, then results are stored in a tag named `BLISS_ANALYSIS`
+* `tags` specifies whether analysis results should be written to, and read from,
+files. Set to `true` or `false`. This is the same as setting both `read_tags`
+and `write_tags` to `true`
 * `preserve` specifies whether file modification time should be preserved when
 writing tags. Set to `true` or `false`.
 
@@ -174,7 +178,10 @@ tracks are to be analysed and how many old tracks are left in the database.
 * `-L` / `--lms` Hostname, or IP address, of your LMS server.
 * `-J` / `--json` JSONRPC port number of your LMS server.
 * `-n` / `--numtracks` Specify maximum number of tracks to analyse.
-* `-T` / `--tags` Write analysis results to file tags, and read from file tags.
+* `-R` / `--read-tags` Read analysis results from file tags.
+* `-W` / `--write-tags` Write analysis results to file tags.
+* `-T` / `--tags` Read tags if present, and write tags if not present - this
+option is the same as supplying both --read-tags and --write-tags.
 * `-p' / '--preserve` Attempt to preserve file modification time when writing tags.
 
 Equivalent items specified in the INI config file (detailed above) will override

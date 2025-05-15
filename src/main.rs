@@ -42,6 +42,8 @@ fn main() {
     let mut music_paths: Vec<PathBuf> = Vec::new();
     let mut max_threads: usize = 0;
     let mut use_tags = false;
+    let mut read_tags = false;
+    let mut write_tags = false;
     let mut preserve_mod_times = false;
 
     match dirs::home_dir() {
@@ -76,7 +78,9 @@ fn main() {
         arg_parse.refer(&mut lms_json_port).add_option(&["-J", "--json"], Store, &lms_json_port_help);
         arg_parse.refer(&mut max_num_files).add_option(&["-n", "--numfiles"], Store, "Maximum number of files to analyse");
         arg_parse.refer(&mut max_threads).add_option(&["-t", "--threads"], Store, "Maximum number of threads to use for analysis");
-        arg_parse.refer(&mut use_tags).add_option(&["-T", "--tags"], StoreTrue, "Read/write analysis results from/to source files");
+        arg_parse.refer(&mut read_tags).add_option(&["-R", "--read-tags"], StoreTrue, "Read analysis results from file tags");
+        arg_parse.refer(&mut write_tags).add_option(&["-W", "--write-tags"], StoreTrue, "Write analysis results to file tags");
+        arg_parse.refer(&mut use_tags).add_option(&["-T", "--tags"], StoreTrue, "Read tags if present, and write tags if not present - this option is the same as supplying both --read-tags and --write-tags");
         arg_parse.refer(&mut preserve_mod_times).add_option(&["-p", "--preserve"], StoreTrue, "Preserve modification time when writing tags to files");
         arg_parse.refer(&mut task).add_argument("task", Store, "Task to perform; analyse, tags, ignore, upload, export, stopmixer.");
         arg_parse.parse_args_or_exit();
@@ -149,6 +153,14 @@ fn main() {
                         Some(val) => { use_tags = val.eq("true"); }
                         None => { }
                     }
+                    match config.get(TOP_LEVEL_INI_TAG, "read_tags") {
+                        Some(val) => { read_tags = val.eq("true"); }
+                        None => { }
+                    }
+                    match config.get(TOP_LEVEL_INI_TAG, "write_tags") {
+                        Some(val) => { write_tags = val.eq("true"); }
+                        None => { }
+                    }
                     match config.get(TOP_LEVEL_INI_TAG, "preserve") {
                         Some(val) => { preserve_mod_times = val.eq("true"); }
                         None => { }
@@ -216,7 +228,7 @@ fn main() {
                 db::export(&db_path, &music_paths, max_threads, preserve_mod_times);
             } else {
                 let ignore_path = PathBuf::from(&ignore_file);
-                analyse::analyse_files(&db_path, &music_paths, dry_run, keep_old, max_num_files, max_threads, &ignore_path, use_tags, preserve_mod_times);
+                analyse::analyse_files(&db_path, &music_paths, dry_run, keep_old, max_num_files, max_threads, &ignore_path, use_tags||read_tags, use_tags||write_tags, preserve_mod_times);
             }
         }
     }
