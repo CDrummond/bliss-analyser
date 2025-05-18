@@ -25,11 +25,33 @@ const ANALYSIS_TAG: &str = "BLISS_ANALYSIS";
 const ANALYSIS_TAG_VER: u16 = 1;
 
 pub fn write_analysis(track: &String, analysis: &Analysis, preserve_mod_times: bool) -> bool {
-    let value = format!("{},{:.24},{:.24},{:.24},{:.24},{:.24},{:.24},{:.24},{:.24},{:.24},{:.24},{:.24},{:.24},{:.24},{:.24},{:.24},{:.24},{:.24},{:.24},{:.24},{:.24}", ANALYSIS_TAG_VER,
-                        analysis[AnalysisIndex::Tempo], analysis[AnalysisIndex::Zcr], analysis[AnalysisIndex::MeanSpectralCentroid], analysis[AnalysisIndex::StdDeviationSpectralCentroid], analysis[AnalysisIndex::MeanSpectralRolloff],
-                        analysis[AnalysisIndex::StdDeviationSpectralRolloff], analysis[AnalysisIndex::MeanSpectralFlatness], analysis[AnalysisIndex::StdDeviationSpectralFlatness], analysis[AnalysisIndex::MeanLoudness], analysis[AnalysisIndex::StdDeviationLoudness],
-                        analysis[AnalysisIndex::Chroma1], analysis[AnalysisIndex::Chroma2], analysis[AnalysisIndex::Chroma3], analysis[AnalysisIndex::Chroma4], analysis[AnalysisIndex::Chroma5],
-                        analysis[AnalysisIndex::Chroma6], analysis[AnalysisIndex::Chroma7], analysis[AnalysisIndex::Chroma8], analysis[AnalysisIndex::Chroma9], analysis[AnalysisIndex::Chroma10]);
+//     let value = format!("{},{:.24},{:.24},{:.24},{:.24},{:.24},{:.24},{:.24},{:.24},{:.24},{:.24},{:.24},{:.24},{:.24},{:.24},{:.24},{:.24},{:.24},{:.24},{:.24},{:.24}", ANALYSIS_TAG_VER,
+//                         analysis[AnalysisIndex::Tempo], analysis[AnalysisIndex::Zcr], analysis[AnalysisIndex::MeanSpectralCentroid], analysis[AnalysisIndex::StdDeviationSpectralCentroid], analysis[AnalysisIndex::MeanSpectralRolloff],
+//                         analysis[AnalysisIndex::StdDeviationSpectralRolloff], analysis[AnalysisIndex::MeanSpectralFlatness], analysis[AnalysisIndex::StdDeviationSpectralFlatness], analysis[AnalysisIndex::MeanLoudness], analysis[AnalysisIndex::StdDeviationLoudness],
+//                         analysis[AnalysisIndex::Chroma1], analysis[AnalysisIndex::Chroma2], analysis[AnalysisIndex::Chroma3], analysis[AnalysisIndex::Chroma4], analysis[AnalysisIndex::Chroma5],
+//                         analysis[AnalysisIndex::Chroma6], analysis[AnalysisIndex::Chroma7], analysis[AnalysisIndex::Chroma8], analysis[AnalysisIndex::Chroma9], analysis[AnalysisIndex::Chroma10]);
+
+    let value = format!("{},{:.15},{:.15},{:.15},{:.15},{:.15},{:.15},{:.15},{:.15},{:.15},{:.15},{:.15},{:.15},{:.15},{:.15},{:.15},{:.15},{:.15},{:.15},{:.15},{:.15}", ANALYSIS_TAG_VER,
+                        analysis[AnalysisIndex::Tempo], 
+                        analysis[AnalysisIndex::Zcr], 
+                        analysis[AnalysisIndex::MeanSpectralCentroid], 
+                        analysis[AnalysisIndex::StdDeviationSpectralCentroid], 
+                        analysis[AnalysisIndex::MeanSpectralRolloff],
+                        analysis[AnalysisIndex::StdDeviationSpectralRolloff], 
+                        analysis[AnalysisIndex::MeanSpectralFlatness], 
+                        analysis[AnalysisIndex::StdDeviationSpectralFlatness], 
+                        analysis[AnalysisIndex::MeanLoudness], 
+                        analysis[AnalysisIndex::StdDeviationLoudness],
+                        analysis[AnalysisIndex::Chroma1], 
+                        analysis[AnalysisIndex::Chroma2], 
+                        analysis[AnalysisIndex::Chroma3], 
+                        analysis[AnalysisIndex::Chroma4], 
+                        analysis[AnalysisIndex::Chroma5],
+                        analysis[AnalysisIndex::Chroma6], 
+                        analysis[AnalysisIndex::Chroma7], 
+                        analysis[AnalysisIndex::Chroma8], 
+                        analysis[AnalysisIndex::Chroma9], 
+                        analysis[AnalysisIndex::Chroma10]);
 
     let mut written = false;
     if let Ok(mut file) = lofty::read_from_path(Path::new(track)) {
@@ -74,6 +96,49 @@ pub fn write_analysis(track: &String, analysis: &Analysis, preserve_mod_times: b
     written
 }
 
+// fn read_analysis_string(tag_str: &str, start_tag_pos:usize, version_pos:usize) -> Option<Analysis> {
+//     let parts = tag_str.split(",");
+//     let mut index = 0;
+//     let mut num_read_vals = 0;
+//     let mut vals = [0.; NUM_ANALYSIS_VALS];
+//     let val_start_pos = version_pos+1;
+//     for part in parts {
+//         if index==start_tag_pos && start_tag_pos<version_pos {
+//             if part!=ANALYSIS_TAG {
+//                 break;
+//             }
+//         } else if index==version_pos {
+//             match part.parse::<u16>() {
+//                 Ok(ver) => {
+//                     if ver!=ANALYSIS_TAG_VER {
+//                         break;
+//                     }
+//                 },
+//                 Err(_) => {
+//                     break;
+//                 }
+//             }
+//         } else if (index - val_start_pos) < NUM_ANALYSIS_VALS {
+//             match part.parse::<f32>() {
+//                 Ok(val) => {
+//                     num_read_vals += 1;
+//                     vals[index - val_start_pos] = val;
+//                 },
+//                 Err(_) => {
+//                     break;
+//                 }
+//             }
+//         } else {
+//             break;
+//         }
+//         index += 1;
+//     }
+//     if num_read_vals == NUM_ANALYSIS_VALS {
+//         return Some(Analysis::new(vals));
+//     }
+//     None
+// }
+
 fn read_analysis_string(tag_str: &str, start_tag_pos:usize, version_pos:usize) -> Option<Analysis> {
     let parts = tag_str.split(",");
     let mut index = 0;
@@ -100,7 +165,9 @@ fn read_analysis_string(tag_str: &str, start_tag_pos:usize, version_pos:usize) -
             match part.parse::<f32>() {
                 Ok(val) => {
                     num_read_vals += 1;
-                    vals[index - val_start_pos] = val;
+                    // Format with 15 significant digits to ensure consistency
+                    let s = format!("{:.15}", val);
+                    vals[index - val_start_pos] = s.parse().unwrap_or(val);
                 },
                 Err(_) => {
                     break;

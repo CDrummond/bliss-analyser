@@ -45,6 +45,9 @@ fn main() {
     let mut read_tags = false;
     let mut write_tags = false;
     let mut preserve_mod_times = false;
+    let mut prefer_tags = false;
+
+
 
     match dirs::home_dir() {
         Some(path) => {
@@ -83,6 +86,7 @@ fn main() {
         arg_parse.refer(&mut use_tags).add_option(&["-T", "--tags"], StoreTrue, "Read tags if present, and write tags if not present - this option is the same as supplying both --read-tags and --write-tags");
         arg_parse.refer(&mut preserve_mod_times).add_option(&["-p", "--preserve"], StoreTrue, "Preserve modification time when writing tags to files");
         arg_parse.refer(&mut task).add_argument("task", Store, "Task to perform; analyse, tags, ignore, upload, export, stopmixer.");
+        arg_parse.refer(&mut prefer_tags).add_option(&["-P", "--prefer-tags"], StoreTrue, "Prefer existing tags over analysis (faster)");
         arg_parse.parse_args_or_exit();
     }
 
@@ -228,7 +232,7 @@ fn main() {
                 db::export(&db_path, &music_paths, max_threads, preserve_mod_times);
             } else {
                 let ignore_path = PathBuf::from(&ignore_file);
-                analyse::analyse_files(&db_path, &music_paths, dry_run, keep_old, max_num_files, max_threads, &ignore_path, use_tags||read_tags, use_tags||write_tags, preserve_mod_times);
+                analyse::analyse_files(&db_path, &music_paths, dry_run, keep_old, max_num_files, max_threads, &ignore_path, use_tags||read_tags, use_tags||write_tags, preserve_mod_times, prefer_tags);
             }
         }
     }

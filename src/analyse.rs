@@ -44,7 +44,7 @@ const MAX_ERRORS_TO_SHOW: usize = 100;
 const MAX_TAG_ERRORS_TO_SHOW: usize = 50;
 const VALID_EXTENSIONS: [&str; 7] = ["m4a", "mp3", "ogg", "flac", "opus", "wv", "dsf"];
 
-fn get_file_list(db: &mut db::Db, mpath: &Path, path: &Path, track_paths: &mut Vec<String>, cue_tracks:&mut Vec<cue::CueTrack>, file_count:&mut usize, max_num_files: usize, read_tags: bool, tagged_file_count:&mut usize, dry_run: bool) {
+fn get_file_list(db: &mut db::Db, mpath: &Path, path: &Path, track_paths: &mut Vec<String>, cue_tracks:&mut Vec<cue::CueTrack>, file_count:&mut usize, max_num_files: usize, read_tags: bool, tagged_file_count:&mut usize, dry_run: bool, prefer_tags: bool) {
     if !path.is_dir() {
         return;
     }
@@ -53,23 +53,26 @@ fn get_file_list(db: &mut db::Db, mpath: &Path, path: &Path, track_paths: &mut V
     items.sort_by_key(|dir| dir.path());
 
     for item in items {
-        check_dir_entry(db, mpath, item, track_paths, cue_tracks, file_count, max_num_files, read_tags, tagged_file_count, dry_run);
+        check_dir_entry(db, mpath, item, track_paths, cue_tracks, file_count, max_num_files, read_tags, tagged_file_count, dry_run, prefer_tags);
         if max_num_files>0 && *file_count>=max_num_files {
             break;
         }
     }
 }
 
-fn check_dir_entry(db: &mut db::Db, mpath: &Path, entry: DirEntry, track_paths: &mut Vec<String>, cue_tracks:&mut Vec<cue::CueTrack>, file_count:&mut usize, max_num_files: usize, read_tags: bool, tagged_file_count:&mut usize, dry_run: bool) {
+fn check_dir_entry(db: &mut db::Db, mpath: &Path, entry: DirEntry, track_paths: &mut Vec<String>, cue_tracks: &mut Vec<cue::CueTrack>, 
+                  file_count: &mut usize, max_num_files: usize, read_tags: bool, tagged_file_count: &mut usize, 
+                  dry_run: bool, prefer_tags: bool) {
+
     let pb = entry.path();
     if pb.is_dir() {
         let check = pb.join(DONT_ANALYSE);
         if check.exists() {
             log::info!("Skipping '{}', found '{}'", pb.to_string_lossy(), DONT_ANALYSE);
         } else if max_num_files<=0 || *file_count<max_num_files {
-            get_file_list(db, mpath, &pb, track_paths, cue_tracks, file_count, max_num_files, read_tags, tagged_file_count, dry_run);
+            get_file_list(db, mpath, &pb, track_paths, cue_tracks, file_count, max_num_files, read_tags, tagged_file_count, dry_run, prefer_tags);
         }
-    } else if pb.is_file() && (max_num_files<=0 || *file_count<max_num_files) {
+    } else if pb.is_file() && (max_num_files <= 0 || *file_count < max_num_files) {
         if_chain! {
             if let Some(ext) = pb.extension();
             let ext = ext.to_string_lossy();
@@ -79,6 +82,19 @@ fn check_dir_entry(db: &mut db::Db, mpath: &Path, entry: DirEntry, track_paths: 
                 let sname = String::from(stripped.to_string_lossy());
                 let mut cue_file = pb.clone();
                 cue_file.set_extension("cue");
+
+                // Check if we should prefer tags
+                if prefer_tags {
+                    let meta = tags::read(&String::from(pb.to_string_lossy()), true);
+                    if !meta.is_empty() && meta.analysis.is_some() {
+                        if !dry_run {
+                            db.add_track(&sname, &meta, &meta.analysis.unwrap());
+                        }
+                        *tagged_file_count += 1;
+                        return; // Skip further processing
+                    }
+                }
+
                 if cue_file.exists() {
                     // For cue files, check if first track is in DB
                     let mut cue_track_path = pb.clone();
@@ -404,7 +420,9 @@ fn analyse_new_cue_tracks(db:&db::Db, mpath: &PathBuf, cue_tracks:Vec<cue::CueTr
     Ok(())
 }
 
-pub fn analyse_files(db_path: &str, mpaths: &Vec<PathBuf>, dry_run: bool, keep_old: bool, max_num_files: usize, max_threads: usize, ignore_path: &PathBuf, read_tags: bool, write_tags: bool, preserve_mod_times: bool) {
+pub fn analyse_files(db_path: &str, mpaths: &Vec<PathBuf>, dry_run: bool, keep_old: bool, max_num_files: usize, 
+                    max_threads: usize, ignore_path: &PathBuf, read_tags: bool, write_tags: bool, 
+                    preserve_mod_times: bool, prefer_tags: bool) {
     let mut db = db::Db::new(&String::from(db_path));
 
     db.init();
@@ -422,12 +440,17 @@ pub fn analyse_files(db_path: &str, mpaths: &Vec<PathBuf>, dry_run: bool, keep_o
         let mut file_count:usize = 0;
         let mut tagged_file_count:usize = 0;
 
+        get_file_list(&mut db, &mpath, &cur, &mut track_paths, &mut cue_tracks, 
+                     &mut file_count, max_num_files, read_tags, &mut tagged_file_count, 
+                     dry_run, prefer_tags);
+
+
         if mpaths.len() > 1 {
             log::info!("Looking for new files in {}", mpath.to_string_lossy());
         } else {
             log::info!("Looking for new files");
         }
-        get_file_list(&mut db, &mpath, &cur, &mut track_paths, &mut cue_tracks, &mut file_count, max_num_files, read_tags, &mut tagged_file_count, dry_run);
+        get_file_list(&mut db, &mpath, &cur, &mut track_paths, &mut cue_tracks, &mut file_count, max_num_files, read_tags, &mut tagged_file_count, dry_run, prefer_tags);
         track_paths.sort();
         if read_tags {
             log::info!("New untagged files: {}", track_paths.len());
