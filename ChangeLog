@@ -3,12 +3,11 @@
 1. Add action to export results from database to files.
 2. Add option to preserve file modification time when writing tags.
 3. Store analysis in BLISS_ANALYSIS tag, not in a COMMENT tag.
-4. Fix read of tags during analysis phase.
+4. Fix reading of tags during analysis phase.
 5. Check for multiple genre tags, and if found add as semi-colon separated
    list to DB.
-6. Multi-thread DB export.
-7. Add --read-tags and --write-tags commandline options.
-8. Use max of 16 significant digits (traling zeros stripped) when writing
+6. Add --read-tags and --write-tags commandline options.
+7. Use max of 16 significant digits (traling zeros stripped) when writing
    analysis results to file tags.
 
 0.3.0
