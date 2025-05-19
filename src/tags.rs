@@ -50,6 +50,25 @@ pub fn write_analysis(track: &String, analysis: &Analysis, preserve_mod_times: b
         let tag_key = ItemKey::Unknown(ANALYSIS_TAG.to_string());
         tag.remove_key(&tag_key);
         tag.insert_unchecked(TagItem::new(tag_key, ItemValue::Text(value)));
+
+        // If we have any of the older analysis-in-comment tags, then remove these
+        let entries = tag.get_strings(&ItemKey::Comment);
+        let mut keep: Vec<ItemValue> = Vec::new();
+        let mut have_old = false;
+        for entry in entries {
+            if entry.starts_with(ANALYSIS_TAG) {
+                have_old = true;
+            } else {
+                keep.push(ItemValue::Text(entry.to_string()));
+            }
+        }
+        if have_old {
+            tag.remove_key(&ItemKey::Comment);
+            for k in keep {
+                tag.push(TagItem::new(ItemKey::Comment, k));
+            }
+        }
+
         let now = SystemTime::now();
         let mut mod_time = now;
 
