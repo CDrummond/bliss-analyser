@@ -8,6 +8,8 @@
    list to DB.
 6. Multi-thread DB export.
 7. Add --read-tags and --write-tags commandline options.
+8. Use max of 16 significant digits (traling zeros stripped) when writing
+   analysis results to file tags.
 
 0.3.0
 -----

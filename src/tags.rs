@@ -24,12 +24,16 @@ const NUM_ANALYSIS_VALS: usize = 20;
 const ANALYSIS_TAG: &str = "BLISS_ANALYSIS";
 const ANALYSIS_TAG_FORMAT_VER: u16 = 1;
 
+fn fmt(val: f32) -> String {
+    format!("{:.16}", val).trim_end_matches("0").to_string()
+}
+
 pub fn write_analysis(track: &String, analysis: &Analysis, preserve_mod_times: bool) -> bool {
-    let value = format!("{},{:.24},{:.24},{:.24},{:.24},{:.24},{:.24},{:.24},{:.24},{:.24},{:.24},{:.24},{:.24},{:.24},{:.24},{:.24},{:.24},{:.24},{:.24},{:.24},{:.24}", ANALYSIS_TAG_FORMAT_VER,
-                        analysis[AnalysisIndex::Tempo], analysis[AnalysisIndex::Zcr], analysis[AnalysisIndex::MeanSpectralCentroid], analysis[AnalysisIndex::StdDeviationSpectralCentroid], analysis[AnalysisIndex::MeanSpectralRolloff],
-                        analysis[AnalysisIndex::StdDeviationSpectralRolloff], analysis[AnalysisIndex::MeanSpectralFlatness], analysis[AnalysisIndex::StdDeviationSpectralFlatness], analysis[AnalysisIndex::MeanLoudness], analysis[AnalysisIndex::StdDeviationLoudness],
-                        analysis[AnalysisIndex::Chroma1], analysis[AnalysisIndex::Chroma2], analysis[AnalysisIndex::Chroma3], analysis[AnalysisIndex::Chroma4], analysis[AnalysisIndex::Chroma5],
-                        analysis[AnalysisIndex::Chroma6], analysis[AnalysisIndex::Chroma7], analysis[AnalysisIndex::Chroma8], analysis[AnalysisIndex::Chroma9], analysis[AnalysisIndex::Chroma10]);
+    let value = format!("{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{}", ANALYSIS_TAG_FORMAT_VER,
+                        fmt(analysis[AnalysisIndex::Tempo]), fmt(analysis[AnalysisIndex::Zcr]), fmt(analysis[AnalysisIndex::MeanSpectralCentroid]), fmt(analysis[AnalysisIndex::StdDeviationSpectralCentroid]), fmt(analysis[AnalysisIndex::MeanSpectralRolloff]),
+                        fmt(analysis[AnalysisIndex::StdDeviationSpectralRolloff]), fmt(analysis[AnalysisIndex::MeanSpectralFlatness]), fmt(analysis[AnalysisIndex::StdDeviationSpectralFlatness]), fmt(analysis[AnalysisIndex::MeanLoudness]), fmt(analysis[AnalysisIndex::StdDeviationLoudness]),
+                        fmt(analysis[AnalysisIndex::Chroma1]), fmt(analysis[AnalysisIndex::Chroma2]), fmt(analysis[AnalysisIndex::Chroma3]), fmt(analysis[AnalysisIndex::Chroma4]), fmt(analysis[AnalysisIndex::Chroma5]),
+                        fmt(analysis[AnalysisIndex::Chroma6]), fmt(analysis[AnalysisIndex::Chroma7]), fmt(analysis[AnalysisIndex::Chroma8]), fmt(analysis[AnalysisIndex::Chroma9]), fmt(analysis[AnalysisIndex::Chroma10]));
 
     let mut written = false;
     if let Ok(mut file) = lofty::read_from_path(Path::new(track)) {
