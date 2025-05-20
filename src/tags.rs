@@ -193,8 +193,7 @@ pub fn read(track: &String, read_analysis: bool) -> db::Metadata {
                                         if let Ok(val) = test {
                                             let idx: usize = val as usize;
                                             if idx < MAX_GENRE_VAL {
-                                                meta.genre =
-                                                    lofty::id3::v1::GENRES[idx].to_string();
+                                                meta.genre = lofty::id3::v1::GENRES[idx].to_string();
                                             }
                                         }
                                     }
