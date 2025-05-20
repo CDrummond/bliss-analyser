@@ -147,13 +147,7 @@ password protected then use `user:pass@server` - e.g. `lms=pi:abc123@127.0.0.1`
 to `9000`.
 * `ignore` specifies the name and location of a file containing items to ignore
 in mixes. See the `Ignore` section later on for more details.
-* `read_tags` specifies whether analysis results should be read from files. Set
-to `true` or `false`. If enabled, then results are read from a tag named `BLISS_ANALYSIS`.
-* `write_tags` specifies whether analysis results should be written to files. Set
-to `true` or `false`. If enabled, then results are stored in a tag named `BLISS_ANALYSIS`
-* `tags` specifies whether analysis results should be written to, and read from,
-files. Set to `true` or `false`. This is the same as setting both `read_tags`
-and `write_tags` to `true`
+* `tags` specifies whether analysis results should be written to files when anlysed.
 * `preserve` specifies whether file modification time should be preserved when
 writing tags. Set to `true` or `false`.
 
@@ -178,14 +172,12 @@ tracks are to be analysed and how many old tracks are left in the database.
 * `-L` / `--lms` Hostname, or IP address, of your LMS server.
 * `-J` / `--json` JSONRPC port number of your LMS server.
 * `-n` / `--numtracks` Specify maximum number of tracks to analyse.
-* `-R` / `--read-tags` Read analysis results from file tags.
-* `-W` / `--write-tags` Write analysis results to file tags.
-* `-T` / `--tags` Read tags if present, and write tags if not present - this
-option is the same as supplying both --read-tags and --write-tags.
+* `-T` / `--tags` When using the `analyse` task, write analysis results to files
+within a `BLISS_ANALYSIS` tag.
 * `-p' / '--preserve` Attempt to preserve file modification time when writing tags.
 
 Equivalent items specified in the INI config file (detailed above) will override
-any specified on the commandline.
+any specified on the command-line.
 
 `bliss-analyser` requires one extra parameter, which is used to determine the
 required task. This takes the following values:
@@ -225,6 +217,19 @@ is shown.
 
 As a rough guide, a 2015-era i7 8-core laptop with SSD analyses around 14000
 tracks/hour.
+
+Tags
+----
+When analysing tracks, the analyser will first check for a `BLISS_ANALYSIS` tag
+within the file, and if found this will be used instead of re-analysing the file.
+
+If `--tags` is passed, the analysis results will be stored within a `BLISS_ANALYSIS`
+tag in the file itself. Note, however, that only tracks that are not currently in
+the database will be analysed - therefore any such tracks would not have the
+`BLISS_ANALYSIS` tag updated. To export analysis results from the database to
+files themselves use the `export` task.
+
+*NOTE* USe of the `BLISS_ANALYSIS` tag is not supported for CUE files.
 
 
 CUE files
