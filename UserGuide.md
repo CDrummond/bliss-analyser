@@ -184,12 +184,12 @@ required task. This takes the following values:
 
 * `analyse` Performs analysis of tracks.
 * `upload` Uploads the database to LMS.
-* `stopmixer` Asks LMS plugin to stop it instance of `bliss-mixer`
+* `stopmixer` Asks LMS plugin to stop its instance of `bliss-mixer`
 * `tags` Re-reads tags from your music collection, and updates the database for
 any changes.
 * `ignore` Reads the `ignore` file and updates the database to flag tracks as
 to be ignored for mixes.
-* `export` Exports tags from DB and stores within the audio files.
+* `export` Exports tags from database and stores within the audio files.
 
 
 
@@ -376,9 +376,9 @@ is accomplished as follows:
 Exporting Analysis
 ==================
 
-If you have analysis results stored within the SQLite DB, and not within the files
-themselves, then you can use the `export` action to copy these analysis results from
-the DB and into the files.
+If you have analysis results stored within the SQLite database, and not within
+the files themselves, then you can use the `export` action to copy these
+analysis results from the database and into the files.
 
 (Linux / macOS)
 ```
