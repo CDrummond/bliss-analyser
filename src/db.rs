@@ -418,7 +418,7 @@ impl Db {
                 }
             }
             progress.finish_with_message(format!("Finished!"));
-            log::info!("{} Exported. {} Existing. {} Failure(s).", exported, had_tags, failed_to_write);
+            log::info!("{} Exported. {} Existing. {} Failed.", exported, had_tags, failed_to_write);
         });
         threads.push(reporting_thread);
         for thread in 0..num_threads {

@@ -250,7 +250,7 @@ fn analyse_new_files(db: &db::Db, mpath: &PathBuf, track_paths: Vec<String>, max
     }
 
     progress.finish_with_message("Finished!");
-    log::info!("{} Analysed. {} Failure(s).", analysed, failed.len());
+    log::info!("{} Analysed. {} Failed.", analysed, failed.len());
     show_errors(&mut failed, &mut tag_error);
     Ok(())
 }
@@ -309,7 +309,7 @@ fn analyse_new_files(db: &db::Db, mpath: &PathBuf, track_paths: Vec<String>, max
     }
 
     progress.finish_with_message("Finished!");
-    log::info!("{} Analysed. {} Failure(s).", analysed, failed.len());
+    log::info!("{} Analysed. {} Failed.", analysed, failed.len());
     show_errors(&mut failed, &mut tag_error);
     Ok(())
 }
@@ -397,7 +397,7 @@ fn analyse_new_cue_tracks(db:&db::Db, mpath: &PathBuf, cue_tracks:Vec<cue::CueTr
         progress.inc(1);
     }
     progress.finish_with_message("Finished!");
-    log::info!("{} Analysed. {} Failure(s).", analysed, failed.len());
+    log::info!("{} Analysed. {} Failed.", analysed, failed.len());
     show_errors(&mut failed, &mut tag_error);
     Ok(())
 }
