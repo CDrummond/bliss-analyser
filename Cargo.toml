@@ -9,6 +9,9 @@ repository = "https://github.com/CDrummond/bliss-analyser"
 keywords = ["audio", "song", "similarity"]
 readme = "README.md"
 
+[profile.release]
+strip=true
+
 [dependencies]
 argparse = "0.2.2"
 anyhow = "1.0.40"
