@@ -11,6 +11,7 @@
 7. Use max of 16 significant digits (trailing zeros stripped) when writing
    analysis results to file tags.
 8. Strip symbols from release binaries.
+9. Gracefully handle Ctrl-C.
 
 0.3.0
 -----

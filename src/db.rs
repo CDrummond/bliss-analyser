@@ -62,6 +62,20 @@ impl Metadata {
     }
 }
 
+static mut TERMINATE_EXPORT_FLAG: bool = false;
+
+fn terminate_export() -> bool {
+    unsafe {
+        return TERMINATE_EXPORT_FLAG
+    }
+}
+
+fn handle_ctrl_c() {
+    unsafe {
+        TERMINATE_EXPORT_FLAG = true;
+    }
+}
+
 pub struct Db {
     pub conn: Connection,
 }
@@ -352,6 +366,10 @@ impl Db {
     }
 
     pub fn export(&self, mpaths: &Vec<PathBuf>, max_threads: usize, preserve_mod_times: bool) {
+        ctrlc::set_handler(move || {
+            handle_ctrl_c();
+        }).expect("Error setting Ctrl-C handler");
+
         log::info!("Querying database");
         let mut tracks:Vec<AnalysisResults> = Vec::new();
         let mut stmt = self.conn.prepare("SELECT File, Tempo, Zcr, MeanSpectralCentroid, StdDevSpectralCentroid, MeanSpectralRolloff, StdDevSpectralRolloff, MeanSpectralFlatness, StdDevSpectralFlatness, MeanLoudness, StdDevLoudness, Chroma1, Chroma2, Chroma3, Chroma4, Chroma5, Chroma6, Chroma7, Chroma8, Chroma9, Chroma10 FROM Tracks ORDER BY File ASC;").unwrap();
@@ -416,8 +434,15 @@ impl Db {
                 if processed == total {
                     break;
                 }
+                if terminate_export() {
+                    break
+                }
             }
-            progress.finish_with_message(format!("Finished!"));
+            if terminate_export() {
+                progress.abandon_with_message("Terminated!");
+            } else {
+                progress.finish_with_message(format!("Finished!"));
+            }
             log::info!("{} Exported. {} Existing. {} Failed.", exported, had_tags, failed_to_write);
         });
         threads.push(reporting_thread);
@@ -438,6 +463,9 @@ impl Db {
                         }
                     }
                     sndr.send(updated).unwrap();
+                    if terminate_export() {
+                        break
+                    }
                 }
             }));
         }

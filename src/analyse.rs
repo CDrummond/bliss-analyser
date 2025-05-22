@@ -44,6 +44,20 @@ const MAX_ERRORS_TO_SHOW: usize = 100;
 const MAX_TAG_ERRORS_TO_SHOW: usize = 50;
 const VALID_EXTENSIONS: [&str; 7] = ["m4a", "mp3", "ogg", "flac", "opus", "wv", "dsf"];
 
+static mut TERMINATE_ANALYSIS_FLAG: bool = false;
+
+fn terminate_analysis() -> bool {
+    unsafe {
+        return TERMINATE_ANALYSIS_FLAG
+    }
+}
+
+fn handle_ctrl_c() {
+    unsafe {
+        TERMINATE_ANALYSIS_FLAG = true;
+    }
+}
+
 fn get_file_list(db: &mut db::Db, mpath: &Path, path: &Path, track_paths: &mut Vec<String>, cue_tracks:&mut Vec<cue::CueTrack>, file_count:&mut usize, max_num_files: usize, tagged_file_count:&mut usize, dry_run: bool) {
     if !path.is_dir() {
         return;
@@ -247,9 +261,16 @@ fn analyse_new_files(db: &db::Db, mpath: &PathBuf, track_paths: Vec<String>, max
         if inc_progress {
             progress.inc(1);
         }
+        if terminate_analysis() {
+            break
+        }
     }
 
-    progress.finish_with_message("Finished!");
+    if terminate_analysis() {
+        progress.abandon_with_message("Terminated!");
+    } else {
+        progress.finish_with_message("Finished!");
+    }
     log::info!("{} Analysed. {} Failed.", analysed, failed.len());
     show_errors(&mut failed, &mut tag_error);
     Ok(())
@@ -298,6 +319,9 @@ fn analyse_new_files(db: &db::Db, mpath: &PathBuf, track_paths: Vec<String>, max
         };
 
         progress.inc(1);
+        if terminate_analysis() {
+            break
+        }
     }
 
     // Reset terminal, otherwise typed output does not show? Perhaps Linux only...
@@ -308,7 +332,11 @@ fn analyse_new_files(db: &db::Db, mpath: &PathBuf, track_paths: Vec<String>, max
         };
     }
 
-    progress.finish_with_message("Finished!");
+    if terminate_analysis() {
+        progress.abandon_with_message("Terminated!");
+    } else {
+        progress.finish_with_message("Finished!");
+    }
     log::info!("{} Analysed. {} Failed.", analysed, failed.len());
     show_errors(&mut failed, &mut tag_error);
     Ok(())
@@ -395,8 +423,16 @@ fn analyse_new_cue_tracks(db:&db::Db, mpath: &PathBuf, cue_tracks:Vec<cue::CueTr
             }
         };
         progress.inc(1);
+        if terminate_analysis() {
+            break
+        }
     }
-    progress.finish_with_message("Finished!");
+
+    if terminate_analysis() {
+        progress.abandon_with_message("Terminated!");
+    } else {
+        progress.finish_with_message("Finished!");
+    }
     log::info!("{} Analysed. {} Failed.", analysed, failed.len());
     show_errors(&mut failed, &mut tag_error);
     Ok(())
@@ -404,6 +440,10 @@ fn analyse_new_cue_tracks(db:&db::Db, mpath: &PathBuf, cue_tracks:Vec<cue::CueTr
 
 pub fn analyse_files(db_path: &str, mpaths: &Vec<PathBuf>, dry_run: bool, keep_old: bool, max_num_files: usize, max_threads: usize, ignore_path: &PathBuf, write_tags: bool, preserve_mod_times: bool) {
     let mut db = db::Db::new(&String::from(db_path));
+
+    ctrlc::set_handler(move || {
+        handle_ctrl_c();
+    }).expect("Error setting Ctrl-C handler");
 
     db.init();
 
@@ -433,31 +473,33 @@ pub fn analyse_files(db_path: &str, mpaths: &Vec<PathBuf>, dry_run: bool, keep_o
         }
         log::info!("New tagged files: {}", tagged_file_count);
 
-        if dry_run {
-            if !track_paths.is_empty() || !cue_tracks.is_empty() {
-                log::info!("The following need to be analysed:");
-                for track in track_paths {
-                    log::info!("  {}", track);
-                }
-                for track in cue_tracks {
-                    log::info!("  {}", track.track_path.to_string_lossy());
-                }
-            }
-        } else {
-            if !track_paths.is_empty() {
-                match analyse_new_files(&db, &mpath, track_paths, max_threads, write_tags, preserve_mod_times) {
-                    Ok(_) => { changes_made = true; }
-                    Err(e) => { log::error!("Analysis returned error: {}", e); }
+        if !terminate_analysis() {
+            if dry_run {
+                if !track_paths.is_empty() || !cue_tracks.is_empty() {
+                    log::info!("The following need to be analysed:");
+                    for track in track_paths {
+                        log::info!("  {}", track);
+                    }
+                    for track in cue_tracks {
+                        log::info!("  {}", track.track_path.to_string_lossy());
+                    }
                 }
             } else {
-                log::info!("No new files to analyse");
-            }
+                if !track_paths.is_empty() {
+                    match analyse_new_files(&db, &mpath, track_paths, max_threads, write_tags, preserve_mod_times) {
+                        Ok(_) => { changes_made = true; }
+                        Err(e) => { log::error!("Analysis returned error: {}", e); }
+                    }
+                } else {
+                    log::info!("No new files to analyse");
+                }
 
-            #[cfg(feature = "ffmpeg")]
-            if !cue_tracks.is_empty() {
-                match analyse_new_cue_tracks(&db, &mpath, cue_tracks) {
-                    Ok(_) => { changes_made = true; },
-                    Err(e) => { log::error!("Cue analysis returned error: {}", e); }
+                #[cfg(feature = "ffmpeg")]
+                if !cue_tracks.is_empty() && !terminate_analysis() {
+                    match analyse_new_cue_tracks(&db, &mpath, cue_tracks) {
+                        Ok(_) => { changes_made = true; },
+                        Err(e) => { log::error!("Cue analysis returned error: {}", e); }
+                    }
                 }
             }
         }
