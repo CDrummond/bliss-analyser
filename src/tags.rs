@@ -53,6 +53,8 @@ pub fn write_analysis(track: &String, analysis: &Analysis, preserve_mod_times: b
         // Store analysis results
         let tag_key = ItemKey::Unknown(ANALYSIS_TAG.to_string());
         tag.remove_key(&tag_key);
+        let lower_tag_key = ItemKey::Unknown(ANALYSIS_TAG.to_lowercase().to_string());
+        tag.remove_key(&lower_tag_key);
         tag.insert_unchecked(TagItem::new(tag_key, ItemValue::Text(value)));
 
         // If we have any of the older analysis-in-comment tags, then remove these
@@ -219,18 +221,34 @@ pub fn read(track: &String, read_analysis: bool) -> db::Metadata {
                         None => { }
                     }
                 }
-                None => {
-                    // Old, stored in comment
-                    let entries = tag.get_strings(&ItemKey::Comment);
-                    for entry in entries {
-                        if entry.len()>(ANALYSIS_TAG.len()+(NUM_ANALYSIS_VALS*8)) && entry.starts_with(ANALYSIS_TAG) {
-                            match read_analysis_string(entry, 0, 1) {
-                                Some(analysis) => {
-                                    meta.analysis = Some(analysis);
-                                    break;
-                                }
-                                None => { }
+                None => { }
+            }
+            if meta.analysis.is_none() {
+                // Try lowercase
+                match tag.get_string(&ItemKey::Unknown(ANALYSIS_TAG.to_lowercase().to_string())) {
+                    Some(tag_str) => {
+                        match read_analysis_string(tag_str, 100, 0) {
+                            Some(analysis) => {
+                                meta.analysis = Some(analysis);
                             }
+                            None => { }
+                        }
+                    }
+                    None => { }
+                }
+            }
+
+            if meta.analysis.is_none() {
+                // Try old, stored in comment
+                let entries = tag.get_strings(&ItemKey::Comment);
+                for entry in entries {
+                    if entry.len()>(ANALYSIS_TAG.len()+(NUM_ANALYSIS_VALS*8)) && entry.starts_with(ANALYSIS_TAG) {
+                        match read_analysis_string(entry, 0, 1) {
+                            Some(analysis) => {
+                                meta.analysis = Some(analysis);
+                                break;
+                            }
+                            None => { }
                         }
                     }
                 }
