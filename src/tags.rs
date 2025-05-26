@@ -223,6 +223,7 @@ pub fn read(track: &String, read_analysis: bool) -> db::Metadata {
                 }
                 None => { }
             }
+
             if meta.analysis.is_none() {
                 // Try lowercase
                 match tag.get_string(&ItemKey::Unknown(ANALYSIS_TAG.to_lowercase().to_string())) {
