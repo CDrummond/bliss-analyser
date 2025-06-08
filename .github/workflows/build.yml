@@ -149,15 +149,26 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v4
 
-    - name: Build ARM ffmpeg on Debian
+    - name: Build ARM ffmpeg on Bullseye
       run: |
-        docker build -t bliss-analyser-cross - < docker/Dockerfile_Bullseye_ffmpeg
+        docker build --pull --no-cache -t bliss-analyser-cross - < docker/Dockerfile_Bullseye_ffmpeg
+        docker run --rm -v $PWD/target:/build -v $PWD:/src bliss-analyser-cross
+
+    - name: Upload artifacts 
+      uses: actions/upload-artifact@v4
+      with: 
+        name: bliss-analyser-debian-bullseye-arm-ffmpeg
+        path: releases/
+
+    - name: Build ARM ffmpeg on Bookworm
+      run: |
+        docker build --pull --no-cache -t bliss-analyser-cross - < docker/Dockerfile_Bookworm_ffmpeg
         docker run --rm -v $PWD/target:/build -v $PWD:/src bliss-analyser-cross
 
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: bliss-analyser-linux-arm-ffmpeg
+        name: bliss-analyser-debian-bookworm-arm-ffmpeg
         path: releases/
 
 
@@ -170,7 +181,7 @@ jobs:
 
     - name: Build ARM static-libav on Debian
       run: |
-        docker build -t bliss-analyser-cross - < docker/Dockerfile_Bullseye_static
+        docker build --pull --no-cache -t bliss-analyser-cross - < docker/Dockerfile_Bullseye_static
         docker run --rm -v $PWD/target:/build -v $PWD:/src bliss-analyser-cross
 
     - name: Upload artifacts
@@ -189,7 +200,7 @@ jobs:
 
     - name: Build ARM libav on Bullseye
       run: |
-        docker build -t bliss-analyser-cross - < docker/Dockerfile_Bullseye_libav
+        docker build --pull --no-cache -t bliss-analyser-cross - < docker/Dockerfile_Bullseye_libav
         docker run --rm -v $PWD/target:/build -v $PWD:/src bliss-analyser-cross
 
     - name: Upload artifacts
@@ -200,7 +211,7 @@ jobs:
 
     - name: Build ARM libav on Bookworm
       run : |
-        docker build -t bliss-analyser-cross - < docker/Dockerfile_Bookworm_libav
+        docker build --pull --no-cache -t bliss-analyser-cross - < docker/Dockerfile_Bookworm_libav
         docker run --rm -v $PWD/target:/build -v $PWD:/src bliss-analyser-cross
 
     - name: Upload artifacts
@@ -219,7 +230,7 @@ jobs:
 
     - name: Build ARM symphonia on Debian
       run: |
-        docker build -t bliss-analyser-cross - < docker/Dockerfile_Bullseye_symphonia
+        docker build --pull --no-cache -t bliss-analyser-cross - < docker/Dockerfile_Bullseye_symphonia
         docker run --rm -v $PWD/target:/build -v $PWD:/src bliss-analyser-cross
 
     - name: Upload artifacts
