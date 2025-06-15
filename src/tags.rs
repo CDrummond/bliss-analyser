@@ -151,7 +151,13 @@ pub fn read(track: &String, read_analysis: bool) -> db::Metadata {
     if let Ok(file) = lofty::read_from_path(Path::new(track)) {
         let tag = match file.primary_tag() {
             Some(primary_tag) => primary_tag,
-            None => file.first_tag().expect("Error: No tags found!"),
+            None => {
+                if let Some(first_tag) = file.first_tag() {
+                    first_tag
+                } else {
+                    return meta;
+                }
+            }
         };
 
         meta.title = tag.title().unwrap_or_default().to_string();

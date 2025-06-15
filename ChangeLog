@@ -1,3 +1,7 @@
+0.4.1
+-----
+1. Don't crash if file has no tags.
+
 0.4.0
 -----
 1. Add action to export results from DB to files.
