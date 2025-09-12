@@ -1,6 +1,7 @@
 0.4.1
 -----
 1. Don't crash if file has no tags.
+2. Set log level for tag reader library.
 
 0.4.0
 -----

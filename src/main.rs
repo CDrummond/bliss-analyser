@@ -90,6 +90,7 @@ fn main() {
     let mut builder = env_logger::Builder::from_env(env_logger::Env::default().filter_or("XXXXXXXX", logging));
     builder.filter(Some("bliss_audio"), other_level);
     builder.filter(Some("symphonia"), other_level);
+    builder.filter(Some("lofty"), other_level);
     builder.format(|buf, record| {
         writeln!(buf, "[{} {:.1}] {}", Local::now().format("%Y-%m-%d %H:%M:%S"), record.level(), record.args())
     });
