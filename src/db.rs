@@ -9,7 +9,7 @@
  #[cfg(feature = "ffmpeg")]
 use crate::ffmpeg;
 use crate::tags;
-use bliss_audio::{Analysis, AnalysisIndex};
+use bliss_audio::{Analysis, AnalysisIndex, FeaturesVersion};
 use indicatif::{ProgressBar, ProgressStyle};
 use rusqlite::{params, Connection};
 use std::convert::TryInto;
@@ -41,7 +41,7 @@ struct AnalysisResults {
     pub analysis: Analysis,
 }
 
-#[derive(Default, PartialEq)]
+#[derive(Clone, Default, PartialEq)]
 pub struct Metadata {
     pub title: String,
     pub artist: String,
@@ -96,8 +96,13 @@ impl Db {
     }
 
     pub fn init(&self) {
+        let _ = self.conn.execute("DROP TABLE IF EXISTS Tracks;", [],);
+        let _ = self.conn.execute("DROP INDEX IF EXISTS Tracks_idx", []);
+
+        let _ = self.conn.execute("VACUUM", [],);
+
         let cmd = self.conn.execute(
-            "CREATE TABLE IF NOT EXISTS Tracks (
+            "CREATE TABLE IF NOT EXISTS TracksV2 (
                 File text primary key,
                 Title text,
                 Artist text,
@@ -125,7 +130,10 @@ impl Db {
                 Chroma7 real,
                 Chroma8 real,
                 Chroma9 real,
-                Chroma10 real
+                Chroma10 real,
+                Chroma11 real,
+                Chroma12 real,
+                Chroma13 real
             );",
             [],
         );
@@ -135,7 +143,7 @@ impl Db {
             process::exit(-1);
         }
 
-        let cmd = self.conn.execute("CREATE UNIQUE INDEX IF NOT EXISTS Tracks_idx ON Tracks(File)", []);
+        let cmd = self.conn.execute("CREATE UNIQUE INDEX IF NOT EXISTS TracksV2_idx ON TracksV2(File)", []);
 
         if cmd.is_err() {
             log::error!("Failed to create DB index");
@@ -152,7 +160,7 @@ impl Db {
         if cfg!(windows) {
             db_path = db_path.replace("\\", "/");
         }
-        let mut stmt = self.conn.prepare("SELECT rowid FROM Tracks WHERE File=:path;")?;
+        let mut stmt = self.conn.prepare("SELECT rowid FROM TracksV2 WHERE File=:path;")?;
         let track_iter = stmt.query_map(&[(":path", &db_path)], |row| Ok(row.get(0)?)).unwrap();
         let mut rowid: usize = 0;
         for tr in track_iter {
@@ -170,17 +178,18 @@ impl Db {
         match self.get_rowid(&path) {
             Ok(id) => {
                 if id <= 0 {
-                    match self.conn.execute("INSERT INTO Tracks (File, Title, Artist, AlbumArtist, Album, Genre, Duration, Ignore, Tempo, Zcr, MeanSpectralCentroid, StdDevSpectralCentroid, MeanSpectralRolloff, StdDevSpectralRolloff, MeanSpectralFlatness, StdDevSpectralFlatness, MeanLoudness, StdDevLoudness, Chroma1, Chroma2, Chroma3, Chroma4, Chroma5, Chroma6, Chroma7, Chroma8, Chroma9, Chroma10) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);",
+                    match self.conn.execute("INSERT INTO TracksV2 (File, Title, Artist, AlbumArtist, Album, Genre, Duration, Ignore, Tempo, Zcr, MeanSpectralCentroid, StdDevSpectralCentroid, MeanSpectralRolloff, StdDevSpectralRolloff, MeanSpectralFlatness, StdDevSpectralFlatness, MeanLoudness, StdDevLoudness, Chroma1, Chroma2, Chroma3, Chroma4, Chroma5, Chroma6, Chroma7, Chroma8, Chroma9, Chroma10, Chroma11, Chroma12, Chroma13) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);",
                             params![db_path, meta.title, meta.artist, meta.album_artist, meta.album, meta.genre, meta.duration, 0,
                             analysis[AnalysisIndex::Tempo], analysis[AnalysisIndex::Zcr], analysis[AnalysisIndex::MeanSpectralCentroid], analysis[AnalysisIndex::StdDeviationSpectralCentroid], analysis[AnalysisIndex::MeanSpectralRolloff],
                             analysis[AnalysisIndex::StdDeviationSpectralRolloff], analysis[AnalysisIndex::MeanSpectralFlatness], analysis[AnalysisIndex::StdDeviationSpectralFlatness], analysis[AnalysisIndex::MeanLoudness], analysis[AnalysisIndex::StdDeviationLoudness],
                             analysis[AnalysisIndex::Chroma1], analysis[AnalysisIndex::Chroma2], analysis[AnalysisIndex::Chroma3], analysis[AnalysisIndex::Chroma4], analysis[AnalysisIndex::Chroma5],
-                            analysis[AnalysisIndex::Chroma6], analysis[AnalysisIndex::Chroma7], analysis[AnalysisIndex::Chroma8], analysis[AnalysisIndex::Chroma9], analysis[AnalysisIndex::Chroma10]]) {
+                            analysis[AnalysisIndex::Chroma6], analysis[AnalysisIndex::Chroma7], analysis[AnalysisIndex::Chroma8], analysis[AnalysisIndex::Chroma9], analysis[AnalysisIndex::Chroma10],
+                            analysis[AnalysisIndex::Chroma11], analysis[AnalysisIndex::Chroma12], analysis[AnalysisIndex::Chroma13]]) {
                         Ok(_) => { }
                         Err(e) => { log::error!("Failed to insert '{}' into database. {}", path, e); }
                     }
                 } else {
-                    match self.conn.execute("UPDATE Tracks SET Title=?, Artist=?, AlbumArtist=?, Album=?, Genre=?, Duration=?, Tempo=?, Zcr=?, MeanSpectralCentroid=?, StdDevSpectralCentroid=?, MeanSpectralRolloff=?, StdDevSpectralRolloff=?, MeanSpectralFlatness=?, StdDevSpectralFlatness=?, MeanLoudness=?, StdDevLoudness=?, Chroma1=?, Chroma2=?, Chroma3=?, Chroma4=?, Chroma5=?, Chroma6=?, Chroma7=?, Chroma8=?, Chroma9=?, Chroma10=? WHERE rowid=?;",
+                    match self.conn.execute("UPDATE TracksV2 SET Title=?, Artist=?, AlbumArtist=?, Album=?, Genre=?, Duration=?, Tempo=?, Zcr=?, MeanSpectralCentroid=?, StdDevSpectralCentroid=?, MeanSpectralRolloff=?, StdDevSpectralRolloff=?, MeanSpectralFlatness=?, StdDevSpectralFlatness=?, MeanLoudness=?, StdDevLoudness=?, Chroma1=?, Chroma2=?, Chroma3=?, Chroma4=?, Chroma5=?, Chroma6=?, Chroma7=?, Chroma8=?, Chroma9=?, Chroma10=?, Chroma11=?, Chroma12=?, Chroma13=? WHERE rowid=?;",
                             params![meta.title, meta.artist, meta.album_artist, meta.album, meta.genre, meta.duration,
                             analysis[AnalysisIndex::Tempo], analysis[AnalysisIndex::Zcr], analysis[AnalysisIndex::MeanSpectralCentroid], analysis[AnalysisIndex::StdDeviationSpectralCentroid], analysis[AnalysisIndex::MeanSpectralRolloff],
                             analysis[AnalysisIndex::StdDeviationSpectralRolloff], analysis[AnalysisIndex::MeanSpectralFlatness], analysis[AnalysisIndex::StdDeviationSpectralFlatness], analysis[AnalysisIndex::MeanLoudness], analysis[AnalysisIndex::StdDeviationLoudness],
@@ -197,7 +206,7 @@ impl Db {
 
     pub fn remove_old(&self, mpaths: &Vec<PathBuf>, dry_run: bool) {
         log::info!("Looking for non-existent tracks");
-        let mut stmt = self.conn.prepare("SELECT File FROM Tracks;").unwrap();
+        let mut stmt = self.conn.prepare("SELECT File FROM TracksV2;").unwrap();
         let track_iter = stmt.query_map([], |row| Ok((row.get(0)?,))).unwrap();
         let mut to_remove: Vec<String> = Vec::new();
         for tr in track_iter {
@@ -241,7 +250,7 @@ impl Db {
                 let count_before = self.get_track_count();
                 for t in to_remove {
                     //log::debug!("Remove '{}'", t);
-                    let cmd = self.conn.execute("DELETE FROM Tracks WHERE File = ?;", params![t]);
+                    let cmd = self.conn.execute("DELETE FROM TracksV2 WHERE File = ?;", params![t]);
 
                     if let Err(e) = cmd {
                         log::error!("Failed to remove '{}' - {}", t, e)
@@ -256,7 +265,7 @@ impl Db {
     }
 
     pub fn get_track_count(&self) -> usize {
-        let mut stmt = self.conn.prepare("SELECT COUNT(*) FROM Tracks;").unwrap();
+        let mut stmt = self.conn.prepare("SELECT COUNT(*) FROM TracksV2;").unwrap();
         let track_iter = stmt.query_map([], |row| Ok(row.get(0)?)).unwrap();
         let mut count: usize = 0;
         for tr in track_iter {
@@ -277,7 +286,7 @@ impl Db {
                     .progress_chars("=> "),
             );
 
-            let mut stmt = self.conn.prepare("SELECT rowid, File, Title, Artist, AlbumArtist, Album, Genre, Duration FROM Tracks ORDER BY File ASC;").unwrap();
+            let mut stmt = self.conn.prepare("SELECT rowid, File, Title, Artist, AlbumArtist, Album, Genre, Duration FROM TracksV2 ORDER BY File ASC;").unwrap();
             let track_iter = stmt
                 .query_map([], |row| {
                     Ok(FileMetadata {
@@ -323,7 +332,7 @@ impl Db {
                             if ftags.is_empty() {
                                 log::error!("Failed to read tags of '{}'", dbtags.file);
                             } else if ftags != dtags {
-                                match self.conn.execute("UPDATE Tracks SET Title=?, Artist=?, AlbumArtist=?, Album=?, Genre=?, Duration=? WHERE rowid=?;",
+                                match self.conn.execute("UPDATE TracksV2 SET Title=?, Artist=?, AlbumArtist=?, Album=?, Genre=?, Duration=? WHERE rowid=?;",
                                                         params![ftags.title, ftags.artist, ftags.album_artist, ftags.album, ftags.genre, ftags.duration, dbtags.rowid]) {
                                     Ok(_) => { updated += 1; }
                                     Err(e) => { log::error!("Failed to update tags of '{}'. {}", dbtags.file, e); }
@@ -340,7 +349,7 @@ impl Db {
     }
 
     pub fn clear_ignore(&self) {
-        let cmd = self.conn.execute("UPDATE Tracks SET Ignore=0;", []);
+        let cmd = self.conn.execute("UPDATE TracksV2 SET Ignore=0;", []);
 
         if let Err(e) = cmd {
             log::error!("Failed clear Ignore column. {}", e);
@@ -351,13 +360,13 @@ impl Db {
         log::info!("Ignore: {}", line);
         if line.starts_with("SQL:") {
             let sql = &line[4..];
-            let cmd = self.conn.execute(&format!("UPDATE Tracks Set Ignore=1 WHERE {}", sql), []);
+            let cmd = self.conn.execute(&format!("UPDATE TracksV2 Set Ignore=1 WHERE {}", sql), []);
 
             if let Err(e) = cmd {
                 log::error!("Failed set Ignore column for '{}'. {}", line, e);
             }
         } else {
-            let cmd = self.conn.execute(&format!("UPDATE Tracks SET Ignore=1 WHERE File LIKE \"{}%\"", line), []);
+            let cmd = self.conn.execute(&format!("UPDATE TracksV2 SET Ignore=1 WHERE File LIKE \"{}%\"", line), []);
 
             if let Err(e) = cmd {
                 log::error!("Failed set Ignore column for '{}'. {}", line, e);
@@ -372,12 +381,12 @@ impl Db {
 
         log::info!("Querying database");
         let mut tracks:Vec<AnalysisResults> = Vec::new();
-        let mut stmt = self.conn.prepare("SELECT File, Tempo, Zcr, MeanSpectralCentroid, StdDevSpectralCentroid, MeanSpectralRolloff, StdDevSpectralRolloff, MeanSpectralFlatness, StdDevSpectralFlatness, MeanLoudness, StdDevLoudness, Chroma1, Chroma2, Chroma3, Chroma4, Chroma5, Chroma6, Chroma7, Chroma8, Chroma9, Chroma10 FROM Tracks ORDER BY File ASC;").unwrap();
+        let mut stmt = self.conn.prepare("SELECT File, Tempo, Zcr, MeanSpectralCentroid, StdDevSpectralCentroid, MeanSpectralRolloff, StdDevSpectralRolloff, MeanSpectralFlatness, StdDevSpectralFlatness, MeanLoudness, StdDevLoudness, Chroma1, Chroma2, Chroma3, Chroma4, Chroma5, Chroma6, Chroma7, Chroma8, Chroma9, Chroma10, Chroma11, Chroma12, Chroma13 FROM TracksV2 ORDER BY File ASC;").unwrap();
         let track_iter = stmt
             .query_map([], |row| {
                 Ok(AnalysisResults {
                     file: row.get(0)?,
-                    analysis: Analysis::new([row.get(1)?, row.get(2)?, row.get(3)?, row.get(4)?, row.get(5)?, row.get(6)?, row.get(7)?, row.get(8)?, row.get(9)?, row.get(10)?, row.get(11)?, row.get(12)?, row.get(13)?, row.get(14)?, row.get(15)?, row.get(16)?, row.get(17)?, row.get(18)?, row.get(19)?, row.get(20)?]),
+                    analysis: Analysis::new([row.get(1)?, row.get(2)?, row.get(3)?, row.get(4)?, row.get(5)?, row.get(6)?, row.get(7)?, row.get(8)?, row.get(9)?, row.get(10)?, row.get(11)?, row.get(12)?, row.get(13)?, row.get(14)?, row.get(15)?, row.get(16)?, row.get(17)?, row.get(18)?, row.get(19)?, row.get(20)?, row.get(21)?, row.get(22)?, row.get(23)?].to_vec(), FeaturesVersion::LATEST).expect("REASON"),
                 })
             })
             .unwrap();
@@ -388,7 +397,7 @@ impl Db {
                 for mpath in mpaths {
                     let track_path = mpath.join(dbtags.file.clone());
                     if track_path.exists() {
-                        tracks.push(AnalysisResults{file:String::from(track_path.to_string_lossy()), analysis:dbtags.analysis});
+                        tracks.push(AnalysisResults{file:String::from(track_path.to_string_lossy()), analysis:dbtags.analysis.clone()});
                     }
                 }
             }

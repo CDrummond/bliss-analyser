@@ -17,23 +17,24 @@ use std::fs;
 use std::path::Path;
 use substring::Substring;
 use std::time::SystemTime;
-use bliss_audio::{Analysis, AnalysisIndex};
+use bliss_audio::{Analysis, AnalysisIndex, FeaturesVersion};
 
 const MAX_GENRE_VAL: usize = 192;
-const NUM_ANALYSIS_VALS: usize = 20;
+const NUM_ANALYSIS_VALS: usize = 23;
 const ANALYSIS_TAG: &str = "BLISS_ANALYSIS";
-const ANALYSIS_TAG_FORMAT_VER: u16 = 1;
+const ANALYSIS_TAG_FORMAT_VER: u16 = 2;
 
 fn fmt(val: f32) -> String {
     format!("{:.16}", val).trim_end_matches("0").to_string()
 }
 
 pub fn write_analysis(track: &String, analysis: &Analysis, preserve_mod_times: bool) -> bool {
-    let value = format!("{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{}", ANALYSIS_TAG_FORMAT_VER,
+    let value = format!("{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{}", ANALYSIS_TAG_FORMAT_VER,
                         fmt(analysis[AnalysisIndex::Tempo]), fmt(analysis[AnalysisIndex::Zcr]), fmt(analysis[AnalysisIndex::MeanSpectralCentroid]), fmt(analysis[AnalysisIndex::StdDeviationSpectralCentroid]), fmt(analysis[AnalysisIndex::MeanSpectralRolloff]),
                         fmt(analysis[AnalysisIndex::StdDeviationSpectralRolloff]), fmt(analysis[AnalysisIndex::MeanSpectralFlatness]), fmt(analysis[AnalysisIndex::StdDeviationSpectralFlatness]), fmt(analysis[AnalysisIndex::MeanLoudness]), fmt(analysis[AnalysisIndex::StdDeviationLoudness]),
                         fmt(analysis[AnalysisIndex::Chroma1]), fmt(analysis[AnalysisIndex::Chroma2]), fmt(analysis[AnalysisIndex::Chroma3]), fmt(analysis[AnalysisIndex::Chroma4]), fmt(analysis[AnalysisIndex::Chroma5]),
-                        fmt(analysis[AnalysisIndex::Chroma6]), fmt(analysis[AnalysisIndex::Chroma7]), fmt(analysis[AnalysisIndex::Chroma8]), fmt(analysis[AnalysisIndex::Chroma9]), fmt(analysis[AnalysisIndex::Chroma10]));
+                        fmt(analysis[AnalysisIndex::Chroma6]), fmt(analysis[AnalysisIndex::Chroma7]), fmt(analysis[AnalysisIndex::Chroma8]), fmt(analysis[AnalysisIndex::Chroma9]), fmt(analysis[AnalysisIndex::Chroma10]),
+                        fmt(analysis[AnalysisIndex::Chroma11]), fmt(analysis[AnalysisIndex::Chroma12]), fmt(analysis[AnalysisIndex::Chroma13]));
 
     let mut written = false;
     if let Ok(mut file) = lofty::read_from_path(Path::new(track)) {
@@ -137,7 +138,7 @@ fn read_analysis_string(tag_str: &str, start_tag_pos:usize, version_pos:usize) -
         index += 1;
     }
     if num_read_vals == NUM_ANALYSIS_VALS {
-        return Some(Analysis::new(vals));
+        return Some(Analysis::new(vals.to_vec(), FeaturesVersion::LATEST).expect("REASON"));
     }
     None
 }

@@ -7,115 +7,7 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  Linux_ffmpeg_x86:
-    runs-on: ubuntu-22.04
-
-    steps:
-    - name: Checkout
-      uses: actions/checkout@v4
-
-    - name: Packages
-      run: sudo apt-get update && sudo apt-get install build-essential yasm -y
-
-    - name: Build x86 ffmpeg version
-      run: |
-        cargo build --release --features=ffmpeg
-        strip target/release/bliss-analyser
-        mkdir releases
-        cp target/release/bliss-analyser releases/bliss-analyser
-        cp UserGuide.md releases/README.md
-        cp LICENSE releases/
-        cp configs/linux.ini releases/config.ini
-
-    - name: Upload artifacts
-      uses: actions/upload-artifact@v4
-      with:
-        name: bliss-analyser-linux-x86-ffmpeg
-        path: releases/
-
-
-  Linux_static_x86:
-    runs-on: ubuntu-22.04
-
-    steps:
-    - name: Checkout
-      uses: actions/checkout@v4
-
-    - name: Packages
-      run: sudo apt-get update && sudo apt-get install build-essential yasm -y
-
-    - name: Build x86 static-libav version
-      run: |
-        cargo build --release --features=libav,staticlibav
-        strip target/release/bliss-analyser
-        mkdir releases
-        cp target/release/bliss-analyser releases/bliss-analyser
-        cp UserGuide.md releases/README.md
-        cp LICENSE releases/
-        cp configs/linux.ini releases/config.ini
-
-    - name: Upload artifacts
-      uses: actions/upload-artifact@v4
-      with:
-        name: bliss-analyser-linux-x86-static
-        path: releases/
-
-
-  Ubuntu_2204_libav_x86:
-    runs-on: ubuntu-22.04
-
-    steps:
-    - name: Checkout
-      uses: actions/checkout@v4
-
-    - name: Packages
-      run: sudo apt-get update && sudo apt-get install build-essential yasm libavutil-dev libavcodec-dev libavformat-dev libavfilter-dev libavdevice-dev libswresample-dev libfftw3-dev ffmpeg -y
-
-    - name: Build 22.04 libav version
-      run: |
-        cargo build --release --features=libav
-        strip target/release/bliss-analyser
-        mkdir releases
-        cp target/release/bliss-analyser releases/bliss-analyser
-        cp UserGuide.md releases/README.md
-        cp LICENSE releases/
-        cp configs/linux.ini releases/config.ini
-
-    - name: Upload artifacts
-      uses: actions/upload-artifact@v4
-      with:
-        name: bliss-analyser-ubuntu-22.04-x86-libav
-        path: releases/
-
-
-  Ubuntu_2404_libav_x86:
-    runs-on: ubuntu-24.04
-
-    steps:
-    - name: Checkout
-      uses: actions/checkout@v4
-
-    - name: Packages
-      run: sudo apt-get update && sudo apt-get install build-essential yasm libavutil-dev libavcodec-dev libavformat-dev libavfilter-dev libavdevice-dev libswresample-dev libfftw3-dev ffmpeg -y
-
-    - name: Build 24.04 libav version
-      run: |
-        cargo build --release --features=libav
-        strip target/release/bliss-analyser
-        mkdir releases
-        cp target/release/bliss-analyser releases/bliss-analyser
-        cp UserGuide.md releases/README.md
-        cp LICENSE releases/
-        cp configs/linux.ini releases/config.ini
-
-    - name: Upload artifacts
-      uses: actions/upload-artifact@v4
-      with:
-        name: bliss-analyser-ubuntu-24.04-x86-libav
-        path: releases/
-
-
-  Linux_symphonia_x86:
+  Linux_x86:
     runs-on: ubuntu-22.04
 
     steps:
@@ -138,90 +30,11 @@ jobs:
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: bliss-analyser-linux-x86-symphonia
+        name: bliss-analyser-linux-x86
         path: releases/
 
 
-  Linux_ffmpeg_arm:
-    runs-on: ubuntu-22.04
-
-    steps:
-    - name: Checkout
-      uses: actions/checkout@v4
-
-    - name: Build ARM ffmpeg on Bullseye
-      run: |
-        docker build --pull --no-cache -t bliss-analyser-cross - < docker/Dockerfile_Bullseye_ffmpeg
-        docker run --rm -v $PWD/target:/build -v $PWD:/src bliss-analyser-cross
-
-    - name: Upload artifacts 
-      uses: actions/upload-artifact@v4
-      with: 
-        name: bliss-analyser-debian-bullseye-arm-ffmpeg
-        path: releases/
-
-    - name: Build ARM ffmpeg on Bookworm
-      run: |
-        docker build --pull --no-cache -t bliss-analyser-cross - < docker/Dockerfile_Bookworm_ffmpeg
-        docker run --rm -v $PWD/target:/build -v $PWD:/src bliss-analyser-cross
-
-    - name: Upload artifacts
-      uses: actions/upload-artifact@v4
-      with:
-        name: bliss-analyser-debian-bookworm-arm-ffmpeg
-        path: releases/
-
-
-  Linux_static_arm:
-    runs-on: ubuntu-22.04
-
-    steps:
-    - name: Checkout
-      uses: actions/checkout@v4
-
-    - name: Build ARM static-libav on Debian
-      run: |
-        docker build --pull --no-cache -t bliss-analyser-cross - < docker/Dockerfile_Bullseye_static
-        docker run --rm -v $PWD/target:/build -v $PWD:/src bliss-analyser-cross
-
-    - name: Upload artifacts
-      uses: actions/upload-artifact@v4
-      with:
-        name: bliss-analyser-linux-arm-static
-        path: releases/
-
-
-  Debian_libav_arm:
-    runs-on: ubuntu-22.04
-
-    steps:
-    - name: Checkout
-      uses: actions/checkout@v4
-
-    - name: Build ARM libav on Bullseye
-      run: |
-        docker build --pull --no-cache -t bliss-analyser-cross - < docker/Dockerfile_Bullseye_libav
-        docker run --rm -v $PWD/target:/build -v $PWD:/src bliss-analyser-cross
-
-    - name: Upload artifacts
-      uses: actions/upload-artifact@v4
-      with:
-        name: bliss-analyser-debian-bullseye-arm-libav
-        path: releases/
-
-    - name: Build ARM libav on Bookworm
-      run : |
-        docker build --pull --no-cache -t bliss-analyser-cross - < docker/Dockerfile_Bookworm_libav
-        docker run --rm -v $PWD/target:/build -v $PWD:/src bliss-analyser-cross
-
-    - name: Upload artifacts
-      uses: actions/upload-artifact@v4
-      with:
-        name: bliss-analyser-debian-bookworm-arm-libav
-        path: releases/
-
-
-  Linux_symphonia_arm:
+  Linux_arm:
     runs-on: ubuntu-22.04
 
     steps:
@@ -236,142 +49,11 @@ jobs:
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: bliss-analyser-linux-arm-symphonia
+        name: bliss-analyser-linux-arm
         path: releases/
 
 
-  macOS_ffmpeg:
-    runs-on: macos-13
-
-    steps:
-    - name: Install Rust
-      uses: actions-rs/toolchain@v1
-      with:
-          toolchain: stable
-
-    - name: Checkout
-      uses: actions/checkout@v2
-
-    - name: Install Rust support for ARM64 & prepare environment
-      run: |
-        rustup target add aarch64-apple-darwin
-        mkdir releases
-
-    - name: Build
-      run: |
-        cargo build --release --features ffmpeg,update-aubio-bindings
-        strip target/release/bliss-analyser
-        cp target/release/bliss-analyser releases/bliss-analyser-x86_64
-        cargo build --target=aarch64-apple-darwin --release --features ffmpeg,update-aubio-bindings
-        strip target/aarch64-apple-darwin/release/bliss-analyser
-        cp target/aarch64-apple-darwin/release/bliss-analyser releases/bliss-analyser-arm64
-        cp UserGuide.md releases/README.md
-        cp LICENSE releases/
-        cp configs/macos.ini releases/config.ini
-
-    - name: Build fat binary
-      run: |
-        lipo -create \
-          -arch x86_64 releases/bliss-analyser-x86_64 \
-          -arch arm64 releases/bliss-analyser-arm64 \
-          -output releases/bliss-analyser
-
-    - name: Remove unused binaries
-      run:
-        rm releases/bliss-analyser-x86_64 releases/bliss-analyser-arm64
-
-    - name: Upload artifacts
-      uses: actions/upload-artifact@v4
-      with:
-        name: bliss-analyser-mac-ffmpeg
-        path: releases/
-
-
-#  macOS_staticlibav:
-#    runs-on: macos-13
-#
-#    steps:
-#    - name: Install Rust
-#      uses: actions-rs/toolchain@v1
-#      with:
-#          toolchain: stable
-#
-#    - name: Checkout
-#      uses: actions/checkout@v2
-#
-#    - name: Install deps
-#      run: |
-#        brew install pkg-config ffmpeg nasm
-#
-#    - name: Install Rust support for ARM64 & prepare environment
-#      run: |
-#        rustup target add aarch64-apple-darwin
-#        mkdir releases
-#
-#    - name: Build
-#      run: |
-#        cargo build --release --features update-aubio-bindings,libav,staticlibav
-#        strip target/release/bliss-analyser
-#        cp target/release/bliss-analyser releases/bliss-analyser-x86_64
-#        cargo build --target=aarch64-apple-darwin --release --features update-aubio-bindings,libav,staticlibav
-#        strip target/aarch64-apple-darwin/release/bliss-analyser
-#        cp target/aarch64-apple-darwin/release/bliss-analyser releases/bliss-analyser-arm64
-#        cp UserGuide.md releases/README.md
-#        cp LICENSE releases/
-#        cp configs/macos.ini releases/config.ini
-#
-#    - name: Build fat binary
-#      run: |
-#        lipo -create \
-#          -arch x86_64 releases/bliss-analyser-x86_64 \
-#          -arch arm64 releases/bliss-analyser-arm64 \
-#          -output releases/bliss-analyser
-#
-#    - name: Remove unused binaries
-#      run:
-#        rm releases/bliss-analyser-x86_64 releases/bliss-analyser-arm64
-#
-#    - name: Upload artifacts
-#      uses: actions/upload-artifact@v4
-#      with:
-#        name: bliss-analyser-mac-static
-#        path: releases/
-
-
-#  macOS_libav:
-#    runs-on: macos-13
-#
-#    steps:
-#    - name: Install Rust
-#      uses: actions-rs/toolchain@v1
-#      with:
-#          toolchain: stable
-#
-#    - name: Checkout
-#      uses: actions/checkout@v2
-#
-#    - name: Install deps
-#      run: |
-#        brew install pkg-config ffmpeg
-#
-#    - name: Build
-#      run: |
-#        mkdir releases
-#        cargo build --release
-#        strip target/release/bliss-analyser
-#        cp target/release/bliss-analyser releases/bliss-analyser
-#        cp UserGuide.md releases/README.md
-#        cp LICENSE releases/
-#        cp configs/macos.ini releases/config.ini
-#
-#    - name: Upload artifacts
-#      uses: actions/upload-artifact@v4
-#      with:
-#        name: bliss-analyser-mac-libav
-#        path: releases/
-
-
-  macOS_symphonia:
+  macOS:
     runs-on: macos-13
 
     steps:
@@ -418,54 +100,11 @@ jobs:
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: bliss-analyser-mac-symphonia
+        name: bliss-analyser-mac
         path: releases/
 
 
-  Windows_libav:
-    runs-on: windows-2019
-
-    steps:
-    - name: Checkout
-      uses: actions/checkout@v2
-
-    - name: Install deps
-      run: |
-        $VCINSTALLDIR = $(& "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" -latest -property installationPath)
-        Add-Content $env:GITHUB_ENV "LIBCLANG_PATH=${VCINSTALLDIR}\VC\Tools\LLVM\x64\bin`n"
-        Invoke-WebRequest "https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-full-shared.7z" -OutFile ffmpeg-shared.7z
-        7z x ffmpeg-shared.7z
-        mkdir deps
-        mv ffmpeg-*/* deps/
-        Add-Content $env:GITHUB_ENV "FFMPEG_DIR=${pwd}\deps`n"
-        Add-Content $env:GITHUB_PATH "${pwd}\deps\bin`n"
-
-    - name: Install Rust
-      uses: actions-rs/toolchain@v1
-      with:
-        toolchain: stable
-        override: true
-        components: rustfmt, clippy
-
-    - name: Build
-      run: |
-        cargo build --release --features=libav
-        mkdir releases
-        cp target/release/bliss-analyser.exe releases/bliss-analyser.exe
-        cp deps/bin/*.dll releases/
-        cp UserGuide.md releases/README.md
-        cp LICENSE releases/
-        cp configs/windows.ini releases/config.ini
-        cp c:\Windows\system32\vcruntime140.dll releases
-
-    - name: Upload artifacts
-      uses: actions/upload-artifact@v4
-      with:
-        name: bliss-analyser-windows-libav
-        path: releases/
-
-
-  Windows_symphonia:
+  Windows:
     runs-on: windows-2019
 
     steps:
@@ -492,5 +131,5 @@ jobs:
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: bliss-analyser-windows-symphonia
+        name: bliss-analyser-windows
         path: releases/

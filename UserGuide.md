@@ -10,43 +10,13 @@ feature.
 PowerShell for Windows), as there is no graphical user interface.
 
 
-Variants
---------
-
-`bliss-analyser` can be built to support using either the `ffmpeg` libraries
-(`libavcodec`, etc.), `symphonia` library, or invoking the `ffmpeg` command
-itself.
-
-If the package used ended with `-libav` then `bliss-analyser` has been built
-with the `ffmpeg` libraries. This allows faster decoding of files, but will
-require the exact `ffmpeg` library versions to be on your system. (These
-libraries are usually provided with the Windows build).
-
-If the package used ended with `-static` then `bliss-analyser` has been built
-with the `ffmpeg` libraries - but these have been statically linked. This
-allows faster decoding of files, and a more portable binary - however, this
-_may_ reduce the number of supported file formats.
-
-If the package used ended with `-symphonia` then `bliss-analyser` has been built
-with the `symphonia` libraries. This allows a more portable binary, but at a
-slightly slower decoding speed (than `libav`) and produces analysis results that
-are not the same as those produced by `ffmpeg`/`libav`.
-
-If the package used ended with `-ffmpeg`, then `bliss-analyser` requires you
-also have the `ffmpeg` application installed and in your `$PATH`. These
-builds are roughly 50% slower at analysis, but are more portable as they can
-use (alomost) any `ffmpeg` version.
-
 
 Quick guide
 ===========
 
 1. Install the `Bliss Mixer` LMS plugin.
 
-2. Install `ffmpeg` if using Linux or macOS (and using `-libav` or `-ffmpeg`
-package (see `Varaints` (above))).
-
-3. Edit the supplied `config.ini` in the current folder to set appropriate values
+2. Edit the supplied `config.ini` in the current folder to set appropriate values
 for `music` and `lms` - e.g.:
 ```
 [Bliss]
@@ -54,67 +24,19 @@ music=/home/user/Music
 lms=127.0.0.1
 ```
 
-4. Analyse your tracks:
+3. Analyse your tracks:
 ```
 ./bliss-analyser analyse
 ```
 
-5. Upload analysis database to LMS:
+4. Upload analysis database to LMS:
 ```
 ./bliss-analyser upload
 ```
 
-6. Set LMS to use `Bliss` in `Don't Stop the Music`
+5. Set LMS to use `Bliss` in `Don't Stop the Music`
 
-7. Play some music!
-
-
-
-Installation
-============
-
-For Windows no extra installation steps are required, as all dependencies are
-bundled within its ZIP file. However, if using a `-libav` or `-ffmpeg` package (see
-`Varaints` (above)), both the Linux and macOS versions require that `ffmpeg` be
-installed - if using a `-static` or `-symphinia` package, then no additional
-dependencies are used.
-
-
-Linux
------
-
-Debian based systems (e.g. Ubuntu):
-```
-sudo apt install ffmpeg
-```
-
-RedHat based systems (e.g. Fedora):
-```
-sudo yum install ffmpeg
-```
-
-
-macOS
------
-
-First install `HomeBrew`
-
-High Sierra, Sierra, El Capitan, or earlier:
-```
-/usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-```
-
-Otherwise:
-```
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-```
-
-Then install `ffmpeg`:
-```
-brew install ffmpeg@5
-brew link ffmpeg@5
-```
-
+6. Play some music!
 
 
 Configuration

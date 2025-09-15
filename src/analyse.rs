@@ -31,13 +31,14 @@ use std::thread;
 #[cfg(feature = "ffmpeg")]
 use std::time::Duration;
 use num_cpus;
-use bliss_audio::decoder::Decoder;
 #[cfg(feature = "libav")]
 use bliss_audio::decoder::ffmpeg::FFmpegDecoder as SongDecoder;
 #[cfg(feature = "symphonia")]
 use bliss_audio::decoder::symphonia::SymphoniaDecoder as SongDecoder;
 #[cfg(feature = "ffmpeg")]
-use bliss_audio::{BlissResult, Song};
+use bliss_audio::{BlissResult, Song, AnalysisOptions};
+#[cfg(not(feature = "ffmpeg"))]
+use bliss_audio::{AnalysisOptions, decoder::Decoder};
 
 const DONT_ANALYSE: &str = ".notmusic";
 const MAX_ERRORS_TO_SHOW: usize = 100;
@@ -126,7 +127,7 @@ fn check_dir_entry(db: &mut db::Db, mpath: &Path, entry: DirEntry, track_paths: 
                             let meta = tags::read(&String::from(pb.to_string_lossy()), true);
                             if !meta.is_empty() && !meta.analysis.is_none() {
                                 if !dry_run {
-                                    db.add_track(&sname, &meta, &meta.analysis.unwrap());
+                                    db.add_track(&sname, &meta.clone(), &meta.analysis.unwrap());
                                 }
                                 *tagged_file_count+=1;
                                 tags_used = true;
@@ -188,9 +189,11 @@ fn analyse_new_files(db: &db::Db, mpath: &PathBuf, track_paths: Vec<String>, max
     let mut failed: Vec<String> = Vec::new();
     let mut tag_error: Vec<String> = Vec::new();
     let mut reported_cue:HashSet<String> = HashSet::new();
+    let mut options:AnalysisOptions = AnalysisOptions::default();
+    options.number_cores = cpu_threads;
 
     log::info!("Analysing new files");
-    for (path, result) in SongDecoder::analyze_paths_with_cores(track_paths, cpu_threads) {
+    for (path, result) in SongDecoder::analyze_paths_with_options(track_paths, options) {
         let stripped = path.strip_prefix(mpath).unwrap();
         let spbuff = stripped.to_path_buf();
         let sname = String::from(spbuff.to_string_lossy());
