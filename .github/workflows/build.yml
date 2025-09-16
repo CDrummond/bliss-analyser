@@ -17,7 +17,7 @@ jobs:
     - name: Packages
       run: sudo apt-get update && sudo apt-get install build-essential yasm -y
 
-    - name: Build x86 static-libav version
+    - name: Build
       run: |
         cargo build --release --features=symphonia
         strip target/release/bliss-analyser
@@ -41,7 +41,7 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v4
 
-    - name: Build ARM symphonia on Debian
+    - name: Build
       run: |
         docker build --pull --no-cache -t bliss-analyser-cross - < docker/Dockerfile_Bullseye_symphonia
         docker run --rm -v $PWD/target:/build -v $PWD:/src bliss-analyser-cross
@@ -105,7 +105,7 @@ jobs:
 
 
   Windows:
-    runs-on: windows-2019
+    runs-on: windows-2022
 
     steps:
     - name: Checkout
