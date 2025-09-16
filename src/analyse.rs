@@ -36,7 +36,7 @@ use bliss_audio::decoder::ffmpeg::FFmpegDecoder as SongDecoder;
 #[cfg(feature = "symphonia")]
 use bliss_audio::decoder::symphonia::SymphoniaDecoder as SongDecoder;
 #[cfg(feature = "ffmpeg")]
-use bliss_audio::{BlissResult, Song, AnalysisOptions};
+use bliss_audio::{BlissResult, Song, AnalysisOptions, decoder::Decoder};
 #[cfg(not(feature = "ffmpeg"))]
 use bliss_audio::{AnalysisOptions, decoder::Decoder};
 
@@ -295,9 +295,11 @@ fn analyse_new_files(db: &db::Db, mpath: &PathBuf, track_paths: Vec<String>, max
     let mut analysed = 0;
     let mut failed: Vec<String> = Vec::new();
     let mut tag_error: Vec<String> = Vec::new();
+    let mut options:AnalysisOptions = AnalysisOptions::default();
+    options.number_cores = cpu_threads;
 
     log::info!("Analysing new files");
-    for (path, result) in <ffmpeg::FFmpegCmdDecoder as Decoder>::analyze_paths_with_cores(track_paths, cpu_threads) {
+    for (path, result) in <ffmpeg::FFmpegCmdDecoder as Decoder>::analyze_paths_with_options(track_paths, options) {
         let stripped = path.strip_prefix(mpath).unwrap();
         let spbuff = stripped.to_path_buf();
         let sname = String::from(spbuff.to_string_lossy());
