@@ -15,7 +15,7 @@ strip=true
 [dependencies]
 argparse = "0.2.2"
 anyhow = "1.0.40"
-rusqlite = { version = "0.28.0", features = ["bundled"] }
+rusqlite = { version = "0.34.0", features = ["bundled"] }
 log = "0.4.14"
 env_logger = "0.8.4"
 indicatif = "0.16.2"
