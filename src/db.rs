@@ -386,7 +386,7 @@ impl Db {
             .query_map([], |row| {
                 Ok(AnalysisResults {
                     file: row.get(0)?,
-                    analysis: Analysis::new([row.get(1)?, row.get(2)?, row.get(3)?, row.get(4)?, row.get(5)?, row.get(6)?, row.get(7)?, row.get(8)?, row.get(9)?, row.get(10)?, row.get(11)?, row.get(12)?, row.get(13)?, row.get(14)?, row.get(15)?, row.get(16)?, row.get(17)?, row.get(18)?, row.get(19)?, row.get(20)?, row.get(21)?, row.get(22)?, row.get(23)?].to_vec(), FeaturesVersion::LATEST).expect("REASON"),
+                    analysis: Analysis::new([row.get(1)?, row.get(2)?, row.get(3)?, row.get(4)?, row.get(5)?, row.get(6)?, row.get(7)?, row.get(8)?, row.get(9)?, row.get(10)?, row.get(11)?, row.get(12)?, row.get(13)?, row.get(14)?, row.get(15)?, row.get(16)?, row.get(17)?, row.get(18)?, row.get(19)?, row.get(20)?, row.get(21)?, row.get(22)?, row.get(23)?].to_vec(), FeaturesVersion::LATEST).expect("number of vals should be 23"),
                 })
             })
             .unwrap();

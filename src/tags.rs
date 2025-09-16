@@ -138,7 +138,7 @@ fn read_analysis_string(tag_str: &str, start_tag_pos:usize, version_pos:usize) -
         index += 1;
     }
     if num_read_vals == NUM_ANALYSIS_VALS {
-        return Some(Analysis::new(vals.to_vec(), FeaturesVersion::LATEST).expect("REASON"));
+        return Some(Analysis::new(vals.to_vec(), FeaturesVersion::LATEST).expect("number of vals should be 23"));
     }
     None
 }
