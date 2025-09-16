@@ -32,6 +32,10 @@ fn main() {
     let mut db_path = "bliss.db".to_string();
     let mut logging = "info".to_string();
     let mut music_path = ".".to_string();
+    let mut music_1_path = "".to_string();
+    let mut music_2_path = "".to_string();
+    let mut music_3_path = "".to_string();
+    let mut music_4_path = "".to_string();
     let mut ignore_file = "ignore.txt".to_string();
     let mut keep_old: bool = false;
     let mut dry_run: bool = false;
@@ -54,6 +58,7 @@ fn main() {
     {
         let config_file_help = format!("config file (default: {})", &config_file);
         let music_path_help = format!("Music folder (default: {})", &music_path);
+        let alt_music_path_help = format!("Other music folder");
         let db_path_help = format!("Database location (default: {})", &db_path);
         let logging_help = format!("Log level; trace, debug, info, warn, error. (default: {})", logging);
         let ignore_file_help = format!("File contains items to mark as ignored. (default: {})", ignore_file);
@@ -67,6 +72,10 @@ fn main() {
         arg_parse.set_description(&description);
         arg_parse.refer(&mut config_file).add_option(&["-c", "--config"], Store, &config_file_help);
         arg_parse.refer(&mut music_path).add_option(&["-m", "--music"], Store, &music_path_help);
+        arg_parse.refer(&mut music_1_path).add_option(&["--music_1"], Store, &alt_music_path_help);
+        arg_parse.refer(&mut music_2_path).add_option(&["--music_2"], Store, &alt_music_path_help);
+        arg_parse.refer(&mut music_3_path).add_option(&["--music_3"], Store, &alt_music_path_help);
+        arg_parse.refer(&mut music_4_path).add_option(&["--music_4"], Store, &alt_music_path_help);
         arg_parse.refer(&mut db_path).add_option(&["-d", "--db"], Store, &db_path_help);
         arg_parse.refer(&mut logging).add_option(&["-l", "--logging"], Store, &logging_help);
         arg_parse.refer(&mut keep_old).add_option(&["-k", "--keep-old"], StoreTrue, "Don't remove files from DB if they don't exist (used with analyse task)");
@@ -102,7 +111,7 @@ fn main() {
     }
 
     if !task.eq_ignore_ascii_case("analyse") && !task.eq_ignore_ascii_case("tags") && !task.eq_ignore_ascii_case("ignore")
-        && !task.eq_ignore_ascii_case("upload") && !task.eq_ignore_ascii_case("export") && !task.eq_ignore_ascii_case("stopmixer") {
+        && !task.eq_ignore_ascii_case("upload") && !task.eq_ignore_ascii_case("export") && !task.eq_ignore_ascii_case("stopmixer") && !task.eq_ignore_ascii_case("analyse-lms") {
         log::error!("Invalid task ({}) supplied", task);
         process::exit(-1);
     }
@@ -165,6 +174,18 @@ fn main() {
 
     if music_paths.is_empty() {
         music_paths.push(PathBuf::from(&music_path));
+        if !music_1_path.is_empty() {
+            music_paths.push(PathBuf::from(&music_1_path));
+        }
+        if !music_2_path.is_empty() {
+            music_paths.push(PathBuf::from(&music_2_path));
+        }
+        if !music_3_path.is_empty() {
+            music_paths.push(PathBuf::from(&music_3_path));
+        }
+        if !music_4_path.is_empty() {
+            music_paths.push(PathBuf::from(&music_4_path));
+        }
     }
 
     if task.eq_ignore_ascii_case("stopmixer") {
@@ -217,7 +238,10 @@ fn main() {
                 db::export(&db_path, &music_paths, max_threads, preserve_mod_times);
             } else {
                 let ignore_path = PathBuf::from(&ignore_file);
-                analyse::analyse_files(&db_path, &music_paths, dry_run, keep_old, max_num_files, max_threads, &ignore_path, write_tags, preserve_mod_times);
+                let modified = analyse::analyse_files(&db_path, &music_paths, dry_run, keep_old, max_num_files, max_threads, &ignore_path, write_tags, preserve_mod_times);
+                if modified && task.eq_ignore_ascii_case("analyse-lms") && path.exists() {
+                    upload::stop_mixer(&lms_host, lms_json_port);
+                }
             }
         }
     }

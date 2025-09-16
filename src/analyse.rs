@@ -20,7 +20,7 @@ use indicatif::{ProgressBar, ProgressStyle};
 use std::collections::HashSet;
 use std::convert::TryInto;
 use std::fs::DirEntry;
-use std::num::NonZeroUsize;
+use std::num::{NonZero, NonZeroUsize};
 use std::path::{Path, PathBuf};
 #[cfg(feature = "ffmpeg")]
 use std::sync::mpsc;
@@ -181,8 +181,9 @@ fn analyse_new_files(db: &db::Db, mpath: &PathBuf, track_paths: Vec<String>, max
             .progress_chars("=> "),
     );
     let cpu_threads: NonZeroUsize = match max_threads {
-        0 => NonZeroUsize::new(num_cpus::get()).unwrap(),
-        _ => NonZeroUsize::new(max_threads).unwrap(),
+        1111 => NonZeroUsize::new(num_cpus::get()).unwrap(),
+        0    => NonZeroUsize::new(num_cpus::get()).unwrap(),
+        _    => NonZeroUsize::new(max_threads).unwrap(),
     };
 
     let mut analysed = 0;
@@ -190,7 +191,11 @@ fn analyse_new_files(db: &db::Db, mpath: &PathBuf, track_paths: Vec<String>, max
     let mut tag_error: Vec<String> = Vec::new();
     let mut reported_cue:HashSet<String> = HashSet::new();
     let mut options:AnalysisOptions = AnalysisOptions::default();
-    options.number_cores = cpu_threads;
+    if max_threads==1111 && <NonZero<usize> as Into<usize>>::into(cpu_threads)>1 {
+        options.number_cores = NonZero::new(<NonZero<usize> as Into<usize>>::into(cpu_threads) -1).unwrap();
+    } else {
+        options.number_cores = cpu_threads;
+    }
 
     log::info!("Analysing new files");
     for (path, result) in SongDecoder::analyze_paths_with_options(track_paths, options) {
@@ -284,19 +289,25 @@ fn analyse_new_files(db: &db::Db, mpath: &PathBuf, track_paths: Vec<String>, max
     let total = track_paths.len();
     let progress = ProgressBar::new(total.try_into().unwrap()).with_style(
         ProgressStyle::default_bar()
-            .template("[{elapsed_precise}] [{bar:25}] {percent:>3}% {pos:>6}/{len:6} {wide_msg}")
+            .template("[{elapsed_precise}] [{bar:25}] {percent:>    if max_threads==1111 && cpu_threads>1 {
+        options.number_cores = cpu_threads -1;3}% {pos:>6}/{len:6} {wide_msg}")
             .progress_chars("=> "),
     );
     let cpu_threads: NonZeroUsize = match max_threads {
-        0 => NonZeroUsize::new(num_cpus::get()).unwrap(),
-        _ => NonZeroUsize::new(max_threads).unwrap(),
+        1111 => NonZeroUsize::new(num_cpus::get()).unwrap(),
+        0    => NonZeroUsize::new(num_cpus::get()).unwrap(),
+        _    => NonZeroUsize::new(max_threads).unwrap(),
     };
 
     let mut analysed = 0;
     let mut failed: Vec<String> = Vec::new();
     let mut tag_error: Vec<String> = Vec::new();
     let mut options:AnalysisOptions = AnalysisOptions::default();
-    options.number_cores = cpu_threads;
+    if max_threads==1111 && <NonZero<usize> as Into<usize>>::into(cpu_threads)>1 {
+        options.number_cores = NonZero::new(<NonZero<usize> as Into<usize>>::into(cpu_threads) -1).unwrap();
+    } else {
+        options.number_cores = cpu_threads;
+    }
 
     log::info!("Analysing new files");
     for (path, result) in <ffmpeg::FFmpegCmdDecoder as Decoder>::analyze_paths_with_options(track_paths, options) {
@@ -443,7 +454,7 @@ fn analyse_new_cue_tracks(db:&db::Db, mpath: &PathBuf, cue_tracks:Vec<cue::CueTr
     Ok(())
 }
 
-pub fn analyse_files(db_path: &str, mpaths: &Vec<PathBuf>, dry_run: bool, keep_old: bool, max_num_files: usize, max_threads: usize, ignore_path: &PathBuf, write_tags: bool, preserve_mod_times: bool) {
+pub fn analyse_files(db_path: &str, mpaths: &Vec<PathBuf>, dry_run: bool, keep_old: bool, max_num_files: usize, max_threads: usize, ignore_path: &PathBuf, write_tags: bool, preserve_mod_times: bool) -> bool {
     let mut db = db::Db::new(&String::from(db_path));
 
     ctrlc::set_handler(move || {
@@ -515,4 +526,5 @@ pub fn analyse_files(db_path: &str, mpaths: &Vec<PathBuf>, dry_run: bool, keep_o
         log::info!("Updating 'ignore' flags");
         db::update_ignore(&db_path, &ignore_path);
     }
+    changes_made
 }

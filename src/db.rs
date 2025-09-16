@@ -410,10 +410,15 @@ impl Db {
         }
         log::info!("Starting export");
         let cpu_threads: NonZeroUsize = match max_threads {
-            0 => NonZeroUsize::new(num_cpus::get()).unwrap(),
-            _ => NonZeroUsize::new(max_threads).unwrap(),
+            1111 => NonZeroUsize::new(num_cpus::get()).unwrap(),
+            0    => NonZeroUsize::new(num_cpus::get()).unwrap(),
+            _    => NonZeroUsize::new(max_threads).unwrap(),
         }.into();
-        let num_threads = cpu_threads.into();
+
+        let mut num_threads = cpu_threads.into();
+        if max_threads==1111 && num_threads>1 {
+            num_threads -= 1;
+        }
         let chunk_size = total/cpu_threads;
         let mut threads: Vec<JoinHandle<()>> = vec![];
 
