@@ -39,6 +39,7 @@ use bliss_audio::decoder::symphonia::SymphoniaDecoder as SongDecoder;
 use bliss_audio::{BlissResult, Song, AnalysisOptions, decoder::Decoder};
 #[cfg(not(feature = "ffmpeg"))]
 use bliss_audio::{AnalysisOptions, decoder::Decoder};
+use ureq;
 
 const DONT_ANALYSE: &str = ".notmusic";
 const MAX_ERRORS_TO_SHOW: usize = 100;
@@ -57,6 +58,13 @@ fn handle_ctrl_c() {
     unsafe {
         TERMINATE_ANALYSIS_FLAG = true;
     }
+}
+
+pub fn send_notif(lms_host: &String, json_port: u16, text: &str) {
+    let json = &format!("{{\"id\":1, \"method\":\"slim.request\",\"params\":[\"\",[\"blissmixer\",\"analyser\",\"update:{}\"]]}}", text);
+
+    log::info!("Sending notif to LMS: {}", text);
+    let _ = ureq::post(&format!("http://{}:{}/jsonrpc.js", lms_host, json_port)).send_string(&json);
 }
 
 fn get_file_list(db: &mut db::Db, mpath: &Path, path: &Path, track_paths: &mut Vec<String>, cue_tracks:&mut Vec<cue::CueTrack>, file_count:&mut usize, max_num_files: usize, tagged_file_count:&mut usize, dry_run: bool) {
@@ -173,7 +181,8 @@ fn show_errors(failed: &mut Vec<String>, tag_error: &mut Vec<String>) {
 }
 
 #[cfg(not(feature = "ffmpeg"))]
-fn analyse_new_files(db: &db::Db, mpath: &PathBuf, track_paths: Vec<String>, max_threads: usize, write_tags: bool, preserve_mod_times: bool) -> Result<()> {
+fn analyse_new_files(db: &db::Db, mpath: &PathBuf, track_paths: Vec<String>, max_threads: usize, write_tags: bool,
+                     preserve_mod_times: bool, lms_host: &String, json_port: u16, send_notifs: bool) -> Result<()> {
     let total = track_paths.len();
     let progress = ProgressBar::new(total.try_into().unwrap()).with_style(
         ProgressStyle::default_bar()
@@ -186,6 +195,7 @@ fn analyse_new_files(db: &db::Db, mpath: &PathBuf, track_paths: Vec<String>, max
         _    => NonZeroUsize::new(max_threads).unwrap(),
     };
 
+    let mut last_update = 0;
     let mut analysed = 0;
     let mut failed: Vec<String> = Vec::new();
     let mut tag_error: Vec<String> = Vec::new();
@@ -197,7 +207,11 @@ fn analyse_new_files(db: &db::Db, mpath: &PathBuf, track_paths: Vec<String>, max
         options.number_cores = cpu_threads;
     }
 
-    log::info!("Analysing new files");
+    if send_notifs {
+        send_notif(lms_host, json_port, "  0%");
+    } else {
+        log::info!("Analysing new files");
+    }
     for (path, result) in SongDecoder::analyze_paths_with_options(track_paths, options) {
         let stripped = path.strip_prefix(mpath).unwrap();
         let spbuff = stripped.to_path_buf();
@@ -268,6 +282,14 @@ fn analyse_new_files(db: &db::Db, mpath: &PathBuf, track_paths: Vec<String>, max
 
         if inc_progress {
             progress.inc(1);
+            if send_notifs {
+                let val = (progress.position()/((total as u64)*100)) as u64 ;
+                if val!=last_update {
+                    last_update = val;
+                    let secs = progress.eta().as_secs(); 
+                    send_notif(lms_host, json_port, &format!("{:3}% ({:02}:{:02}:{:02})", last_update, (secs/60)/60, (secs/60)%60, secs%60));
+                }
+            }
         }
         if terminate_analysis() {
             break
@@ -285,7 +307,8 @@ fn analyse_new_files(db: &db::Db, mpath: &PathBuf, track_paths: Vec<String>, max
 }
 
 #[cfg(feature = "ffmpeg")]
-fn analyse_new_files(db: &db::Db, mpath: &PathBuf, track_paths: Vec<String>, max_threads: usize, write_tags: bool, preserve_mod_times: bool) -> Result<()> {
+fn analyse_new_files(db: &db::Db, mpath: &PathBuf, track_paths: Vec<String>, max_threads: usize, write_tags: bool, 
+                     preserve_mod_times: bool, lms_host: &String, json_port: u16, send_notifs: bool) -> Result<()> {
     let total = track_paths.len();
     let progress = ProgressBar::new(total.try_into().unwrap()).with_style(
         ProgressStyle::default_bar()
@@ -454,7 +477,9 @@ fn analyse_new_cue_tracks(db:&db::Db, mpath: &PathBuf, cue_tracks:Vec<cue::CueTr
     Ok(())
 }
 
-pub fn analyse_files(db_path: &str, mpaths: &Vec<PathBuf>, dry_run: bool, keep_old: bool, max_num_files: usize, max_threads: usize, ignore_path: &PathBuf, write_tags: bool, preserve_mod_times: bool) -> bool {
+pub fn analyse_files(db_path: &str, mpaths: &Vec<PathBuf>, dry_run: bool, keep_old: bool, max_num_files: usize, 
+                     max_threads: usize, ignore_path: &PathBuf, write_tags: bool, preserve_mod_times: bool,
+                     lms_host: &String, json_port: u16, send_notifs: bool) -> bool {
     let mut db = db::Db::new(&String::from(db_path));
 
     ctrlc::set_handler(move || {
@@ -476,8 +501,14 @@ pub fn analyse_files(db_path: &str, mpaths: &Vec<PathBuf>, dry_run: bool, keep_o
         let mut file_count:usize = 0;
         let mut tagged_file_count:usize = 0;
 
-        if mpaths.len() > 1 {
-            log::info!("Looking for new files in {}", mpath.to_string_lossy());
+        if send_notifs {
+            send_notif(lms_host, json_port, "Looking for new files");
+        } else if mpaths.len() > 1 {
+            if send_notifs {
+                send_notif(lms_host, json_port, "Looking for new files");
+            } else {
+                log::info!("Looking for new files in {}", mpath.to_string_lossy());
+            }
         } else {
             log::info!("Looking for new files");
         }
@@ -502,7 +533,7 @@ pub fn analyse_files(db_path: &str, mpaths: &Vec<PathBuf>, dry_run: bool, keep_o
                 }
             } else {
                 if !track_paths.is_empty() {
-                    match analyse_new_files(&db, &mpath, track_paths, max_threads, write_tags, preserve_mod_times) {
+                    match analyse_new_files(&db, &mpath, track_paths, max_threads, write_tags, preserve_mod_times, lms_host, json_port, send_notifs) {
                         Ok(_) => { changes_made = true; }
                         Err(e) => { log::error!("Analysis returned error: {}", e); }
                     }

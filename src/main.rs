@@ -47,6 +47,7 @@ fn main() {
     let mut max_threads: usize = 0;
     let mut write_tags = false;
     let mut preserve_mod_times = false;
+    let mut send_notifs = false;
 
     match dirs::home_dir() {
         Some(path) => {
@@ -87,6 +88,7 @@ fn main() {
         arg_parse.refer(&mut max_threads).add_option(&["-t", "--threads"], Store, "Maximum number of threads to use for analysis");
         arg_parse.refer(&mut write_tags).add_option(&["-T", "--tags"], StoreTrue, "When analysing files, also store results within files themselves");
         arg_parse.refer(&mut preserve_mod_times).add_option(&["-p", "--preserve"], StoreTrue, "Preserve modification time when writing results to files");
+        arg_parse.refer(&mut send_notifs).add_option(&["-N", "--notifs"], StoreTrue, "Periodically send notification messages to LMS");
         arg_parse.refer(&mut task).add_argument("task", Store, "Task to perform; analyse, tags, ignore, upload, export, stopmixer.");
         arg_parse.parse_args_or_exit();
     }
@@ -238,7 +240,9 @@ fn main() {
                 db::export(&db_path, &music_paths, max_threads, preserve_mod_times);
             } else {
                 let ignore_path = PathBuf::from(&ignore_file);
-                let modified = analyse::analyse_files(&db_path, &music_paths, dry_run, keep_old, max_num_files, max_threads, &ignore_path, write_tags, preserve_mod_times);
+                let modified = analyse::analyse_files(&db_path, &music_paths, dry_run, keep_old, max_num_files, max_threads, 
+                                                      &ignore_path, write_tags, preserve_mod_times, &lms_host, lms_json_port,
+                                                      send_notifs);
                 if modified && task.eq_ignore_ascii_case("analyse-lms") && path.exists() {
                     upload::stop_mixer(&lms_host, lms_json_port);
                 }
