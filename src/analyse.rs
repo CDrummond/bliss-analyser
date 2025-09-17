@@ -40,10 +40,12 @@ use bliss_audio::{BlissResult, Song, AnalysisOptions, decoder::Decoder};
 #[cfg(not(feature = "ffmpeg"))]
 use bliss_audio::{AnalysisOptions, decoder::Decoder};
 use ureq;
+use std::time::{SystemTime, UNIX_EPOCH};
 
 const DONT_ANALYSE: &str = ".notmusic";
 const MAX_ERRORS_TO_SHOW: usize = 100;
 const MAX_TAG_ERRORS_TO_SHOW: usize = 50;
+const MIN_NOTIF_TIME:u64 = 2;
 const VALID_EXTENSIONS: [&str; 7] = ["m4a", "mp3", "ogg", "flac", "opus", "wv", "dsf"];
 
 static mut TERMINATE_ANALYSIS_FLAG: bool = false;
@@ -60,37 +62,48 @@ fn handle_ctrl_c() {
     }
 }
 
-pub fn send_notif(lms_host: &String, json_port: u16, text: &str) {
-    let json = &format!("{{\"id\":1, \"method\":\"slim.request\",\"params\":[\"\",[\"blissmixer\",\"analyser\",\"act:update\",\"msg:{}\"]]}}", text);
+pub fn send_notif(lms_host: &String, json_port: u16, last_notif_time: &mut u64, text: &str) {
+    let now = SystemTime::now().duration_since(UNIX_EPOCH).expect("time should go forward").as_secs();
+    if now>=*last_notif_time+MIN_NOTIF_TIME {
+        let json = &format!("{{\"id\":1, \"method\":\"slim.request\",\"params\":[\"\",[\"blissmixer\",\"analyser\",\"act:update\",\"msg:{}\"]]}}", text);
 
-    log::info!("Sending notif to LMS: {}", text);
-    let _ = ureq::post(&format!("http://{}:{}/jsonrpc.js", lms_host, json_port)).send_string(&json);
+        log::info!("Sending notif to LMS: {}", text);
+        let _ = ureq::post(&format!("http://{}:{}/jsonrpc.js", lms_host, json_port)).send_string(&json);
+        *last_notif_time = now;
+    }
 }
 
-fn get_file_list(db: &mut db::Db, mpath: &Path, path: &Path, track_paths: &mut Vec<String>, cue_tracks:&mut Vec<cue::CueTrack>, file_count:&mut usize, max_num_files: usize, tagged_file_count:&mut usize, dry_run: bool) {
+fn get_file_list(db: &mut db::Db, mpath: &Path, path: &Path, track_paths: &mut Vec<String>, cue_tracks:&mut Vec<cue::CueTrack>, file_count:&mut usize,
+                 max_num_files: usize, tagged_file_count:&mut usize, dry_run: bool, lms_host: &String, json_port: u16, send_notifs: bool, last_notif_time: &mut u64) {
     if !path.is_dir() {
         return;
     }
 
+    if send_notifs {
+        send_notif(lms_host, json_port, last_notif_time, &format!("Dir: {}", path.to_string_lossy()));
+    }
     let mut items: Vec<_> = path.read_dir().unwrap().map(|r| r.unwrap()).collect();
     items.sort_by_key(|dir| dir.path());
 
     for item in items {
-        check_dir_entry(db, mpath, item, track_paths, cue_tracks, file_count, max_num_files, tagged_file_count, dry_run);
+        check_dir_entry(db, mpath, item, track_paths, cue_tracks, file_count, max_num_files, tagged_file_count, dry_run, lms_host,
+                        json_port, send_notifs, last_notif_time);
         if max_num_files>0 && *file_count>=max_num_files {
             break;
         }
     }
 }
 
-fn check_dir_entry(db: &mut db::Db, mpath: &Path, entry: DirEntry, track_paths: &mut Vec<String>, cue_tracks:&mut Vec<cue::CueTrack>, file_count:&mut usize, max_num_files: usize, tagged_file_count:&mut usize, dry_run: bool) {
+fn check_dir_entry(db: &mut db::Db, mpath: &Path, entry: DirEntry, track_paths: &mut Vec<String>, cue_tracks:&mut Vec<cue::CueTrack>, file_count:&mut usize,
+                   max_num_files: usize, tagged_file_count:&mut usize, dry_run: bool, lms_host: &String, json_port: u16, send_notifs: bool, last_notif_time: &mut u64) {
     let pb = entry.path();
     if pb.is_dir() {
         let check = pb.join(DONT_ANALYSE);
         if check.exists() {
             log::info!("Skipping '{}', found '{}'", pb.to_string_lossy(), DONT_ANALYSE);
         } else if max_num_files<=0 || *file_count<max_num_files {
-            get_file_list(db, mpath, &pb, track_paths, cue_tracks, file_count, max_num_files, tagged_file_count, dry_run);
+            get_file_list(db, mpath, &pb, track_paths, cue_tracks, file_count, max_num_files, tagged_file_count, dry_run, lms_host,
+                          json_port, send_notifs, last_notif_time);
         }
     } else if pb.is_file() && (max_num_files<=0 || *file_count<max_num_files) {
         if_chain! {
@@ -182,7 +195,7 @@ fn show_errors(failed: &mut Vec<String>, tag_error: &mut Vec<String>) {
 
 #[cfg(not(feature = "ffmpeg"))]
 fn analyse_new_files(db: &db::Db, mpath: &PathBuf, track_paths: Vec<String>, max_threads: usize, write_tags: bool,
-                     preserve_mod_times: bool, lms_host: &String, json_port: u16, send_notifs: bool) -> Result<()> {
+                     preserve_mod_times: bool, lms_host: &String, json_port: u16, send_notifs: bool, last_notif_time: &mut u64) -> Result<()> {
     let total = track_paths.len();
     let progress = ProgressBar::new(total.try_into().unwrap()).with_style(
         ProgressStyle::default_bar()
@@ -195,7 +208,6 @@ fn analyse_new_files(db: &db::Db, mpath: &PathBuf, track_paths: Vec<String>, max
         _    => NonZeroUsize::new(max_threads).unwrap(),
     };
 
-    let mut last_update = 0;
     let mut analysed = 0;
     let mut failed: Vec<String> = Vec::new();
     let mut tag_error: Vec<String> = Vec::new();
@@ -208,7 +220,7 @@ fn analyse_new_files(db: &db::Db, mpath: &PathBuf, track_paths: Vec<String>, max
     }
 
     if send_notifs {
-        send_notif(lms_host, json_port, "  0%");
+        send_notif(lms_host, json_port, last_notif_time, "  0%");
     } else {
         log::info!("Analysing new files");
     }
@@ -283,11 +295,12 @@ fn analyse_new_files(db: &db::Db, mpath: &PathBuf, track_paths: Vec<String>, max
         if inc_progress {
             progress.inc(1);
             if send_notifs {
-                let val = ((progress.position() as f64 * 100.0)/total as f64).round() as u64;
-                if val!=last_update {
-                    last_update = val;
+                let now = SystemTime::now().duration_since(UNIX_EPOCH).expect("time should go forward").as_secs();
+                if now>=*last_notif_time+MIN_NOTIF_TIME {
+                    let val = (progress.position() as f64 * 100.0)/total as f64;
                     let el = progress.elapsed().as_secs();
-                    send_notif(lms_host, json_port, &format!("{:3}% ({:02}:{:02}:{:02})", last_update, (el/60)/60, (el/60)%60, el%60));
+                    send_notif(lms_host, json_port, last_notif_time, &format!("{:8.2}% ({:02}:{:02}:{:02}) {}", val, 
+                                                                              (el/60)/60, (el/60)%60, el%60, sname));
                 }
             }
         }
@@ -493,6 +506,7 @@ pub fn analyse_files(db_path: &str, mpaths: &Vec<PathBuf>, dry_run: bool, keep_o
     }
 
     let mut changes_made = false;
+    let mut last_notif_time:u64 = 0;
     for path in mpaths {
         let mpath = path.clone();
         let cur = path.clone();
@@ -502,17 +516,14 @@ pub fn analyse_files(db_path: &str, mpaths: &Vec<PathBuf>, dry_run: bool, keep_o
         let mut tagged_file_count:usize = 0;
 
         if send_notifs {
-            send_notif(lms_host, json_port, "Looking for new files");
+            send_notif(lms_host, json_port, &mut last_notif_time, "Looking for new files");
         } else if mpaths.len() > 1 {
-            if send_notifs {
-                send_notif(lms_host, json_port, "Looking for new files");
-            } else {
-                log::info!("Looking for new files in {}", mpath.to_string_lossy());
-            }
+            log::info!("Looking for new files in {}", mpath.to_string_lossy());
         } else {
             log::info!("Looking for new files");
         }
-        get_file_list(&mut db, &mpath, &cur, &mut track_paths, &mut cue_tracks, &mut file_count, max_num_files, &mut tagged_file_count, dry_run);
+        get_file_list(&mut db, &mpath, &cur, &mut track_paths, &mut cue_tracks, &mut file_count, max_num_files, 
+                      &mut tagged_file_count, dry_run, lms_host, json_port, send_notifs, &mut last_notif_time);
         track_paths.sort();
         log::info!("New untagged files: {}", track_paths.len());
         if !cue_tracks.is_empty() {
@@ -533,7 +544,8 @@ pub fn analyse_files(db_path: &str, mpaths: &Vec<PathBuf>, dry_run: bool, keep_o
                 }
             } else {
                 if !track_paths.is_empty() {
-                    match analyse_new_files(&db, &mpath, track_paths, max_threads, write_tags, preserve_mod_times, lms_host, json_port, send_notifs) {
+                    match analyse_new_files(&db, &mpath, track_paths, max_threads, write_tags, preserve_mod_times,
+                                            lms_host, json_port, send_notifs, &mut last_notif_time) {
                         Ok(_) => { changes_made = true; }
                         Err(e) => { log::error!("Analysis returned error: {}", e); }
                     }
