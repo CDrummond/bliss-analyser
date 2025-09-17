@@ -61,7 +61,7 @@ fn handle_ctrl_c() {
 }
 
 pub fn send_notif(lms_host: &String, json_port: u16, text: &str) {
-    let json = &format!("{{\"id\":1, \"method\":\"slim.request\",\"params\":[\"\",[\"blissmixer\",\"analyser\",\"update:{}\"]]}}", text);
+    let json = &format!("{{\"id\":1, \"method\":\"slim.request\",\"params\":[\"\",[\"blissmixer\",\"analyser\",\"act:update\",\"msg:{}\"]]}}", text);
 
     log::info!("Sending notif to LMS: {}", text);
     let _ = ureq::post(&format!("http://{}:{}/jsonrpc.js", lms_host, json_port)).send_string(&json);
@@ -283,11 +283,11 @@ fn analyse_new_files(db: &db::Db, mpath: &PathBuf, track_paths: Vec<String>, max
         if inc_progress {
             progress.inc(1);
             if send_notifs {
-                let val = (progress.position()/((total as u64)*100)) as u64 ;
+                let val = ((progress.position() as f64 * 100.0)/total as f64).round() as u64;
                 if val!=last_update {
                     last_update = val;
-                    let secs = progress.eta().as_secs(); 
-                    send_notif(lms_host, json_port, &format!("{:3}% ({:02}:{:02}:{:02})", last_update, (secs/60)/60, (secs/60)%60, secs%60));
+                    let el = progress.elapsed().as_secs();
+                    send_notif(lms_host, json_port, &format!("{:3}% ({:02}:{:02}:{:02})", last_update, (el/60)/60, (el/60)%60, el%60));
                 }
             }
         }
