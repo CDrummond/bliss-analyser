@@ -50,6 +50,13 @@ const VALID_EXTENSIONS: [&str; 7] = ["m4a", "mp3", "ogg", "flac", "opus", "wv", 
 
 static mut TERMINATE_ANALYSIS_FLAG: bool = false;
 
+struct NotifInfo {
+    pub enabled: bool,
+    pub address: String,
+    pub last_send: u64,
+    pub start_time: u64
+}
+
 fn terminate_analysis() -> bool {
     unsafe {
         return TERMINATE_ANALYSIS_FLAG
@@ -62,32 +69,32 @@ fn handle_ctrl_c() {
     }
 }
 
-pub fn send_notif(lms_host: &String, json_port: u16, last_notif_time: &mut u64, text: &str) {
-    let now = SystemTime::now().duration_since(UNIX_EPOCH).expect("time should go forward").as_secs();
-    if now>=*last_notif_time+MIN_NOTIF_TIME {
-        let json = &format!("{{\"id\":1, \"method\":\"slim.request\",\"params\":[\"\",[\"blissmixer\",\"analyser\",\"act:update\",\"msg:{}\"]]}}", text);
-
-        log::info!("Sending notif to LMS: {}", text);
-        let _ = ureq::post(&format!("http://{}:{}/jsonrpc.js", lms_host, json_port)).send_string(&json);
-        *last_notif_time = now;
+fn send_notif(notifs: &mut NotifInfo, text: &str) {
+    if notifs.enabled {
+        let now = SystemTime::now().duration_since(UNIX_EPOCH).expect("time should go forward").as_secs();
+        if now>=notifs.last_send+MIN_NOTIF_TIME {
+            let dur = now - notifs.start_time;
+            let msg = format!("[{:02}:{:02}:{:02}] {}", (dur/60)/60, (dur/60)%60, dur%60, text);
+            let json = &format!("{{\"id\":1, \"method\":\"slim.request\",\"params\":[\"\",[\"blissmixer\",\"analyser\",\"act:update\",\"msg:{}\"]]}}", msg);
+            log::info!("Sending notif to LMS: {}", text);
+            let _ = ureq::post(&notifs.address).send_string(&json);
+            notifs.last_send = now;
+        }
     }
 }
 
 fn get_file_list(db: &mut db::Db, mpath: &Path, path: &Path, track_paths: &mut Vec<String>, cue_tracks:&mut Vec<cue::CueTrack>, file_count:&mut usize,
-                 max_num_files: usize, tagged_file_count:&mut usize, dry_run: bool, lms_host: &String, json_port: u16, send_notifs: bool, last_notif_time: &mut u64) {
+                 max_num_files: usize, tagged_file_count:&mut usize, dry_run: bool, notifs: &mut NotifInfo) {
     if !path.is_dir() {
         return;
     }
 
-    if send_notifs {
-        send_notif(lms_host, json_port, last_notif_time, &format!("Dir: {}", path.to_string_lossy()));
-    }
+    send_notif(notifs, &format!("Dir: {}", path.to_string_lossy()));
     let mut items: Vec<_> = path.read_dir().unwrap().map(|r| r.unwrap()).collect();
     items.sort_by_key(|dir| dir.path());
 
     for item in items {
-        check_dir_entry(db, mpath, item, track_paths, cue_tracks, file_count, max_num_files, tagged_file_count, dry_run, lms_host,
-                        json_port, send_notifs, last_notif_time);
+        check_dir_entry(db, mpath, item, track_paths, cue_tracks, file_count, max_num_files, tagged_file_count, dry_run, notifs);
         if max_num_files>0 && *file_count>=max_num_files {
             break;
         }
@@ -95,15 +102,14 @@ fn get_file_list(db: &mut db::Db, mpath: &Path, path: &Path, track_paths: &mut V
 }
 
 fn check_dir_entry(db: &mut db::Db, mpath: &Path, entry: DirEntry, track_paths: &mut Vec<String>, cue_tracks:&mut Vec<cue::CueTrack>, file_count:&mut usize,
-                   max_num_files: usize, tagged_file_count:&mut usize, dry_run: bool, lms_host: &String, json_port: u16, send_notifs: bool, last_notif_time: &mut u64) {
+                   max_num_files: usize, tagged_file_count:&mut usize, dry_run: bool, notifs: &mut NotifInfo) {
     let pb = entry.path();
     if pb.is_dir() {
         let check = pb.join(DONT_ANALYSE);
         if check.exists() {
             log::info!("Skipping '{}', found '{}'", pb.to_string_lossy(), DONT_ANALYSE);
         } else if max_num_files<=0 || *file_count<max_num_files {
-            get_file_list(db, mpath, &pb, track_paths, cue_tracks, file_count, max_num_files, tagged_file_count, dry_run, lms_host,
-                          json_port, send_notifs, last_notif_time);
+            get_file_list(db, mpath, &pb, track_paths, cue_tracks, file_count, max_num_files, tagged_file_count, dry_run, notifs);
         }
     } else if pb.is_file() && (max_num_files<=0 || *file_count<max_num_files) {
         if_chain! {
@@ -195,7 +201,7 @@ fn show_errors(failed: &mut Vec<String>, tag_error: &mut Vec<String>) {
 
 #[cfg(not(feature = "ffmpeg"))]
 fn analyse_new_files(db: &db::Db, mpath: &PathBuf, track_paths: Vec<String>, max_threads: usize, write_tags: bool,
-                     preserve_mod_times: bool, lms_host: &String, json_port: u16, send_notifs: bool, last_notif_time: &mut u64) -> Result<()> {
+                     preserve_mod_times: bool, notifs: &mut NotifInfo) -> Result<()> {
     let total = track_paths.len();
     let progress = ProgressBar::new(total.try_into().unwrap()).with_style(
         ProgressStyle::default_bar()
@@ -219,11 +225,9 @@ fn analyse_new_files(db: &db::Db, mpath: &PathBuf, track_paths: Vec<String>, max
         options.number_cores = cpu_threads;
     }
 
-    if send_notifs {
-        send_notif(lms_host, json_port, last_notif_time, "  0%");
-    } else {
-        log::info!("Analysing new files");
-    }
+    send_notif(notifs, "Analysing new files");
+    log::info!("Analysing new files");
+
     for (path, result) in SongDecoder::analyze_paths_with_options(track_paths, options) {
         let stripped = path.strip_prefix(mpath).unwrap();
         let spbuff = stripped.to_path_buf();
@@ -294,14 +298,9 @@ fn analyse_new_files(db: &db::Db, mpath: &PathBuf, track_paths: Vec<String>, max
 
         if inc_progress {
             progress.inc(1);
-            if send_notifs {
-                let now = SystemTime::now().duration_since(UNIX_EPOCH).expect("time should go forward").as_secs();
-                if now>=*last_notif_time+MIN_NOTIF_TIME {
-                    let val = (progress.position() as f64 * 100.0)/total as f64;
-                    let el = progress.elapsed().as_secs();
-                    send_notif(lms_host, json_port, last_notif_time, &format!("{:8.2}% ({:02}:{:02}:{:02}) {}", val, 
-                                                                              (el/60)/60, (el/60)%60, el%60, sname));
-                }
+            if notifs.enabled {
+                let pc = (progress.position() as f64 * 100.0)/total as f64;
+                send_notif(notifs, &format!("{:8.2}% {}", pc, sname));
             }
         }
         if terminate_analysis() {
@@ -321,7 +320,7 @@ fn analyse_new_files(db: &db::Db, mpath: &PathBuf, track_paths: Vec<String>, max
 
 #[cfg(feature = "ffmpeg")]
 fn analyse_new_files(db: &db::Db, mpath: &PathBuf, track_paths: Vec<String>, max_threads: usize, write_tags: bool, 
-                     preserve_mod_times: bool, lms_host: &String, json_port: u16, send_notifs: bool) -> Result<()> {
+                     preserve_mod_times: bool, lms_host: &String, json_port: u16, notifs: &mut NotifInfo) -> Result<()> {
     let total = track_paths.len();
     let progress = ProgressBar::new(total.try_into().unwrap()).with_style(
         ProgressStyle::default_bar()
@@ -494,6 +493,12 @@ pub fn analyse_files(db_path: &str, mpaths: &Vec<PathBuf>, dry_run: bool, keep_o
                      max_threads: usize, ignore_path: &PathBuf, write_tags: bool, preserve_mod_times: bool,
                      lms_host: &String, json_port: u16, send_notifs: bool) -> bool {
     let mut db = db::Db::new(&String::from(db_path));
+    let mut notifs = NotifInfo {
+        enabled: send_notifs,
+        address: format!("http://{}:{}/jsonrpc.js", lms_host, json_port),
+        last_send: 0,
+        start_time: SystemTime::now().duration_since(UNIX_EPOCH).expect("time should go forward").as_secs(),
+    };
 
     ctrlc::set_handler(move || {
         handle_ctrl_c();
@@ -502,11 +507,11 @@ pub fn analyse_files(db_path: &str, mpaths: &Vec<PathBuf>, dry_run: bool, keep_o
     db.init();
 
     if !keep_old {
+        send_notif(&mut notifs, "Removing old files from DB");
         db.remove_old(mpaths, dry_run);
     }
 
     let mut changes_made = false;
-    let mut last_notif_time:u64 = 0;
     for path in mpaths {
         let mpath = path.clone();
         let cur = path.clone();
@@ -516,14 +521,14 @@ pub fn analyse_files(db_path: &str, mpaths: &Vec<PathBuf>, dry_run: bool, keep_o
         let mut tagged_file_count:usize = 0;
 
         if send_notifs {
-            send_notif(lms_host, json_port, &mut last_notif_time, "Looking for new files");
+            send_notif(&mut notifs, "Looking for new files");
         } else if mpaths.len() > 1 {
             log::info!("Looking for new files in {}", mpath.to_string_lossy());
         } else {
             log::info!("Looking for new files");
         }
         get_file_list(&mut db, &mpath, &cur, &mut track_paths, &mut cue_tracks, &mut file_count, max_num_files, 
-                      &mut tagged_file_count, dry_run, lms_host, json_port, send_notifs, &mut last_notif_time);
+                      &mut tagged_file_count, dry_run, &mut notifs);
         track_paths.sort();
         log::info!("New untagged files: {}", track_paths.len());
         if !cue_tracks.is_empty() {
@@ -544,8 +549,7 @@ pub fn analyse_files(db_path: &str, mpaths: &Vec<PathBuf>, dry_run: bool, keep_o
                 }
             } else {
                 if !track_paths.is_empty() {
-                    match analyse_new_files(&db, &mpath, track_paths, max_threads, write_tags, preserve_mod_times,
-                                            lms_host, json_port, send_notifs, &mut last_notif_time) {
+                    match analyse_new_files(&db, &mpath, track_paths, max_threads, write_tags, preserve_mod_times, &mut notifs) {
                         Ok(_) => { changes_made = true; }
                         Err(e) => { log::error!("Analysis returned error: {}", e); }
                     }
@@ -567,6 +571,7 @@ pub fn analyse_files(db_path: &str, mpaths: &Vec<PathBuf>, dry_run: bool, keep_o
     db.close();
     if changes_made && ignore_path.exists() && ignore_path.is_file() {
         log::info!("Updating 'ignore' flags");
+        send_notif(&mut notifs, "Updating ignore");
         db::update_ignore(&db_path, &ignore_path);
     }
     changes_made
