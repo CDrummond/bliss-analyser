@@ -69,15 +69,19 @@ fn handle_ctrl_c() {
     }
 }
 
+fn send_notif_msg(notifs: &mut NotifInfo, text: &str) {
+    let json = &format!("{{\"id\":1, \"method\":\"slim.request\",\"params\":[\"\",[\"blissmixer\",\"analyser\",\"act:update\",\"msg:{}\"]]}}", text);
+    log::info!("Sending notif to LMS: {}", text);
+    let _ = ureq::post(&notifs.address).send_string(&json);
+}
+
 fn send_notif(notifs: &mut NotifInfo, text: &str) {
     if notifs.enabled {
         let now = SystemTime::now().duration_since(UNIX_EPOCH).expect("time should go forward").as_secs();
         if now>=notifs.last_send+MIN_NOTIF_TIME {
             let dur = now - notifs.start_time;
             let msg = format!("[{:02}:{:02}:{:02}] {}", (dur/60)/60, (dur/60)%60, dur%60, text);
-            let json = &format!("{{\"id\":1, \"method\":\"slim.request\",\"params\":[\"\",[\"blissmixer\",\"analyser\",\"act:update\",\"msg:{}\"]]}}", msg);
-            log::info!("Sending notif to LMS: {}", text);
-            let _ = ureq::post(&notifs.address).send_string(&json);
+            send_notif_msg(notifs, &msg);
             notifs.last_send = now;
         }
     }
@@ -520,13 +524,9 @@ pub fn analyse_files(db_path: &str, mpaths: &Vec<PathBuf>, dry_run: bool, keep_o
         let mut file_count:usize = 0;
         let mut tagged_file_count:usize = 0;
 
-        if send_notifs {
-            send_notif(&mut notifs, "Looking for new files");
-        } else if mpaths.len() > 1 {
-            log::info!("Looking for new files in {}", mpath.to_string_lossy());
-        } else {
-            log::info!("Looking for new files");
-        }
+        log::info!("Looking for new files in {}", mpath.to_string_lossy());
+        send_notif(&mut notifs, &format!("Looking for new files in {}", mpath.to_string_lossy()));
+
         get_file_list(&mut db, &mpath, &cur, &mut track_paths, &mut cue_tracks, &mut file_count, max_num_files, 
                       &mut tagged_file_count, dry_run, &mut notifs);
         track_paths.sort();
@@ -555,6 +555,7 @@ pub fn analyse_files(db_path: &str, mpaths: &Vec<PathBuf>, dry_run: bool, keep_o
                     }
                 } else {
                     log::info!("No new files to analyse");
+                    send_notif(&mut notifs, "No new files to analyse");
                 }
 
                 #[cfg(feature = "ffmpeg")]
@@ -573,6 +574,9 @@ pub fn analyse_files(db_path: &str, mpaths: &Vec<PathBuf>, dry_run: bool, keep_o
         log::info!("Updating 'ignore' flags");
         send_notif(&mut notifs, "Updating ignore");
         db::update_ignore(&db_path, &ignore_path);
+    }
+    if send_notifs {
+        send_notif_msg(&mut notifs, "FINISHED");
     }
     changes_made
 }
