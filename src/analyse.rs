@@ -23,12 +23,6 @@ use std::fs::DirEntry;
 use std::num::{NonZero, NonZeroUsize};
 use std::path::{Path, PathBuf};
 #[cfg(feature = "ffmpeg")]
-use std::sync::mpsc;
-#[cfg(feature = "ffmpeg")]
-use std::sync::mpsc::{Receiver, Sender};
-#[cfg(feature = "ffmpeg")]
-use std::thread;
-#[cfg(feature = "ffmpeg")]
 use std::time::Duration;
 use num_cpus;
 #[cfg(feature = "libav")]
@@ -41,6 +35,9 @@ use bliss_audio::{BlissResult, Song, AnalysisOptions, decoder::Decoder};
 use bliss_audio::{AnalysisOptions, decoder::Decoder};
 use ureq;
 use std::time::{SystemTime, UNIX_EPOCH};
+use std::thread;
+use std::sync::mpsc;
+use std::sync::mpsc::{Receiver, Sender};
 
 const DONT_ANALYSE: &str = ".notmusic";
 const MAX_ERRORS_TO_SHOW: usize = 100;
@@ -88,7 +85,7 @@ fn send_notif(notifs: &mut NotifInfo, text: &str) {
 }
 
 fn get_file_list(db: &mut db::Db, mpath: &Path, path: &Path, track_paths: &mut Vec<String>, cue_tracks:&mut Vec<cue::CueTrack>, file_count:&mut usize,
-                 max_num_files: usize, tagged_file_count:&mut usize, dry_run: bool, notifs: &mut NotifInfo) {
+                 max_num_files: usize, dry_run: bool, notifs: &mut NotifInfo) {
     if !path.is_dir() {
         return;
     }
@@ -98,7 +95,7 @@ fn get_file_list(db: &mut db::Db, mpath: &Path, path: &Path, track_paths: &mut V
     items.sort_by_key(|dir| dir.path());
 
     for item in items {
-        check_dir_entry(db, mpath, item, track_paths, cue_tracks, file_count, max_num_files, tagged_file_count, dry_run, notifs);
+        check_dir_entry(db, mpath, item, track_paths, cue_tracks, file_count, max_num_files, dry_run, notifs);
         if max_num_files>0 && *file_count>=max_num_files {
             break;
         }
@@ -106,14 +103,14 @@ fn get_file_list(db: &mut db::Db, mpath: &Path, path: &Path, track_paths: &mut V
 }
 
 fn check_dir_entry(db: &mut db::Db, mpath: &Path, entry: DirEntry, track_paths: &mut Vec<String>, cue_tracks:&mut Vec<cue::CueTrack>, file_count:&mut usize,
-                   max_num_files: usize, tagged_file_count:&mut usize, dry_run: bool, notifs: &mut NotifInfo) {
+                   max_num_files: usize, dry_run: bool, notifs: &mut NotifInfo) {
     let pb = entry.path();
     if pb.is_dir() {
         let check = pb.join(DONT_ANALYSE);
         if check.exists() {
             log::info!("Skipping '{}', found '{}'", pb.to_string_lossy(), DONT_ANALYSE);
         } else if max_num_files<=0 || *file_count<max_num_files {
-            get_file_list(db, mpath, &pb, track_paths, cue_tracks, file_count, max_num_files, tagged_file_count, dry_run, notifs);
+            get_file_list(db, mpath, &pb, track_paths, cue_tracks, file_count, max_num_files, dry_run, notifs);
         }
     } else if pb.is_file() && (max_num_files<=0 || *file_count<max_num_files) {
         if_chain! {
@@ -154,20 +151,8 @@ fn check_dir_entry(db: &mut db::Db, mpath: &Path, entry: DirEntry, track_paths: 
                 } else {
                     if let Ok(id) = db.get_rowid(&sname) {
                         if id<=0 {
-                            let mut tags_used = false;
-                            let meta = tags::read(&String::from(pb.to_string_lossy()), true);
-                            if !meta.is_empty() && !meta.analysis.is_none() {
-                                if !dry_run {
-                                    db.add_track(&sname, &meta.clone(), &meta.analysis.unwrap());
-                                }
-                                *tagged_file_count+=1;
-                                tags_used = true;
-                            }
-
-                            if !tags_used {
-                                track_paths.push(String::from(pb.to_string_lossy()));
-                                *file_count+=1;
-                            }
+                            track_paths.push(String::from(pb.to_string_lossy()));
+                            *file_count+=1;
                         }
                     }
                 }
@@ -201,6 +186,96 @@ fn show_errors(failed: &mut Vec<String>, tag_error: &mut Vec<String>) {
             log::error!("  + {} other(s)", total - MAX_TAG_ERRORS_TO_SHOW);
         }
     }
+}
+
+#[derive(Clone, Default, PartialEq)]
+pub struct Meta {
+    pub file: String,
+    pub meta: db::Metadata
+}
+
+fn read_tags(tracks: Vec<String>, max_threads: usize) -> Receiver<Meta> {
+    let mut cpu_threads: usize = match max_threads {
+        1111 => num_cpus::get(),
+        0    => num_cpus::get(),
+        _    => max_threads,
+    };
+    if max_threads==1111 && cpu_threads>1 {
+        cpu_threads -=1;
+    }
+
+    #[allow(clippy::type_complexity)]
+    let (tx, rx): (
+        Sender<Meta>,
+        Receiver<Meta>,
+    ) = mpsc::channel();
+    if tracks.is_empty() {
+        return rx;
+    }
+
+    let mut handles = Vec::new();
+    let mut chunk_length = tracks.len() / cpu_threads;
+    if chunk_length == 0 {
+        chunk_length = tracks.len();
+    } else if chunk_length == 1 && tracks.len() > cpu_threads {
+        chunk_length = 2;
+    }
+
+    for chunk in tracks.chunks(chunk_length) {
+        let tx_thread = tx.clone();
+        let owned_chunk = chunk.to_owned();
+        let child = thread::spawn(move || {
+            for track in owned_chunk {
+                let _ = tx_thread.send(Meta {
+                    file:track.clone(),
+                    meta: tags::read(&track, true),
+                });
+            }
+        });
+        handles.push(child);
+    }
+
+    rx
+}
+
+fn check_for_tags(db: &db::Db, mpath: &PathBuf, track_paths: Vec<String>, max_threads: usize, notifs: &mut NotifInfo) -> Vec<String> {
+    let mut untagged_paths:Vec<String> = Vec::new();
+    let total = track_paths.len();
+    let results = read_tags(track_paths, max_threads);
+    let progress = ProgressBar::new(total.try_into().unwrap()).with_style(
+        ProgressStyle::default_bar()
+            .template("[{elapsed_precise}] [{bar:25}] {percent:>3}% {pos:>6}/{len:6} {wide_msg}")
+            .progress_chars("=> "),
+    );
+
+    log::info!("Reading any existing analysis tags");
+    send_notif(notifs, "Reading any existing analysis tags");
+    for res in results {
+        let path = PathBuf::from(&res.file);
+        let stripped = path.strip_prefix(mpath).unwrap();
+        let spbuff = stripped.to_path_buf();
+        let sname = String::from(spbuff.to_string_lossy());
+        progress.set_message(format!("{}", sname));
+        if !res.meta.is_empty() && !res.meta.analysis.is_none() {
+            db.add_track(&sname, &res.meta.clone(), &res.meta.analysis.unwrap());
+        } else {
+            untagged_paths.push(res.file);
+        }
+        if terminate_analysis() {
+            break
+        }
+        progress.inc(1);
+        if notifs.enabled {
+            let pc = (progress.position() as f64 * 100.0)/total as f64;
+            send_notif(notifs, &format!("{:8.2}% Read {}", pc, sname));
+        }
+    }
+    if terminate_analysis() {
+        progress.abandon_with_message("Terminated!");
+    } else {
+        progress.finish_with_message("Finished!");
+    }
+    untagged_paths
 }
 
 #[cfg(not(feature = "ffmpeg"))]
@@ -304,7 +379,7 @@ fn analyse_new_files(db: &db::Db, mpath: &PathBuf, track_paths: Vec<String>, max
             progress.inc(1);
             if notifs.enabled {
                 let pc = (progress.position() as f64 * 100.0)/total as f64;
-                send_notif(notifs, &format!("{:8.2}% {}", pc, sname));
+                send_notif(notifs, &format!("{:8.2}% Analysed {}", pc, sname));
             }
         }
         if terminate_analysis() {
@@ -522,24 +597,21 @@ pub fn analyse_files(db_path: &str, mpaths: &Vec<PathBuf>, dry_run: bool, keep_o
         let mut track_paths: Vec<String> = Vec::new();
         let mut cue_tracks:Vec<cue::CueTrack> = Vec::new();
         let mut file_count:usize = 0;
-        let mut tagged_file_count:usize = 0;
 
         log::info!("Looking for new files in {}", mpath.to_string_lossy());
         send_notif(&mut notifs, &format!("Looking for new files in {}", mpath.to_string_lossy()));
 
-        get_file_list(&mut db, &mpath, &cur, &mut track_paths, &mut cue_tracks, &mut file_count, max_num_files, 
-                      &mut tagged_file_count, dry_run, &mut notifs);
+        get_file_list(&mut db, &mpath, &cur, &mut track_paths, &mut cue_tracks, &mut file_count, max_num_files, dry_run, &mut notifs);
         track_paths.sort();
-        log::info!("New untagged files: {}", track_paths.len());
+        log::info!("New files: {}", track_paths.len());
         if !cue_tracks.is_empty() {
             log::info!("New cue tracks: {}", cue_tracks.len());
         }
-        log::info!("New tagged files: {}", tagged_file_count);
 
         if !terminate_analysis() {
             if dry_run {
                 if !track_paths.is_empty() || !cue_tracks.is_empty() {
-                    log::info!("The following need to be analysed:");
+                    log::info!("The following need to be analysed (or tags read):");
                     for track in track_paths {
                         log::info!("  {}", track);
                     }
@@ -549,13 +621,18 @@ pub fn analyse_files(db_path: &str, mpaths: &Vec<PathBuf>, dry_run: bool, keep_o
                 }
             } else {
                 if !track_paths.is_empty() {
-                    match analyse_new_files(&db, &mpath, track_paths, max_threads, write_tags, preserve_mod_times, &mut notifs) {
-                        Ok(_) => { changes_made = true; }
-                        Err(e) => { log::error!("Analysis returned error: {}", e); }
+                    let untagged_paths = check_for_tags(&db, &mpath, track_paths, max_threads, &mut notifs);
+
+                    if !untagged_paths.is_empty() {
+                        log::info!("New untagged files: {}", untagged_paths.len());
+                        match analyse_new_files(&db, &mpath, untagged_paths, max_threads, write_tags, preserve_mod_times, &mut notifs) {
+                            Ok(_) => { changes_made = true; }
+                            Err(e) => { log::error!("Analysis returned error: {}", e); }
+                        }
+                    } else {
+                        log::info!("No new untagged files to analyse");
+                        send_notif(&mut notifs, "No new files to analyse");
                     }
-                } else {
-                    log::info!("No new files to analyse");
-                    send_notif(&mut notifs, "No new files to analyse");
                 }
 
                 #[cfg(feature = "ffmpeg")]

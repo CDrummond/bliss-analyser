@@ -4,6 +4,7 @@
 2. Only build symphonia by default.
 3. Don't crash if file has no tags.
 4. Set log level for tag reader library.
+5. Multi-threaded read of existing analysis tags.
 
 0.4.0
 -----
