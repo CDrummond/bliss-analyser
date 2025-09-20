@@ -71,10 +71,10 @@ To install dependencies on a Fedora system:
 dnf install ffmpeg-devel clang pkg-config
 ```
 
-Build with `cargo build --release --features=libav,libavstatic`
+Build with `cargo build --release --features=libav,staticlibav`
 
 If building on a Raspberry Pi, then `rpi` also needs to be passed to `--features`, e.g.
-`cargo build --release --features=libav,libavstatic,rpi`
+`cargo build --release --features=libav,staticlibav,rpi`
 
 
 
