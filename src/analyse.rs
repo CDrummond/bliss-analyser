@@ -643,7 +643,7 @@ pub fn analyse_files(db_path: &str, mpaths: &Vec<PathBuf>, dry_run: bool, keep_o
                 }
             } else {
                 if !track_paths.is_empty() {
-                    let untagged_paths = check_for_tags(&db, &mpath, track_paths, max_threads, &mut notifs);
+                    let untagged_paths = if write_tags { check_for_tags(&db, &mpath, track_paths, max_threads, &mut notifs) } else { track_paths };
 
                     if !untagged_paths.is_empty() {
                         log::info!("New untagged files: {}", untagged_paths.len());
