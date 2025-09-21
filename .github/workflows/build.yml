@@ -167,7 +167,7 @@ jobs:
     - name: Build
       run: |
         cargo build --release --features=symphonia
-        strip target/release/bliss-analyser
+        strip target/release/bliss-analyser.exe
         mkdir releases
         cp target/release/bliss-analyser.exe releases/bliss-analyser.exe
         cp UserGuide.md releases/README.md
@@ -210,7 +210,7 @@ jobs:
     - name: Build
       run: |
         cargo build --release --features=libav
-        strip target/release/bliss-analyser
+        strip target/release/bliss-analyser.exe
         mkdir releases
         cp target/release/bliss-analyser.exe releases/bliss-analyser.exe
         cp deps/bin/*.dll releases/
