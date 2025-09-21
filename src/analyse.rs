@@ -92,7 +92,7 @@ fn get_file_list(db: &mut db::Db, mpath: &Path, path: &Path, track_paths: &mut V
         return;
     }
 
-    send_notif(notifs, &format!("Dir: {}", path.to_string_lossy()));
+    send_notif(notifs, &format!("SCAN DIR {}", path.to_string_lossy()));
     let mut items: Vec<_> = path.read_dir().unwrap().map(|r| r.unwrap()).collect();
     items.sort_by_key(|dir| dir.path());
 
@@ -284,7 +284,7 @@ fn check_for_tags(db: &db::Db, mpath: &PathBuf, track_paths: Vec<String>, max_th
         progress.inc(1);
         if notifs.enabled {
             let pc = (progress.position() as f64 * 100.0)/total as f64;
-            send_notif(notifs, &format!("{:8.2}% Read {}", pc, sname));
+            send_notif(notifs, &format!("READ TAGS {:8.2}% {}", pc, sname));
         }
     }
     if terminate_analysis() {
@@ -401,7 +401,7 @@ fn analyse_new_files(db: &db::Db, mpath: &PathBuf, track_paths: Vec<String>, max
             progress.inc(1);
             if notifs.enabled {
                 let pc = (progress.position() as f64 * 100.0)/total as f64;
-                send_notif(notifs, &format!("{:8.2}% Analysed {}", pc, sname));
+                send_notif(notifs, &format!("ANALYSE {:8.2}% {}", pc, sname));
             }
         }
         if terminate_analysis() {
