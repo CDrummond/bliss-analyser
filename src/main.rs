@@ -46,6 +46,7 @@ fn main() {
     let mut music_paths: Vec<PathBuf> = Vec::new();
     let mut max_threads: usize = 0;
     let mut write_tags = false;
+    let mut read_tags = false;
     let mut preserve_mod_times = false;
     let mut send_notifs = false;
 
@@ -86,7 +87,8 @@ fn main() {
         arg_parse.refer(&mut lms_json_port).add_option(&["-J", "--json"], Store, &lms_json_port_help);
         arg_parse.refer(&mut max_num_files).add_option(&["-n", "--numfiles"], Store, "Maximum number of files to analyse");
         arg_parse.refer(&mut max_threads).add_option(&["-t", "--threads"], Store, "Maximum number of threads to use for analysis");
-        arg_parse.refer(&mut write_tags).add_option(&["-T", "--tags"], StoreTrue, "When analysing files, also store results within files themselves");
+        arg_parse.refer(&mut write_tags).add_option(&["-W", "--writetags"], StoreTrue, "When analysing files, also store results within files themselves");
+        arg_parse.refer(&mut read_tags).add_option(&["-R", "--readtags"], StoreTrue, "When analysing files, attempt to read results from tags");
         arg_parse.refer(&mut preserve_mod_times).add_option(&["-p", "--preserve"], StoreTrue, "Preserve modification time when writing results to files");
         arg_parse.refer(&mut send_notifs).add_option(&["-N", "--notifs"], StoreTrue, "Periodically send notification messages to LMS");
         arg_parse.refer(&mut task).add_argument("task", Store, "Task to perform; analyse, tags, ignore, upload, export, stopmixer.");
@@ -157,8 +159,12 @@ fn main() {
                         Some(val) => { ignore_file = val; }
                         None => { }
                     }
-                    match config.get(TOP_LEVEL_INI_TAG, "tags") {
+                    match config.get(TOP_LEVEL_INI_TAG, "writetags") {
                         Some(val) => { write_tags = val.eq("true"); }
+                        None => { }
+                    }
+                    match config.get(TOP_LEVEL_INI_TAG, "readtags") {
+                        Some(val) => { read_tags = val.eq("true"); }
                         None => { }
                     }
                     match config.get(TOP_LEVEL_INI_TAG, "preserve") {
@@ -241,7 +247,7 @@ fn main() {
             } else {
                 let ignore_path = PathBuf::from(&ignore_file);
                 let modified = analyse::analyse_files(&db_path, &music_paths, dry_run, keep_old, max_num_files, max_threads, 
-                                                      &ignore_path, write_tags, preserve_mod_times, &lms_host, lms_json_port,
+                                                      &ignore_path, read_tags, write_tags, preserve_mod_times, &lms_host, lms_json_port,
                                                       send_notifs);
                 if modified && task.eq_ignore_ascii_case("analyse-lms") && path.exists() {
                     upload::stop_mixer(&lms_host, lms_json_port);

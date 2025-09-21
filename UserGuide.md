@@ -53,7 +53,8 @@ music=/home/user/Music
 db=bliss.db
 lms=127.0.0.1
 ignore=ignore.txt
-tags=true
+readtags=true
+writetags=true
 ```
 
 The following items are supported:
@@ -69,7 +70,10 @@ password protected then use `user:pass@server` - e.g. `lms=pi:abc123@127.0.0.1`
 to `9000`.
 * `ignore` specifies the name and location of a file containing items to ignore
 in mixes. See the `Ignore` section later on for more details.
-* `tags` specifies whether analysis results should be written to files when anlysed.
+* `readtags` specifies whether analysis results should be read from files whe
+analysing.
+* `writetags` specifies whether analysis results should be written to files when
+analysed.
 * `preserve` specifies whether file modification time should be preserved when
 writing tags. Set to `true` or `false`.
 
@@ -94,7 +98,9 @@ tracks are to be analysed and how many old tracks are left in the database.
 * `-L` / `--lms` Hostname, or IP address, of your LMS server.
 * `-J` / `--json` JSONRPC port number of your LMS server.
 * `-n` / `--numtracks` Specify maximum number of tracks to analyse.
-* `-T` / `--tags` When using the `analyse` task, write analysis results to files
+* `-R` / `--readtags` When using the `analyse` task, read analysis results from a
+files a `BLISS_ANALYSIS` tag (it present) in files.
+* `-W` / `--writetags` When using the `analyse` task, write analysis results to files
 within a `BLISS_ANALYSIS` tag.
 * `-p' / '--preserve` Attempt to preserve file modification time when writing tags.
 
@@ -145,13 +151,13 @@ Tags
 When analysing tracks, the analyser will first check for a `BLISS_ANALYSIS` tag
 within the file, and if found this will be used instead of re-analysing the file.
 
-If `--tags` is passed, the analysis results will be stored within a `BLISS_ANALYSIS`
-tag in the file itself. Note, however, that only tracks that are not currently in
-the database will be analysed - therefore any such tracks would not have the
-`BLISS_ANALYSIS` tag updated. To export analysis results from the database to
-files themselves use the `export` task.
+If `--writetags` is passed, the analysis results will be stored within a
+`BLISS_ANALYSIS` tag in the file itself. Note, however, that only tracks that are
+not currently in the database will be analysed - therefore any such tracks would
+not have the `BLISS_ANALYSIS` tag updated. To export analysis results from the
+database to files themselves use the `export` task.
 
-*NOTE* USe of the `BLISS_ANALYSIS` tag is not supported for CUE files.
+*NOTE* Use of the `BLISS_ANALYSIS` tag is not supported for CUE files.
 
 
 CUE files

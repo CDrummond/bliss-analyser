@@ -591,7 +591,7 @@ fn analyse_new_cue_tracks(db:&db::Db, mpath: &PathBuf, cue_tracks:Vec<cue::CueTr
 }
 
 pub fn analyse_files(db_path: &str, mpaths: &Vec<PathBuf>, dry_run: bool, keep_old: bool, max_num_files: usize, 
-                     max_threads: usize, ignore_path: &PathBuf, write_tags: bool, preserve_mod_times: bool,
+                     max_threads: usize, ignore_path: &PathBuf, read_tags: bool, write_tags: bool, preserve_mod_times: bool,
                      lms_host: &String, json_port: u16, send_notifs: bool) -> bool {
     let mut db = db::Db::new(&String::from(db_path));
     let mut notifs = NotifInfo {
@@ -643,7 +643,7 @@ pub fn analyse_files(db_path: &str, mpaths: &Vec<PathBuf>, dry_run: bool, keep_o
                 }
             } else {
                 if !track_paths.is_empty() {
-                    let untagged_paths = if write_tags { check_for_tags(&db, &mpath, track_paths, max_threads, &mut notifs) } else { track_paths };
+                    let untagged_paths = if read_tags { check_for_tags(&db, &mpath, track_paths, max_threads, &mut notifs) } else { track_paths };
 
                     if !untagged_paths.is_empty() {
                         log::info!("New untagged files: {}", untagged_paths.len());
