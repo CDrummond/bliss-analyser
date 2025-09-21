@@ -139,14 +139,35 @@ impl Db {
         );
 
         if cmd.is_err() {
-            log::error!("Failed to create DB table");
+            log::error!("Failed to create Files table");
             process::exit(-1);
         }
 
         let cmd = self.conn.execute("CREATE UNIQUE INDEX IF NOT EXISTS TracksV2_idx ON TracksV2(File)", []);
 
         if cmd.is_err() {
-            log::error!("Failed to create DB index");
+            log::error!("Failed to create Files index");
+            process::exit(-1);
+        }
+
+        let cmd = self.conn.execute(
+            "CREATE TABLE IF NOT EXISTS Failures (
+                File text primary key,
+                Timestamp integer,
+                Reason text
+            );",
+            [],
+        );
+
+        if cmd.is_err() {
+            log::error!("Failed to create Failures table");
+            process::exit(-1);
+        }
+
+        let cmd = self.conn.execute("CREATE UNIQUE INDEX IF NOT EXISTS Failures_idx ON Failures(File)", []);
+
+        if cmd.is_err() {
+            log::error!("Failed to create Failures index");
             process::exit(-1);
         }
     }
@@ -185,7 +206,7 @@ impl Db {
                             analysis[AnalysisIndex::Chroma1], analysis[AnalysisIndex::Chroma2], analysis[AnalysisIndex::Chroma3], analysis[AnalysisIndex::Chroma4], analysis[AnalysisIndex::Chroma5],
                             analysis[AnalysisIndex::Chroma6], analysis[AnalysisIndex::Chroma7], analysis[AnalysisIndex::Chroma8], analysis[AnalysisIndex::Chroma9], analysis[AnalysisIndex::Chroma10],
                             analysis[AnalysisIndex::Chroma11], analysis[AnalysisIndex::Chroma12], analysis[AnalysisIndex::Chroma13]]) {
-                        Ok(_) => { }
+                        Ok(_) => { self.remove_from_failures(path); }
                         Err(e) => { log::error!("Failed to insert '{}' into database. {}", path, e); }
                     }
                 } else {
@@ -195,7 +216,7 @@ impl Db {
                             analysis[AnalysisIndex::StdDeviationSpectralRolloff], analysis[AnalysisIndex::MeanSpectralFlatness], analysis[AnalysisIndex::StdDeviationSpectralFlatness], analysis[AnalysisIndex::MeanLoudness], analysis[AnalysisIndex::StdDeviationLoudness],
                             analysis[AnalysisIndex::Chroma1], analysis[AnalysisIndex::Chroma2], analysis[AnalysisIndex::Chroma3], analysis[AnalysisIndex::Chroma4], analysis[AnalysisIndex::Chroma5],
                             analysis[AnalysisIndex::Chroma6], analysis[AnalysisIndex::Chroma7], analysis[AnalysisIndex::Chroma8], analysis[AnalysisIndex::Chroma9], analysis[AnalysisIndex::Chroma10], id]) {
-                        Ok(_) => { }
+                        Ok(_) => { self.remove_from_failures(path); }
                         Err(e) => { log::error!("Failed to update '{}' in database. {}", path, e); }
                     }
                 }
@@ -204,9 +225,38 @@ impl Db {
         }
     }
 
+    pub fn add_to_failures(&self, path: &String, timestamp:i64, reason: &String) {
+        self.remove_from_failures(path);
+        let _ = self.conn.execute("INSERT INTO Failures (File, Timestamp, Reason) VALUES (?, ?, ?);", params![path, timestamp, reason]);
+    }
+
+    pub fn remove_from_failures(&self, path: &String) {
+        let _ = self.conn.execute("DELETE FROM Failures WHERE File = ?;", params![path]);
+    }
+
     pub fn remove_old(&self, mpaths: &Vec<PathBuf>, dry_run: bool) {
+        self.remove_old_from_table(mpaths, dry_run, "TracksV2");
+        self.remove_old_from_table(mpaths, dry_run, "Failures");
+    }
+
+    pub fn get_failure_timestamp(&self, path: &String) -> i64 {
+        let mut ts:i64 = 0;
+        let mut db_path = path.to_string();
+        if cfg!(windows) {
+            db_path = db_path.replace("\\", "/");
+        }
+        let mut stmt = self.conn.prepare("SELECT Timestamp FROM Failures WHERE File=:path;").unwrap();
+        let track_iter = stmt.query_map(&[(":path", &db_path)], |row| Ok(row.get(0)?)).unwrap();
+        for tr in track_iter {
+            ts = tr.unwrap();
+            break;
+        }
+        ts
+    }
+
+    fn remove_old_from_table(&self, mpaths: &Vec<PathBuf>, dry_run: bool, table: &str) {
         log::info!("Looking for non-existent tracks");
-        let mut stmt = self.conn.prepare("SELECT File FROM TracksV2;").unwrap();
+        let mut stmt = self.conn.prepare(format!("SELECT File FROM {};", table).as_str()).unwrap();
         let track_iter = stmt.query_map([], |row| Ok((row.get(0)?,))).unwrap();
         let mut to_remove: Vec<String> = Vec::new();
         for tr in track_iter {
@@ -250,7 +300,7 @@ impl Db {
                 let count_before = self.get_track_count();
                 for t in to_remove {
                     //log::debug!("Remove '{}'", t);
-                    let cmd = self.conn.execute("DELETE FROM TracksV2 WHERE File = ?;", params![t]);
+                    let cmd = self.conn.execute(format!("DELETE FROM {} WHERE File = ?;", table).as_str(), params![t]);
 
                     if let Err(e) = cmd {
                         log::error!("Failed to remove '{}' - {}", t, e)

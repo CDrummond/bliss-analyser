@@ -19,6 +19,8 @@ use indicatif::{ProgressBar, ProgressStyle};
 #[cfg(not(feature = "ffmpeg"))]
 use std::collections::HashSet;
 use std::convert::TryInto;
+use filetime::FileTime;
+use std::fs;
 use std::fs::DirEntry;
 use std::num::{NonZero, NonZeroUsize};
 use std::path::{Path, PathBuf};
@@ -151,8 +153,23 @@ fn check_dir_entry(db: &mut db::Db, mpath: &Path, entry: DirEntry, track_paths: 
                 } else {
                     if let Ok(id) = db.get_rowid(&sname) {
                         if id<=0 {
-                            track_paths.push(String::from(pb.to_string_lossy()));
-                            *file_count+=1;
+                            // Check this file is not in Failures table
+                            let ts = db.get_failure_timestamp(&sname);
+                            if ts<=0 {
+                                // ...nope, not in there so analyse
+                                track_paths.push(String::from(pb.to_string_lossy()));
+                                *file_count+=1;
+                            } else {
+                                let path = String::from(pb.to_string_lossy());
+                                let metadata = fs::metadata(&path).unwrap();
+                                let mtime = FileTime::from_last_modification_time(&metadata).unix_seconds();
+                                if mtime!=ts {
+                                    // ...was in failures table, but timestamp has changed
+                                    db.remove_from_failures(&sname);
+                                    track_paths.push(path);
+                                    *file_count+=1;
+                                }
+                            }
                         }
                     }
                 }
@@ -372,7 +389,12 @@ fn analyse_new_files(db: &db::Db, mpath: &PathBuf, track_paths: Vec<String>, max
                 }
                 analysed += 1;
             }
-            Err(e) => { failed.push(format!("{} - {}", sname, e)); }
+            Err(e) => {
+                failed.push(format!("{} - {}", sname, e));
+                let metadata = fs::metadata(path).unwrap();
+                let mtime = FileTime::from_last_modification_time(&metadata);
+                db.add_to_failures(&sname, mtime.unix_seconds(), &format!("{}", e));
+            }
         };
 
         if inc_progress {
