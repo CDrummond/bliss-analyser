@@ -118,7 +118,10 @@ any changes.
 * `ignore` Reads the `ignore` file and updates the database to flag tracks as
 to be ignored for mixes.
 * `export` Exports tags from database and stores within the audio files.
-
+* `clearfail` If analysis fails for a track then the track path and its modification
+time is stored in the database, so that running analysis again ignores these files.
+This action clears this information, so that an analysis run will attempt to analyse
+these files.
 
 
 Analysing tracks
@@ -145,6 +148,10 @@ is shown.
 
 As a rough guide, a 2015-era i7 8-core laptop with SSD analyses around 14000
 tracks/hour.
+
+If analysis fails for a track, then the track's path and timestamp are stored
+within the database so that subsquent analysis calls will skip these tracks.
+
 
 Tags
 ----
@@ -304,7 +311,7 @@ is accomplished as follows:
 Exporting Analysis
 ==================
 
-If you have analysis results stored within the SQLite database, and not within
+If you have analysis results stored within the database, and not within
 the files themselves, then you can use the `export` action to copy these
 analysis results from the database and into the files.
 
@@ -319,6 +326,29 @@ analysis results from the database and into the files.
 ```
 
 *NOTE* Exporting of analysis results is not implemented for CUE tracks.
+
+
+
+Clearing Failed Tracks
+======================
+
+Any tracks that could not be analysed are stored in the database so that
+subsequent analysis runs ignore such files - unless the files themselves
+have been updated.
+
+You can remove this list of failed tracks, from database, via the
+following command:
+
+
+(Linux / macOS)
+```
+./bliss-analyser clearfail
+```
+
+(Windows)
+```
+.\bliss-analyser.exe clearfail
+```
 
 
 

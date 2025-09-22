@@ -239,6 +239,10 @@ impl Db {
         self.remove_old_from_table(mpaths, dry_run, "Failures");
     }
 
+    fn clear_failures(&self) {
+        let _ = self.conn.execute("DELETE FROM Failures;", []);
+    }
+
     pub fn get_failure_timestamp(&self, path: &String) -> i64 {
         let mut ts:i64 = 0;
         let mut db_path = path.to_string();
@@ -550,6 +554,13 @@ pub fn export(db_path: &str, mpaths: &Vec<PathBuf>, max_threads: usize, preserve
     let db = Db::new(&String::from(db_path));
     db.init();
     db.export(&mpaths, max_threads, preserve_mod_times);
+    db.close();
+}
+
+pub fn clear_failures(db_path: &str) {
+    let db = Db::new(&String::from(db_path));
+    db.init();
+    db.clear_failures();
     db.close();
 }
 

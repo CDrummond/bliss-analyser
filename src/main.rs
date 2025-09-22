@@ -91,7 +91,7 @@ fn main() {
         arg_parse.refer(&mut read_tags).add_option(&["-R", "--readtags"], StoreTrue, "When analysing files, attempt to read results from tags");
         arg_parse.refer(&mut preserve_mod_times).add_option(&["-p", "--preserve"], StoreTrue, "Preserve modification time when writing results to files");
         arg_parse.refer(&mut send_notifs).add_option(&["-N", "--notifs"], StoreTrue, "Periodically send notification messages to LMS");
-        arg_parse.refer(&mut task).add_argument("task", Store, "Task to perform; analyse, tags, ignore, upload, export, stopmixer.");
+        arg_parse.refer(&mut task).add_argument("task", Store, "Task to perform; analyse, tags, ignore, upload, export, clearfail, stopmixer.");
         arg_parse.parse_args_or_exit();
     }
 
@@ -110,7 +110,7 @@ fn main() {
     builder.init();
 
     if task.is_empty() {
-        log::error!("No task specified, please choose from; analyse, tags, ignore, upload, export, stopmixer");
+        log::error!("No task specified, please choose from; analyse, tags, ignore, upload, export, clearfail, stopmixer");
         process::exit(-1);
     }
 
@@ -244,6 +244,8 @@ fn main() {
                 db::update_ignore(&db_path, &ignore_path);
             } else if task.eq_ignore_ascii_case("export") {
                 db::export(&db_path, &music_paths, max_threads, preserve_mod_times);
+            } else if task.eq_ignore_ascii_case("clearfail") {
+                db::clear_failures(&db_path);
             } else {
                 let ignore_path = PathBuf::from(&ignore_file);
                 let modified = analyse::analyse_files(&db_path, &music_paths, dry_run, keep_old, max_num_files, max_threads, 
