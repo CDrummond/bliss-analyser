@@ -15,13 +15,8 @@ use std::io::Write;
 use std::path::PathBuf;
 use std::process;
 use num_cpus;
-#[cfg(feature = "ffmpeg")]
-use which::which;
 mod analyse;
-mod cue;
 mod db;
-#[cfg(feature = "ffmpeg")]
-mod ffmpeg;
 mod tags;
 mod upload;
 
@@ -121,15 +116,6 @@ fn main() {
         process::exit(-1);
     }
 
-    // Ensure ffmpeg is in PATH...
-    #[cfg(feature = "ffmpeg")]
-    match which("ffmpeg") {
-        Ok(_) => { }
-        Err(_) => {
-            log::error!("'ffmpeg' was not found! Please ensure this in your PATH");
-            process::exit(-1);
-        },
-    }
 
     if !config_file.is_empty() {
         let path = PathBuf::from(&config_file);

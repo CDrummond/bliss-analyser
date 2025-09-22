@@ -6,8 +6,6 @@
  *
  **/
 
- #[cfg(feature = "ffmpeg")]
-use crate::ffmpeg;
 use crate::tags;
 use bliss_audio::{Analysis, AnalysisIndex, FeaturesVersion};
 use indicatif::{ProgressBar, ProgressStyle};
@@ -373,13 +371,8 @@ impl Db {
                         let track_path = mpath.join(&dbtags.file);
                         if track_path.exists() {
                             let path = String::from(track_path.to_string_lossy());
-                            #[allow(unused_mut)] // ftags is mutable if using ffmpeg on commandline
-                            let mut ftags = tags::read(&path, false);
+                            let ftags = tags::read(&path, false);
 
-                            #[cfg(feature = "ffmpeg")]
-                            if ftags.is_empty() {
-                                ftags = ffmpeg::read_tags(&path);
-                            }
 
                             if ftags.is_empty() {
                                 log::error!("Failed to read tags of '{}'", dbtags.file);

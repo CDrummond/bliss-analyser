@@ -7,6 +7,7 @@
 5. Multi-threaded read of existing analysis tags.
 6. Store file failures in DB so don't re-analyse unless timestamp of file
    changes.
+7. Drop support for using ffmpeg via commandline.
 
 0.4.0
 -----
