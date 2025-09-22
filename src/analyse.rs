@@ -22,11 +22,10 @@ use std::convert::TryInto;
 use filetime::FileTime;
 use std::fs;
 use std::fs::DirEntry;
-use std::num::{NonZero, NonZeroUsize};
+use std::num::NonZero;
 use std::path::{Path, PathBuf};
 #[cfg(feature = "ffmpeg")]
 use std::time::Duration;
-use num_cpus;
 #[cfg(feature = "libav")]
 use bliss_audio::decoder::ffmpeg::FFmpegDecoder as SongDecoder;
 #[cfg(feature = "symphonia")]
@@ -212,15 +211,6 @@ pub struct Meta {
 }
 
 fn read_tags(tracks: Vec<String>, max_threads: usize) -> Receiver<Meta> {
-    let mut cpu_threads: usize = match max_threads {
-        1111 => num_cpus::get(),
-        0    => num_cpus::get(),
-        _    => max_threads,
-    };
-    if max_threads==1111 && cpu_threads>1 {
-        cpu_threads -=1;
-    }
-
     #[allow(clippy::type_complexity)]
     let (tx, rx): (
         Sender<Meta>,
@@ -231,10 +221,10 @@ fn read_tags(tracks: Vec<String>, max_threads: usize) -> Receiver<Meta> {
     }
 
     let mut handles = Vec::new();
-    let mut chunk_length = tracks.len() / cpu_threads;
+    let mut chunk_length = tracks.len() / max_threads;
     if chunk_length == 0 {
         chunk_length = tracks.len();
-    } else if chunk_length == 1 && tracks.len() > cpu_threads {
+    } else if chunk_length == 1 && tracks.len() > max_threads {
         chunk_length = 2;
     }
 
@@ -304,22 +294,12 @@ fn analyse_new_files(db: &db::Db, mpath: &PathBuf, track_paths: Vec<String>, max
             .template("[{elapsed_precise}] [{bar:25}] {percent:>3}% {pos:>6}/{len:6} {wide_msg}")
             .progress_chars("=> "),
     );
-    let cpu_threads: NonZeroUsize = match max_threads {
-        1111 => NonZeroUsize::new(num_cpus::get()).unwrap(),
-        0    => NonZeroUsize::new(num_cpus::get()).unwrap(),
-        _    => NonZeroUsize::new(max_threads).unwrap(),
-    };
-
     let mut analysed = 0;
     let mut failed: Vec<String> = Vec::new();
     let mut tag_error: Vec<String> = Vec::new();
     let mut reported_cue:HashSet<String> = HashSet::new();
     let mut options:AnalysisOptions = AnalysisOptions::default();
-    if max_threads==1111 && <NonZero<usize> as Into<usize>>::into(cpu_threads)>1 {
-        options.number_cores = NonZero::new(<NonZero<usize> as Into<usize>>::into(cpu_threads) -1).unwrap();
-    } else {
-        options.number_cores = cpu_threads;
-    }
+    options.number_cores = NonZero::new(max_threads).unwrap();
 
     send_notif(notifs, "Analysing new files");
     log::info!("Analysing new files");
@@ -425,25 +405,15 @@ fn analyse_new_files(db: &db::Db, mpath: &PathBuf, track_paths: Vec<String>, max
     let total = track_paths.len();
     let progress = ProgressBar::new(total.try_into().unwrap()).with_style(
         ProgressStyle::default_bar()
-            .template("[{elapsed_precise}] [{bar:25}] {percent:>    if max_threads==1111 && cpu_threads>1 {
-        options.number_cores = cpu_threads -1;3}% {pos:>6}/{len:6} {wide_msg}")
+            .template("[{elapsed_precise}] [{bar:25}] {percent:>  -1;3}% {pos:>6}/{len:6} {wide_msg}")
             .progress_chars("=> "),
     );
-    let cpu_threads: NonZeroUsize = match max_threads {
-        1111 => NonZeroUsize::new(num_cpus::get()).unwrap(),
-        0    => NonZeroUsize::new(num_cpus::get()).unwrap(),
-        _    => NonZeroUsize::new(max_threads).unwrap(),
-    };
 
     let mut analysed = 0;
     let mut failed: Vec<String> = Vec::new();
     let mut tag_error: Vec<String> = Vec::new();
     let mut options:AnalysisOptions = AnalysisOptions::default();
-    if max_threads==1111 && <NonZero<usize> as Into<usize>>::into(cpu_threads)>1 {
-        options.number_cores = NonZero::new(<NonZero<usize> as Into<usize>>::into(cpu_threads) -1).unwrap();
-    } else {
-        options.number_cores = cpu_threads;
-    }
+    options.number_cores = NonZero::new(max_threads).unwrap();
 
     log::info!("Analysing new files");
     for (path, result) in <ffmpeg::FFmpegCmdDecoder as Decoder>::analyze_paths_with_options(track_paths, options) {

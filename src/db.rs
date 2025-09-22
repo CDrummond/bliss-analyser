@@ -15,12 +15,10 @@ use rusqlite::{params, Connection};
 use std::convert::TryInto;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
-use std::num::NonZeroUsize;
 use std::path::PathBuf;
 use std::process;
 use std::thread;
 use std::thread::JoinHandle;
-use num_cpus;
 
 pub const CUE_MARKER: &str = ".CUE_TRACK.";
 
@@ -463,17 +461,7 @@ impl Db {
             return;
         }
         log::info!("Starting export");
-        let cpu_threads: NonZeroUsize = match max_threads {
-            1111 => NonZeroUsize::new(num_cpus::get()).unwrap(),
-            0    => NonZeroUsize::new(num_cpus::get()).unwrap(),
-            _    => NonZeroUsize::new(max_threads).unwrap(),
-        }.into();
-
-        let mut num_threads = cpu_threads.into();
-        if max_threads==1111 && num_threads>1 {
-            num_threads -= 1;
-        }
-        let chunk_size = total/cpu_threads;
+        let chunk_size = total/max_threads;
         let mut threads: Vec<JoinHandle<()>> = vec![];
 
         let (sender, receiver) = std::sync::mpsc::channel();
@@ -514,10 +502,10 @@ impl Db {
             log::info!("{} Exported. {} Existing. {} Failed.", exported, had_tags, failed_to_write);
         });
         threads.push(reporting_thread);
-        for thread in 0..num_threads {
+        for thread in 0..max_threads {
             let tid:usize = thread;
             let start = tid * chunk_size;
-            let end = if tid+1 == num_threads { total } else { start + chunk_size };
+            let end = if tid+1 == max_threads { total } else { start + chunk_size };
             let sndr = sender.clone();
             let trks = Vec::from_iter(tracks[start..end].iter().cloned());
             threads.push(thread::spawn(move || {

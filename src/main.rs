@@ -14,6 +14,7 @@ use log::LevelFilter;
 use std::io::Write;
 use std::path::PathBuf;
 use std::process;
+use num_cpus;
 #[cfg(feature = "ffmpeg")]
 use which::which;
 mod analyse;
@@ -44,7 +45,7 @@ fn main() {
     let mut lms_json_port:u16 = 9000;
     let mut max_num_files: usize = 0;
     let mut music_paths: Vec<PathBuf> = Vec::new();
-    let mut max_threads: usize = 0;
+    let mut max_threads: i16 = 0;
     let mut write_tags = false;
     let mut read_tags = false;
     let mut preserve_mod_times = false;
@@ -196,6 +197,15 @@ fn main() {
         }
     }
 
+    let mut thread_limit:usize = num_cpus::get() as usize;
+    if max_threads<0 {
+        if ((max_threads*-1) as usize) < thread_limit {
+            thread_limit = (thread_limit as i16 + max_threads) as usize
+        }
+    } else if max_threads>0 && (max_threads as usize) <thread_limit {
+        thread_limit = max_threads as usize;
+    }
+
     if task.eq_ignore_ascii_case("stopmixer") {
         upload::stop_mixer(&lms_host, lms_json_port);
     } else {
@@ -243,12 +253,12 @@ fn main() {
                 }
                 db::update_ignore(&db_path, &ignore_path);
             } else if task.eq_ignore_ascii_case("export") {
-                db::export(&db_path, &music_paths, max_threads, preserve_mod_times);
+                db::export(&db_path, &music_paths, thread_limit, preserve_mod_times);
             } else if task.eq_ignore_ascii_case("clearfail") {
                 db::clear_failures(&db_path);
             } else {
                 let ignore_path = PathBuf::from(&ignore_file);
-                let modified = analyse::analyse_files(&db_path, &music_paths, dry_run, keep_old, max_num_files, max_threads, 
+                let modified = analyse::analyse_files(&db_path, &music_paths, dry_run, keep_old, max_num_files, thread_limit, 
                                                       &ignore_path, read_tags, write_tags, preserve_mod_times, &lms_host, lms_json_port,
                                                       send_notifs);
                 if modified && task.eq_ignore_ascii_case("analyse-lms") && path.exists() {
