@@ -184,11 +184,9 @@ fn main() {
     }
 
     let mut thread_limit:usize = num_cpus::get() as usize;
-    if max_threads<0 {
-        if ((max_threads*-1) as usize) < thread_limit {
-            thread_limit = (thread_limit as i16 + max_threads) as usize
-        }
-    } else if max_threads>0 && (max_threads as usize) <thread_limit {
+    if max_threads<0 && (max_threads.abs() as usize) < thread_limit-1 {
+        thread_limit = thread_limit - (max_threads.abs() as usize)
+    } else if max_threads>0 && (max_threads as usize) < thread_limit {
         thread_limit = max_threads as usize;
     }
 
