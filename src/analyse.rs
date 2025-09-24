@@ -28,6 +28,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use std::thread;
 use std::sync::mpsc;
 use std::sync::mpsc::{Receiver, Sender};
+use serde_json::to_string;
 
 const DONT_ANALYSE: &str = ".notmusic";
 const MAX_ERRORS_TO_SHOW: usize = 100;
@@ -68,8 +69,10 @@ fn send_notif(notifs: &mut NotifInfo, text: &str) {
         if now>=notifs.last_send+MIN_NOTIF_TIME {
             let dur = now - notifs.start_time;
             let msg = format!("[{:02}:{:02}:{:02}] {}", (dur/60)/60, (dur/60)%60, dur%60, text);
-            send_notif_msg(notifs, &msg);
-            notifs.last_send = now;
+            if let Ok(jstr) = to_string(&msg) {
+                send_notif_msg(notifs, &jstr);
+                notifs.last_send = now;
+            }
         }
     }
 }
