@@ -1,6 +1,4 @@
-# Cross compilation environment for bliss-anlyser
-
-FROM debian:bullseye
+FROM debian:bookworm
 
 RUN dpkg --add-architecture arm64 && \
     dpkg --add-architecture armhf

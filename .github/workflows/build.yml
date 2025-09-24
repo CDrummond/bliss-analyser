@@ -12,20 +12,12 @@ jobs:
 
     steps:
     - name: Checkout
-      uses: actions/checkout@v4
+      uses: actions/checkout@v1
 
-    - name: Packages
-      run: sudo apt-get update && sudo apt-get install build-essential yasm -y
-
-    - name: Build
+    - name: Build x86
       run: |
-        cargo build --release --features=symphonia
-        strip target/release/bliss-analyser
-        mkdir releases
-        cp target/release/bliss-analyser releases/bliss-analyser
-        cp UserGuide.md releases/README.md
-        cp LICENSE releases/
-        cp configs/linux.ini releases/config.ini
+        docker build -t bliss-analyser-x86-symphonia - < docker/Dockerfile_x86_symphonia
+        docker run --rm -v $PWD/target:/build -v $PWD:/src bliss-analyser
 
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
@@ -33,26 +25,17 @@ jobs:
         name: bliss-analyser-linux-x86-symphonia
         path: releases/
 
-
   Linux_x86_ffmpeg:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
 
     steps:
     - name: Checkout
-      uses: actions/checkout@v4
+      uses: actions/checkout@v1
 
-    - name: Packages
-      run: sudo apt-get update && sudo apt-get install build-essential yasm -y
-
-    - name: Build x86 static-ffmpeg version
+    - name: Build x86
       run: |
-        cargo build --release --features=libav,staticlibav
-        strip target/release/bliss-analyser
-        mkdir releases
-        cp target/release/bliss-analyser releases/bliss-analyser
-        cp UserGuide.md releases/README.md
-        cp LICENSE releases/
-        cp configs/linux.ini releases/config.ini
+        docker build -t bliss-analyser-x86-ffmpeg - < docker/Dockerfile_x86_ffmpeg
+        docker run --rm -v $PWD/target:/build -v $PWD:/src bliss-analyser
 
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
@@ -60,18 +43,17 @@ jobs:
         name: bliss-analyser-linux-x86-ffmpeg
         path: releases/
 
-
   Linux_arm_symphonia:
     runs-on: ubuntu-latest
 
     steps:
     - name: Checkout
-      uses: actions/checkout@v4
+      uses: actions/checkout@v1
 
-    - name: Build
+    - name: Build ARM
       run: |
-        docker build --pull --no-cache -t bliss-analyser-cross - < docker/Dockerfile_Bullseye_symphonia
-        docker run --rm -v $PWD/target:/build -v $PWD:/src bliss-analyser-cross
+        docker build -t bliss-analyser-arm-symphonia - < docker/Dockerfile_arm_symphonia
+        docker run --rm -v $PWD/target:/build -v $PWD:/src bliss-analyser
 
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
@@ -79,25 +61,23 @@ jobs:
         name: bliss-analyser-linux-arm-symphonia
         path: releases/
 
-
   Linux_arm_ffmpeg:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
 
     steps:
     - name: Checkout
-      uses: actions/checkout@v4
+      uses: actions/checkout@v1
 
-    - name: Build ARM static-ffmpeg on Debian
+    - name: Build ARM
       run: |
-        docker build -t bliss-analyser-cross - < docker/Dockerfile_Bullseye_static
-        docker run --rm -v $PWD/target:/build -v $PWD:/src bliss-analyser-cross
+        docker build -t bliss-analyser-arm-ffmpeg - < docker/Dockerfile_arm_ffmpeg
+        docker run --rm -v $PWD/target:/build -v $PWD:/src bliss-analyser
 
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
       with:
         name: bliss-analyser-linux-arm-ffmpeg
         path: releases/
-
 
   macOS_symphonia:
     runs-on: macos-13
