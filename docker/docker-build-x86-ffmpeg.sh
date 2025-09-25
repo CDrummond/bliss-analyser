@@ -9,7 +9,7 @@ function build {
 	echo Building for $1 to $3...
 
     if [[ ! -f /build/$1/release/bliss-analyser ]]; then
-        cargo build --release --features=libav,staticlibav --target $1
+        cargo build --release --features=update-aubio-bindings,libav,staticlibav --target $1
     fi
 
     $2 /build/$1/release/bliss-analyser && cp /build/$1/release/bliss-analyser $DESTDIR/$3
