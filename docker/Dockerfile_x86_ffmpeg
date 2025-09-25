@@ -1,18 +1,30 @@
-FROM alpine:latest
+FROM debian:bookworm
 
-RUN apk add --no-cache build-base clang musl-dev yasm git curl pkgconfig llvm-dev clang-dev
+RUN dpkg --add-architecture amd64
+RUN apt-get update
+
+RUN apt-get install -y curl git pkg-config yasm
+RUN apt-get install -y build-essential clang
+
+# Download and extract musl-cross toolchain for x86_64
+RUN curl -LO https://musl.cc/x86_64-linux-musl-cross.tgz \
+    && tar -xzf x86_64-linux-musl-cross.tgz \
+    && mv x86_64-linux-musl-cross /opt/musl-toolchain \
+    && rm x86_64-linux-musl-cross.tgz
+
+ENV PATH="/opt/musl-toolchain/bin:/root/.cargo/bin:${PATH}"
+
+# Optionally, still install musl-tools (for musl-gcc wrapper, not strictly needed now)
+RUN apt-get install -y musl-tools musl-dev musl
 
 RUN curl https://sh.rustup.rs -sSf | sh -s -- -y
-ENV PATH="/root/.cargo/bin/:${PATH}"
 RUN rustup target add x86_64-unknown-linux-musl
 
 RUN mkdir /build
 ENV CARGO_TARGET_DIR /build
 ENV CARGO_HOME /build/cache
-ENV LIBCLANG_PATH=/usr/lib
 
 RUN mkdir /src
 
 WORKDIR /src
 CMD ["/src/docker/docker-build-x86-ffmpeg.sh"]
-
