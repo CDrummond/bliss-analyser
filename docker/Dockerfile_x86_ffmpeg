@@ -4,7 +4,7 @@ RUN dpkg --add-architecture amd64
 RUN apt-get update
 
 RUN apt-get install -y curl git pkg-config yasm
-RUN apt-get install -y build-essential clang
+RUN apt-get install -y build-essential gcc-multilib musl-tools musl-dev musl
 RUN apt-get install -y musl-tools musl-dev musl
 
 RUN curl https://sh.rustup.rs -sSf | sh -s -- -y
@@ -17,8 +17,9 @@ ENV CARGO_HOME /build/cache
 
 RUN mkdir /src
 
-RUN ln -s /usr/bin/ar /usr/bin/musl-ar
+RUN find / -name \*musl\*
+RUN find / -name \*ranlib\*
 
 WORKDIR /src
-CMD ["/src/docker/docker-build-x86-ffmpeg.sh"]
+# CMD ["/src/docker/docker-build-x86-ffmpeg.sh"]
 
