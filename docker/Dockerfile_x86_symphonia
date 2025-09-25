@@ -1,9 +1,9 @@
 FROM debian:bookworm
 
+RUN dpkg --add-architecture amd64
 RUN apt-get update
 
-RUN apt-get install -y curl git pkg-config yasm
-RUN apt-get install -y build-essential clang
+RUN apt-get install -y curl git build-essential gcc-multilib musl-tools musl-dev musl yasm pkg-config
 
 RUN curl https://sh.rustup.rs -sSf | sh -s -- -y
 ENV PATH="/root/.cargo/bin/:${PATH}"
