@@ -1,6 +1,7 @@
 FROM alpine:latest
 
-RUN apk add --no-cache build-base musl-dev yasm git curl pkgconfig
+RUN apk add --no-cache build-base clang musl-dev yasm git curl pkgconfig
+
 RUN curl https://sh.rustup.rs -sSf | sh -s -- -y
 ENV PATH="/root/.cargo/bin/:${PATH}"
 RUN rustup target add x86_64-unknown-linux-musl
