@@ -1,6 +1,6 @@
 0.5.1
 -----
-1. Use serde_json to encode message strings to be JSON safe.
+1. Use serde_json to build JSONRPC notification strings.
 
 0.5.0
 -----
