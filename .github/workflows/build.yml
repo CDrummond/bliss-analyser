@@ -17,7 +17,7 @@ jobs:
     - name: Build x86
       run: |
         docker build -t bliss-analyser-x86-symphonia - < docker/Dockerfile_x86_symphonia
-        docker run --rm -v $PWD/target:/build -v $PWD:/src bliss-analyser
+        docker run --rm -v $PWD/target:/build -v $PWD:/src bliss-analyser-x86-symphonia
 
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
@@ -35,7 +35,7 @@ jobs:
     - name: Build x86
       run: |
         docker build -t bliss-analyser-x86-ffmpeg - < docker/Dockerfile_x86_ffmpeg
-        docker run --rm -v $PWD/target:/build -v $PWD:/src bliss-analyser
+        docker run --rm -v $PWD/target:/build -v $PWD:/src bliss-analyser-x86-ffmpeg
 
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
@@ -53,7 +53,7 @@ jobs:
     - name: Build ARM
       run: |
         docker build -t bliss-analyser-arm-symphonia - < docker/Dockerfile_arm_symphonia
-        docker run --rm -v $PWD/target:/build -v $PWD:/src bliss-analyser
+        docker run --rm -v $PWD/target:/build -v $PWD:/src bliss-analyser-arm-symphonia
 
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
@@ -71,7 +71,7 @@ jobs:
     - name: Build ARM
       run: |
         docker build -t bliss-analyser-arm-ffmpeg - < docker/Dockerfile_arm_ffmpeg
-        docker run --rm -v $PWD/target:/build -v $PWD:/src bliss-analyser
+        docker run --rm -v $PWD/target:/build -v $PWD:/src bliss-analyser-arm-ffmpeg
 
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
