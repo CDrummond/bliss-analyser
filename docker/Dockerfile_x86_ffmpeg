@@ -9,6 +9,7 @@ RUN rustup target add x86_64-unknown-linux-musl
 RUN mkdir /build
 ENV CARGO_TARGET_DIR /build
 ENV CARGO_HOME /build/cache
+ENV LIBCLANG_PATH=/usr/lib
 
 RUN mkdir /src
 
