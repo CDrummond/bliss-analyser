@@ -1,6 +1,6 @@
 FROM alpine:latest
 
-RUN apk add --no-cache build-base clang musl-dev yasm git curl pkgconfig
+RUN apk add --no-cache build-base clang musl-dev yasm git curl pkgconfig llvm-dev clang-dev
 
 RUN curl https://sh.rustup.rs -sSf | sh -s -- -y
 ENV PATH="/root/.cargo/bin/:${PATH}"
