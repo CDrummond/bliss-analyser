@@ -17,9 +17,9 @@ ENV CARGO_HOME /build/cache
 
 RUN mkdir /src
 
-RUN find / -name \*musl\*
-RUN find / -name \*ranlib\*
+RUN ln -s /usr/bin/ar /usr/bin/musl-ar
+RUN ln -s /usr/bin/ranlib /usr/bin/musl-ranlib
 
 WORKDIR /src
-# CMD ["/src/docker/docker-build-x86-ffmpeg.sh"]
+CMD ["/src/docker/docker-build-x86-ffmpeg.sh"]
 
