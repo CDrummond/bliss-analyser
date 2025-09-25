@@ -1,5 +1,4 @@
-#!/bin/bash
-## #!/usr/bin/env bash
+#!/bin/ash
 set -eux
 
 uname -a
