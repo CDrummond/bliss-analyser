@@ -4,6 +4,7 @@ set -eux
 
 uname -a
 DESTDIR=/src/releases
+mkdir -p $DESTDIR
 
 function build {
 	echo Building for $1 to $3...
