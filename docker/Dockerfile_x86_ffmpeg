@@ -17,6 +17,8 @@ ENV CARGO_HOME /build/cache
 
 RUN mkdir /src
 
+RUN ln -s /usr/bin/ar /usr/bin/musl-ar
+
 WORKDIR /src
 CMD ["/src/docker/docker-build-x86-ffmpeg.sh"]
 
