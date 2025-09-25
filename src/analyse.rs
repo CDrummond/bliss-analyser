@@ -28,7 +28,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use std::thread;
 use std::sync::mpsc;
 use std::sync::mpsc::{Receiver, Sender};
-use serde_json::to_string;
+use serde_json::json;
 
 const DONT_ANALYSE: &str = ".notmusic";
 const MAX_ERRORS_TO_SHOW: usize = 100;
@@ -58,9 +58,9 @@ fn handle_ctrl_c() {
 }
 
 fn send_notif_msg(notifs: &mut NotifInfo, text: &str) {
-    let json = &format!("{{\"id\":1, \"method\":\"slim.request\",\"params\":[\"\",[\"blissmixer\",\"analyser\",\"act:update\",\"msg:{}\"]]}}", text);
+    let js = json!({"id":"1", "method":"slim.request", "params":["", ["blissmixer", "analyser", "act:update", format!("msg:{}", text)]]});
     log::info!("Sending notif to LMS: {}", text);
-    let _ = ureq::post(&notifs.address).send_string(&json);
+    let _ = ureq::post(&notifs.address).send_string(&js.to_string());
 }
 
 fn send_notif(notifs: &mut NotifInfo, text: &str) {
@@ -69,10 +69,8 @@ fn send_notif(notifs: &mut NotifInfo, text: &str) {
         if now>=notifs.last_send+MIN_NOTIF_TIME {
             let dur = now - notifs.start_time;
             let msg = format!("[{:02}:{:02}:{:02}] {}", (dur/60)/60, (dur/60)%60, dur%60, text);
-            if let Ok(jstr) = to_string(&msg) {
-                send_notif_msg(notifs, &jstr);
-                notifs.last_send = now;
-            }
+            send_notif_msg(notifs, &msg);
+            notifs.last_send = now;
         }
     }
 }
