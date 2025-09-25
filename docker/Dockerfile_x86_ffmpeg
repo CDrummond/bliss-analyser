@@ -1,12 +1,6 @@
-FROM debian:bookworm
+FROM alpine:latest
 
-RUN dpkg --add-architecture amd64
-RUN apt-get update
-
-RUN apt-get install -y curl git pkg-config yasm
-RUN apt-get install -y build-essential clang
-RUN apt-get install -y musl-tools musl-dev musl
-
+RUN apk add --no-cache build-base musl-dev yasm git curl pkgconfig
 RUN curl https://sh.rustup.rs -sSf | sh -s -- -y
 ENV PATH="/root/.cargo/bin/:${PATH}"
 RUN rustup target add x86_64-unknown-linux-musl
