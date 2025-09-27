@@ -8,6 +8,12 @@ RUN apt-get install -y curl git pkg-config yasm
 RUN apt-get install -y build-essential clang
 RUN apt-get install -y crossbuild-essential-armhf crossbuild-essential-arm64
 
+RUN apt-get install -y libavutil-dev:arm64 libavcodec-dev:arm64 libavformat-dev:arm64 \
+                       libavfilter-dev:arm64 libavdevice-dev:arm64 libswresample-dev:arm64 libfftw3-dev:arm64
+
+RUN apt-get install -y libavutil-dev:armhf libavcodec-dev:armhf libavformat-dev:armhf \
+                       libavfilter-dev:armhf libavdevice-dev:armhf libswresample-dev:armhf libfftw3-dev:armhf
+
 RUN curl https://sh.rustup.rs -sSf | sh -s -- -y
 ENV PATH="/root/.cargo/bin/:${PATH}"
 RUN rustup target add aarch64-unknown-linux-gnu && \

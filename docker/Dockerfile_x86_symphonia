@@ -5,6 +5,7 @@ RUN apt-get update
 
 RUN apt-get install -y curl git pkg-config yasm
 RUN apt-get install -y build-essential clang
+RUN apt-get install -y musl-tools musl-dev musl
 
 RUN curl https://sh.rustup.rs -sSf | sh -s -- -y
 ENV PATH="/root/.cargo/bin/:${PATH}"
