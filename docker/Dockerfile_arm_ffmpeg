@@ -1,4 +1,4 @@
-FROM debian:bookworm
+FROM debian:bullseye
 
 RUN dpkg --add-architecture arm64 && \
     dpkg --add-architecture armhf
