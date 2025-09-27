@@ -1,3 +1,7 @@
+0.5.2
+-----
+1. Fix Linux builds.
+
 0.5.1
 -----
 1. Use serde_json to build JSONRPC notification strings.
