@@ -102,7 +102,8 @@ tracks are to be analysed and how many old tracks are left in the database.
 files a `BLISS_ANALYSIS` tag (it present) in files.
 * `-W` / `--writetags` When using the `analyse` task, write analysis results to files
 within a `BLISS_ANALYSIS` tag.
-* `-p' / '--preserve` Attempt to preserve file modification time when writing tags.
+* `-p` / `--preserve` Attempt to preserve file modification time when writing tags.
+* `-t` / `--threads` Maximum number of threads to use for analysis.
 
 Equivalent items specified in the INI config file (detailed above) will override
 any specified on the command-line.
