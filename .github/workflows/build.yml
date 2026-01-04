@@ -106,7 +106,7 @@ jobs:
         path: releases/
 
   macOS_symphonia:
-    runs-on: macos-13
+    runs-on: macos-15
 
     steps:
     - name: Install Rust
