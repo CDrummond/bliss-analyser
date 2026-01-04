@@ -123,17 +123,14 @@ jobs:
 
     - name: Install Rust support for ARM64 & prepare environment
       run: |
+        rustup target add x86_64-apple-darwin
         rustup target add aarch64-apple-darwin
         mkdir releases
 
     - name: Build
       run: |
-        cargo build --release --features update-aubio-bindings,symphonia
-        strip target/release/bliss-analyser
-        cp target/release/bliss-analyser releases/bliss-analyser-x86_64
+        cargo build --target=x86_64-apple-darwin --release --features update-aubio-bindings,symphonia
         cargo build --target=aarch64-apple-darwin --release --features update-aubio-bindings,symphonia
-        strip target/aarch64-apple-darwin/release/bliss-analyser
-        cp target/aarch64-apple-darwin/release/bliss-analyser releases/bliss-analyser-arm64
         cp UserGuide.md releases/README.md
         cp LICENSE releases/
         cp configs/macos.ini releases/config.ini
@@ -141,13 +138,9 @@ jobs:
     - name: Build fat binary
       run: |
         lipo -create \
-          -arch x86_64 releases/bliss-analyser-x86_64 \
-          -arch arm64 releases/bliss-analyser-arm64 \
+          -arch x86_64 target/x86_64-apple-darwin/release/bliss-analyser \
+          -arch arm64 target/aarch64-apple-darwin/release/bliss-analyser \
           -output releases/bliss-analyser
-
-    - name: Remove unused binaries
-      run:
-        rm releases/bliss-analyser-x86_64 releases/bliss-analyser-arm64
 
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
