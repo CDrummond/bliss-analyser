@@ -2,6 +2,7 @@
 -----
 1. Fix stale case-only paths on case-insensitive filesystems - thanks to
    chrober for implementation.
+2. Fix invalid task warning with 'clearfail'.
 
 0.5.2
 -----

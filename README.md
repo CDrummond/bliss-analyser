@@ -31,7 +31,7 @@ files, but has more limited codec support, and can fail on more files.
 To install dependencies on a Debian system:
 
 ```
-apt install -y clang libavcodec-dev libavformat-dev libavutil-dev libavfilter-dev libavdevice-dev pkg-config
+apt install -y clang libavcodec-dev libavformat-dev libavutil-dev libavfilter-dev libavdevice-dev pkg-config yasm
 ```
 
 To install dependencies on a Fedora system:
@@ -57,7 +57,7 @@ their dependencies).
 To install dependencies on a Debian system:
 
 ```
-apt install -y clang libavcodec-dev libavformat-dev libavutil-dev libavfilter-dev libavdevice-dev pkg-config
+apt install -y clang libavcodec-dev libavformat-dev libavutil-dev libavfilter-dev libavdevice-dev pkg-config yasm
 ```
 
 To install dependencies on a Fedora system:
